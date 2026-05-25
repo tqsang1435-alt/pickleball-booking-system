@@ -1,0 +1,31 @@
+.box {
+  padding: 28px;
+  border-radius: 24px;
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid #ffe0ee;
+}
+
+.box h3 {
+  color: var(--pink-dark);
+  margin-bottom: 8px;
+  font-size: 21px;
+}
+
+.box p {
+  color: #756779;
+  line-height: 1.6;
+}
+
+.loading {
+  border-color: #ffd5e8;
+}
+
+.error {
+  background: #fff6f7;
+  border-color: #ffc6ce;
+}
+
+.empty {
+  background: #fffafe;
+}
