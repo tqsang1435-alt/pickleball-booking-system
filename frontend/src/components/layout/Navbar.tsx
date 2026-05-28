@@ -90,7 +90,7 @@ export default function Navbar() {
   let profilePath = "/profile";
 
   if (role.includes("admin")) {
-    profilePath = "/admin";
+    profilePath = "/admin/profile";
   } else if (role.includes("staff")) {
     profilePath = "/staff";
   } else if (role.includes("coach")) {

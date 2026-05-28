@@ -1,119 +1,158 @@
 .page {
-  background: #fff8fc;
+  background:
+    linear-gradient(180deg, #fbfff5 0%, #ffffff 46%, #f7fff0 100%);
 }
 
 .hero {
-  padding: 48px 0 88px;
-  background: linear-gradient(105deg, #fff8fc 0%, #fff1f8 48%, #ffd6ea 100%);
+  position: relative;
+  padding: 58px 0 96px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 8% 18%, rgba(185, 255, 71, 0.34), transparent 28%),
+    radial-gradient(circle at 92% 12%, rgba(0, 184, 169, 0.18), transparent 30%),
+    #fbfff5;
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  right: -120px;
+  bottom: -160px;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: rgba(139, 216, 15, 0.18);
 }
 
 .heroGrid {
+  position: relative;
+  z-index: 2;
   display: grid;
-  grid-template-columns: 1fr 0.9fr;
-  gap: 50px;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 54px;
   align-items: center;
 }
 
 .heroContent {
-  max-width: 680px;
+  max-width: 660px;
 }
 
 .badge {
   display: inline-flex;
   padding: 10px 18px;
   border-radius: 999px;
-  background: #ffe5f1;
-  color: var(--pink);
+  background: #ffffff;
+  color: var(--mint);
+  border: 1px solid #dff5c7;
   font-size: 14px;
-  font-weight: 800;
-  margin-bottom: 18px;
+  font-weight: 900;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 24px rgba(139, 216, 15, 0.08);
 }
 
 .hero h1 {
-  font-size: clamp(42px, 5vw, 68px);
-  line-height: 1.04;
-  letter-spacing: -0.06em;
-  margin-bottom: 20px;
+  font-size: clamp(42px, 5vw, 70px);
+  line-height: 1.02;
+  letter-spacing: -0.065em;
+  margin-bottom: 22px;
+  color: var(--text);
 }
 
 .hero h1 span {
-  display: block;
-  color: var(--pink);
+  display: inline;
+  color: var(--primary);
 }
 
 .hero p {
-  max-width: 580px;
-  color: #665a6a;
+  max-width: 560px;
+  color: var(--muted);
   font-size: 17px;
   line-height: 1.75;
 }
 
 .searchBox {
-  max-width: 620px;
-  height: 62px;
-  margin-top: 28px;
+  max-width: 600px;
+  height: 64px;
+  margin-top: 30px;
   padding: 8px;
   display: grid;
-  grid-template-columns: 1fr 54px;
-  border-radius: 18px;
+  grid-template-columns: 1fr 56px;
+  border-radius: 999px;
   background: #ffffff;
-  box-shadow: 0 16px 35px rgba(246, 51, 141, 0.12);
+  border: 1px solid #dff5c7;
+  box-shadow: 0 18px 38px rgba(0, 184, 169, 0.1);
 }
 
 .searchBox input {
   border: 0;
   outline: 0;
-  padding: 0 18px;
-  font-weight: 700;
-  color: #171226;
+  padding: 0 22px;
+  font-weight: 800;
+  color: var(--text);
+  background: transparent;
 }
 
 .searchBox button {
   border: 0;
-  border-radius: 14px;
+  border-radius: 50%;
   color: #ffffff;
-  background: var(--pink);
+  background: linear-gradient(135deg, #00b8a9, #8bd80f);
 }
 
 .heroVisual {
+  position: relative;
   display: flex;
   justify-content: flex-end;
 }
 
 .heroImage {
   width: 100%;
-  height: 360px;
+  height: 390px;
   padding: 12px;
-  border-radius: 34px;
+  border-radius: 44px 44px 44px 120px;
   background: #ffffff;
-  box-shadow: 0 28px 70px rgba(246, 51, 141, 0.16);
+  box-shadow: 0 30px 80px rgba(0, 184, 169, 0.14);
+}
+
+.heroImage::before {
+  content: "";
+  position: absolute;
+  right: -18px;
+  top: -18px;
+  width: 104px;
+  height: 104px;
+  border-radius: 30px;
+  background: #b9ff47;
+  z-index: -1;
 }
 
 .heroImage img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 26px;
+  border-radius: 34px 34px 34px 96px;
 }
 
 .filterPanel {
-  margin-top: -48px;
+  position: relative;
+  z-index: 5;
+  margin-top: -50px;
   padding: 24px;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 150px;
   gap: 16px;
   align-items: end;
-  border-radius: 24px;
-  background: #ffffff;
-  border: 1px solid #ffe0ee;
-  box-shadow: 0 18px 44px rgba(246, 51, 141, 0.11);
+  border-radius: 28px;
+  background: #073f3b;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 22px 52px rgba(7, 63, 59, 0.18);
 }
 
 .filterPanel label {
   display: grid;
   gap: 8px;
   font-weight: 800;
-  color: #7a6875;
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .filterPanel label span {
@@ -123,42 +162,43 @@
 .filterPanel select,
 .filterPanel button {
   height: 52px;
-  border: 1px solid #ffd5e8;
-  border-radius: 14px;
+  border: 0;
+  border-radius: 16px;
   background: #ffffff;
   padding: 0 18px;
-  font-weight: 800;
-  color: #171226;
+  font-weight: 900;
+  color: var(--text);
 }
 
 .filterPanel button {
-  color: var(--pink);
-  background: #fff0f7;
+  color: #073f3b;
+  background: linear-gradient(135deg, #b9ff47, #8bd80f);
 }
 
 .content {
-  padding: 42px 0 20px;
+  padding: 48px 0 20px;
 }
 
 .resultHeader {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  margin-bottom: 22px;
+  margin-bottom: 24px;
 }
 
 .resultHeader h2 {
-  font-size: 30px;
-  letter-spacing: -0.04em;
+  font-size: 32px;
+  letter-spacing: -0.05em;
   margin-bottom: 6px;
+  color: var(--text);
 }
 
 .resultHeader p {
-  color: #756779;
+  color: var(--muted);
 }
 
 .resultHeader strong {
-  color: var(--pink);
+  color: var(--mint);
 }
 
 .grid {
@@ -169,23 +209,23 @@
 
 .card {
   overflow: hidden;
-  border-radius: 24px;
+  border-radius: 30px;
   background: #ffffff;
-  border: 1px solid #ffe0ee;
-  box-shadow: 0 18px 44px rgba(246, 51, 141, 0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid #e6f6d4;
+  box-shadow: 0 16px 40px rgba(139, 216, 15, 0.08);
+  transition: 0.25s ease;
 }
 
 .card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 24px 60px rgba(246, 51, 141, 0.14);
+  transform: translateY(-6px);
+  box-shadow: 0 26px 64px rgba(0, 184, 169, 0.13);
 }
 
 .imageWrap {
   position: relative;
-  height: 210px;
+  height: 220px;
   overflow: hidden;
-  background: #ffe5f1;
+  background: #efffdd;
 }
 
 .imageWrap img {
@@ -200,43 +240,43 @@
   top: 16px;
   padding: 8px 14px;
   border-radius: 999px;
-  color: var(--pink);
-  background: #fff1f8;
+  color: #073f3b;
+  background: rgba(255, 255, 255, 0.92);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .cardBody {
-  padding: 20px;
+  padding: 22px;
 }
 
 .cardTop {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
 }
 
 .cardTop h3 {
-  font-size: 20px;
+  font-size: 21px;
   margin-bottom: 8px;
   letter-spacing: -0.03em;
+  color: var(--text);
 }
 
 .cardTop p {
-  color: #736879;
+  color: var(--muted);
   font-size: 14px;
 }
 
 .cardTop strong {
-  min-width: 120px;
-  text-align: right;
-  color: #171226;
+  color: var(--primary-dark);
   line-height: 1.35;
+  font-size: 20px;
 }
 
 .cardTop small {
   display: block;
-  color: #736879;
+  color: var(--muted);
   font-size: 13px;
   font-weight: 600;
 }
@@ -244,7 +284,7 @@
 .desc {
   min-height: 44px;
   margin-top: 14px;
-  color: #736879;
+  color: var(--muted);
   line-height: 1.6;
   font-size: 14px;
 }
@@ -258,11 +298,11 @@
 
 .meta span {
   padding: 8px 11px;
-  border-radius: 9px;
-  background: #faf4f8;
-  color: #6d6270;
+  border-radius: 999px;
+  background: #f3ffe4;
+  color: #5d6857;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .actions {
@@ -275,16 +315,16 @@
 .actions button {
   height: 46px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 999px;
   color: #ffffff;
-  background: var(--pink);
-  font-weight: 800;
+  background: #073f3b;
+  font-weight: 900;
 }
 
 .actions .outline {
-  color: var(--pink);
+  color: var(--mint);
   background: #ffffff;
-  border: 1px solid #ffd5e8;
+  border: 1px solid #dff5c7;
 }
 
 @media (max-width: 1024px) {

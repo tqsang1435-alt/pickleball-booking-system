@@ -55,3 +55,12 @@ export async function resetPasswordApi(data: {
     body: data,
   });
 }
+
+export async function googleLoginApi(data: {
+  credential: string;
+}): Promise<AuthResponse> {
+  return apiClient<AuthResponse>("/api/auth/google-login", {
+    method: "POST",
+    body: data,
+  });
+}

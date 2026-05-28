@@ -1,13 +1,19 @@
-import sql from "mssql";
+import type { config } from "mssql";
+import { env } from "./env";
 
-export const dbConfig: sql.config = {
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  server: process.env.DB_SERVER || "localhost",
-  database: process.env.DB_DATABASE,
-
+export const databaseConfig: config = {
+  user: env.dbUser,
+  password: env.dbPassword,
+  server: env.dbServer,
+  database: env.dbName,
+  port: env.dbPort,
   options: {
     encrypt: false,
     trustServerCertificate: true,
+  },
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 30000,
   },
 };

@@ -5,13 +5,22 @@
 }
 
 :root {
-  --pink: #f6338d;
-  --pink-dark: #e21878;
-  --pink-soft: #fff0f7;
-  --pink-border: #ffd5e8;
-  --text: #171226;
-  --muted: #756779;
+  --primary: #8bd80f;
+  --primary-dark: #6fbd00;
+  --primary-soft: #f3ffe4;
+  --primary-border: #dff5c7;
+
+  --mint: #00b8a9;
+  --mint-dark: #008f84;
+
+  --text: #171a2a;
+  --muted: #667064;
   --card: #ffffff;
+
+  --pink: #8bd80f;
+  --pink-dark: #6fbd00;
+  --pink-soft: #f3ffe4;
+  --pink-border: #dff5c7;
 }
 
 html {
@@ -19,7 +28,7 @@ html {
 }
 
 body {
-  background: #fff8fc;
+  background: #fbfff5;
   color: var(--text);
 }
 
@@ -36,6 +45,7 @@ select {
 
 button {
   cursor: pointer;
+  border: none;
 }
 
 img {
@@ -49,7 +59,7 @@ img {
 }
 
 .section {
-  padding: 34px 0;
+  padding: 36px 0;
 }
 
 .sectionTitleRow {
@@ -57,17 +67,22 @@ img {
   justify-content: space-between;
   align-items: flex-end;
   gap: 18px;
-  margin-bottom: 22px;
+  margin-bottom: 24px;
 }
 
 .sectionTitleRow h2 {
-  font-size: 28px;
+  font-size: 30px;
   letter-spacing: -0.04em;
+  color: var(--text);
 }
 
 .sectionTitleRow a {
-  color: var(--pink);
-  font-weight: 800;
+  color: var(--mint);
+  font-weight: 900;
+}
+
+.sectionTitleRow a:hover {
+  color: var(--primary-dark);
 }
 
 @media (max-width: 720px) {

@@ -8,6 +8,9 @@ export type Profile = {
   DateOfBirth?: string | null;
   Address?: string | null;
   Status: string;
+  Roles?: string | null;
+  CreatedAt?: string | null;
+  UpdatedAt?: string | null;
 };
 
 export type UpdateProfilePayload = {
