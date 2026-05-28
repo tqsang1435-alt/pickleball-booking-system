@@ -3,27 +3,46 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { registerApi } from "@/services/authApi";
-import { isStrongPassword, isValidEmail, isValidPhone } from "@/utils/validators";
+import { GoogleLogin } from "@react-oauth/google";
+
+import {
+  googleLoginApi,
+  registerApi,
+} from "@/services/authApi";
+
+import { saveAuth } from "@/utils/authStorage";
+
+import {
+  isStrongPassword,
+  isValidEmail,
+  isValidPhone,
+} from "@/utils/validators";
+
 import styles from "./AuthPage.module.css";
 
 export default function RegisterPage() {
   const router = useRouter();
+
   const [form, setForm] = useState({
     fullName: "",
     email: "",
     phoneNumber: "",
     password: "",
   });
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   function updateField(name: keyof typeof form, value: string) {
-    setForm((current) => ({ ...current, [name]: value }));
+    setForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
     setError("");
 
     if (!form.fullName.trim()) {
@@ -42,56 +61,163 @@ export default function RegisterPage() {
     }
 
     if (!isStrongPassword(form.password)) {
-      setError("Mật khẩu tối thiểu 8 ký tự, có chữ hoa, số và ký tự đặc biệt.");
+      setError(
+        "Mật khẩu tối thiểu 8 ký tự, có chữ hoa, số và ký tự đặc biệt."
+      );
       return;
     }
 
     try {
-  setSubmitting(true);
-  await registerApi(form);
-  router.push(`/verify-otp?email=${encodeURIComponent(form.email)}`);
-} catch (err) {
-  setError(err instanceof Error ? err.message : "Đăng ký thất bại.");
-} finally {
-  setSubmitting(false);
-}
+      setSubmitting(true);
+
+      await registerApi(form);
+
+      router.push(
+        `/verify-otp?email=${encodeURIComponent(form.email)}`
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Đăng ký thất bại."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleGoogleRegister(credential?: string) {
+    try {
+      setError("");
+
+      if (!credential) {
+        setError("Không nhận được Google credential");
+        return;
+      }
+
+      setSubmitting(true);
+
+      const response: any = await googleLoginApi({
+        credential,
+      });
+
+      const token = response.token || response.data?.token;
+      const user = response.user || response.data?.user;
+
+      if (!token || !user) {
+        throw new Error("Backend chưa trả token hoặc user.");
+      }
+
+      saveAuth(token, user);
+
+      window.dispatchEvent(new Event("auth-change"));
+
+      router.push("/");
+      router.refresh();
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Đăng ký Google thất bại"
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
     <main className={styles.page}>
       <form className={styles.card} onSubmit={handleSubmit}>
-      
         <h1>Đăng ký tài khoản</h1>
-        <p>Tạo tài khoản Player để sử dụng chức năng đặt sân và đặt Coach.</p>
 
-        {error ? <div className={styles.error}>{error}</div> : null}
+        <p>
+          Tạo tài khoản Player để sử dụng chức năng đặt sân
+          và đặt Coach.
+        </p>
+
+        {error ? (
+          <div className={styles.error}>{error}</div>
+        ) : null}
 
         <label>
           Họ tên
-          <input value={form.fullName} onChange={(event) => updateField("fullName", event.target.value)} placeholder="Nguyễn Văn A" />
+
+          <input
+            value={form.fullName}
+            disabled={submitting}
+            onChange={(event) =>
+              updateField("fullName", event.target.value)
+            }
+            placeholder="Nguyễn Văn A"
+          />
         </label>
 
         <label>
           Email
-          <input value={form.email} onChange={(event) => updateField("email", event.target.value)} placeholder="you@example.com" />
+
+          <input
+            value={form.email}
+            disabled={submitting}
+            onChange={(event) =>
+              updateField("email", event.target.value)
+            }
+            placeholder="you@example.com"
+          />
         </label>
 
         <label>
           Số điện thoại
-          <input value={form.phoneNumber} onChange={(event) => updateField("phoneNumber", event.target.value)} placeholder="0901234567" />
+
+          <input
+            value={form.phoneNumber}
+            disabled={submitting}
+            onChange={(event) =>
+              updateField("phoneNumber", event.target.value)
+            }
+            placeholder="0901234567"
+          />
         </label>
 
         <label>
           Mật khẩu
-          <input type="password" value={form.password} onChange={(event) => updateField("password", event.target.value)} placeholder="Ví dụ: Pickle@123" />
+
+          <input
+            type="password"
+            disabled={submitting}
+            value={form.password}
+            onChange={(event) =>
+              updateField("password", event.target.value)
+            }
+            placeholder="Ví dụ: Pickle@123"
+          />
         </label>
 
         <button type="submit" disabled={submitting}>
-          {submitting ? "Đang đăng ký..." : "Đăng ký"}
+          {submitting
+            ? "Đang đăng ký..."
+            : "Đăng ký"}
         </button>
 
+        <div className={styles.googleDivider}>
+          <span>Hoặc đăng ký bằng</span>
+        </div>
+
+        <div className={styles.googleLogin}>
+          <GoogleLogin
+            onSuccess={(credentialResponse) => {
+              handleGoogleRegister(
+                credentialResponse.credential
+              );
+            }}
+            onError={() => {
+              setError("Đăng ký Google thất bại");
+            }}
+          />
+        </div>
+
         <p className={styles.switch}>
-          Đã có tài khoản? <Link href="/login">Đăng nhập</Link>
+          Đã có tài khoản?{" "}
+          <Link href="/login">Đăng nhập</Link>
         </p>
       </form>
     </main>

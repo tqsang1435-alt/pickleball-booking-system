@@ -3,7 +3,7 @@ import { Be_Vietnam_Pro } from "next/font/google";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import "./globals.css";
-
+import GoogleProvider from "@/providers/GoogleProvider";
 const beVietnamPro = Be_Vietnam_Pro({
   subsets: ["vietnamese"],
   weight: ["400", "500", "600", "700", "800"],
@@ -18,9 +18,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="vi">
       <body className={beVietnamPro.className}>
-        <Navbar />
-        {children}
-        <Footer />
+        <GoogleProvider>
+          <Navbar />
+          {children}
+          <Footer />
+        </GoogleProvider>
       </body>
     </html>
   );

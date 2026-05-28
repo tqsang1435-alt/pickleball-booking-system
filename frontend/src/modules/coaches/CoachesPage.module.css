@@ -1,21 +1,23 @@
 .hero {
-  padding: 46px 0 74px;
-  background: linear-gradient(105deg, #fff8fc 0%, #fff1f8 48%, #ffd6ea 100%);
+  padding: 52px 0 80px;
+  background:
+    radial-gradient(circle at left bottom, rgba(185, 255, 71, 0.26), transparent 30%),
+    linear-gradient(105deg, #fbfff5 0%, #f4ffdf 52%, #dffff4 100%);
 }
 
 .heroGrid {
   display: grid;
   grid-template-columns: 0.9fr 1.1fr;
-  gap: 46px;
+  gap: 50px;
   align-items: center;
 }
 
 .visual {
-  height: 360px;
+  height: 380px;
   overflow: hidden;
-  border-radius: 34px;
-  background: linear-gradient(135deg, #ffd4e8, #f6338d);
-  box-shadow: 0 28px 70px rgba(246, 51, 141, 0.18);
+  border-radius: 36px;
+  background: linear-gradient(135deg, #cfff6d, #00b8a9);
+  box-shadow: 0 28px 70px rgba(39, 75, 31, 0.16);
 }
 
 .visual img {
@@ -28,8 +30,8 @@
   display: inline-flex;
   padding: 9px 17px;
   border-radius: 999px;
-  background: #ffe5f1;
-  color: var(--pink);
+  background: #efffdd;
+  color: #2f5a24;
   font-size: 14px;
   font-weight: 800;
   margin-bottom: 18px;
@@ -41,17 +43,18 @@
   line-height: 1.04;
   letter-spacing: -0.06em;
   margin-bottom: 22px;
+  color: var(--text);
 }
 
 .hero h1 span {
   display: block;
-  color: var(--pink);
+  color: #3f6b32;
 }
 
 .desc {
   display: block;
   max-width: 620px;
-  color: #665a6a;
+  color: #5f6b5b;
   font-size: 17px;
   line-height: 1.75;
   margin-bottom: 28px;
@@ -59,13 +62,14 @@
 
 .search {
   max-width: 620px;
-  height: 62px;
+  height: 64px;
   padding: 8px;
   display: grid;
-  grid-template-columns: 1fr 54px;
-  border-radius: 18px;
+  grid-template-columns: 1fr 56px;
+  border-radius: 20px;
   background: #ffffff;
-  box-shadow: 0 16px 35px rgba(246, 51, 141, 0.12);
+  border: 1px solid #dff5c7;
+  box-shadow: 0 16px 35px rgba(39, 75, 31, 0.1);
 }
 
 .search input {
@@ -73,14 +77,21 @@
   outline: 0;
   padding: 0 18px;
   font-weight: 700;
-  color: #171226;
+  color: var(--text);
+  background: transparent;
 }
 
 .search button {
   border: 0;
   border-radius: 14px;
   color: #ffffff;
-  background: var(--pink);
+  background: linear-gradient(135deg, #3f6b32 0%, #274b1f 100%);
+  transition: 0.25s ease;
+}
+
+.search button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(39, 75, 31, 0.24);
 }
 
 .filter {
@@ -90,81 +101,99 @@
   grid-template-columns: 1fr 160px;
   gap: 16px;
   align-items: end;
-  border-radius: 22px;
+  border-radius: 24px;
   background: #ffffff;
-  border: 1px solid #ffe0ee;
-  box-shadow: 0 18px 44px rgba(246, 51, 141, 0.1);
+  border: 1px solid #dff5c7;
+  box-shadow: 0 18px 44px rgba(39, 75, 31, 0.09);
 }
 
 .filter label {
   display: grid;
   gap: 8px;
   font-weight: 800;
-  color: #7a6875;
+  color: #5f6b5b;
 }
 
 .filter select,
 .filter button {
-  height: 52px;
-  border: 1px solid #ffd5e8;
+  height: 54px;
+  border: 1px solid #dff5c7;
   border-radius: 14px;
   background: #ffffff;
   padding: 0 18px;
   font-weight: 800;
 }
 
+.filter select {
+  color: var(--text);
+}
+
 .filter button {
-  color: var(--pink);
-  background: #fff0f7;
+  color: #ffffff;
+  background: linear-gradient(135deg, #3f6b32 0%, #274b1f 100%);
+  border: 0;
+  transition: 0.25s ease;
+}
+
+.filter button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(39, 75, 31, 0.22);
 }
 
 .content {
-  padding: 36px 0;
+  padding: 40px 0;
 }
 
 .count {
-  color: #756779;
+  color: #5f6b5b;
   margin-bottom: 20px;
   font-weight: 700;
 }
 
 .list {
   display: grid;
-  gap: 18px;
+  gap: 20px;
 }
 
 .card {
   display: grid;
   grid-template-columns: 220px 1fr 240px;
   gap: 24px;
-  padding: 18px;
-  border-radius: 22px;
+  padding: 20px;
+  border-radius: 24px;
   background: #ffffff;
-  border: 1px solid #ffe0ee;
-  box-shadow: 0 14px 36px rgba(246, 51, 141, 0.07);
+  border: 1px solid #dff5c7;
+  box-shadow: 0 14px 36px rgba(39, 75, 31, 0.07);
+  transition: 0.25s ease;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 46px rgba(39, 75, 31, 0.12);
 }
 
 .card img {
   width: 100%;
   height: 170px;
   object-fit: cover;
-  border-radius: 17px;
-  background: #ffe5f1;
+  border-radius: 18px;
+  background: #efffdd;
 }
 
 .info h3 {
-  font-size: 25px;
+  font-size: 26px;
   margin-bottom: 10px;
   letter-spacing: -0.03em;
+  color: var(--text);
 }
 
 .info h3 span {
-  color: var(--pink);
+  color: #3f6b32;
   font-size: 14px;
 }
 
 .info p {
-  color: #736879;
+  color: #5f6b5b;
   line-height: 1.65;
   margin-bottom: 6px;
 }
@@ -178,10 +207,10 @@
 
 .tags span {
   padding: 8px 12px;
-  border-radius: 9px;
-  background: #faf4f8;
+  border-radius: 10px;
+  background: #f5ffec;
   font-weight: 800;
-  color: #6d6270;
+  color: #4f6049;
   font-size: 13px;
 }
 
@@ -192,28 +221,40 @@
 }
 
 .price strong {
-  font-size: 28px;
+  font-size: 30px;
   letter-spacing: -0.04em;
+  color: var(--text);
 }
 
 .price span {
   margin-top: -12px;
-  color: #756779;
+  color: #5f6b5b;
 }
 
 .price button {
-  height: 48px;
+  height: 50px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 14px;
   color: #ffffff;
-  background: var(--pink);
+  background: linear-gradient(135deg, #3f6b32 0%, #274b1f 100%);
   font-weight: 800;
+  transition: 0.25s ease;
+}
+
+.price button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 30px rgba(39, 75, 31, 0.24);
 }
 
 .price .outline {
-  color: var(--pink);
+  color: #2f5a24;
   background: #ffffff;
-  border: 1px solid var(--pink);
+  border: 1px solid #3f6b32;
+}
+
+.price .outline:hover {
+  color: #ffffff;
+  background: #3f6b32;
 }
 
 @media (max-width: 980px) {

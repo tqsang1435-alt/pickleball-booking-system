@@ -34,3 +34,6 @@ export type AuthResponse = {
   };
   user?: AuthUser;
 };
+export type GoogleLoginPayload = {
+  credential: string;
+};

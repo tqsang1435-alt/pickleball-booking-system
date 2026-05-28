@@ -1,295 +1,269 @@
 .page {
-  min-height: calc(100vh - 80px);
+  min-height: 100vh;
+  padding: 40px 7%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 110px 20px 60px;
   background:
-    radial-gradient(circle at 12% 18%, rgba(244, 114, 182, 0.5), transparent 34%),
-    radial-gradient(circle at 86% 82%, rgba(186, 230, 253, 0.72), transparent 35%),
-    linear-gradient(135deg, #f5bdd3 0%, #faedf4 52%, #dff8f5 100%);
+    linear-gradient(90deg, rgba(4, 61, 39, 0.55), rgba(235, 255, 244, 0.92)),
+     url("/images/courts/san3.png") left center / cover no-repeat;
+  position: relative;
+  overflow: hidden;
 }
 
-/* ================= LOGIN / REGISTER CARD ================= */
+.page::after {
+  content: "";
+  position: absolute;
+  right: -120px;
+  bottom: -160px;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  background: rgba(49, 190, 88, 0.12);
+  filter: blur(20px);
+}
 
 .card {
   position: relative;
-  width: min(540px, 100%);
-  padding: 86px 54px 46px;
-  border: 4px solid rgba(255, 255, 255, 0.82);
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(20px);
-  box-shadow: 0 28px 80px rgba(236, 72, 153, 0.17);
+  z-index: 2;
+  width: min(520px, 100%);
+  padding: 54px 42px 38px;
+  border-radius: 32px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  box-shadow: 0 30px 80px rgba(18, 77, 40, 0.22);
+  backdrop-filter: blur(24px);
 }
 
-/* Avatar chỉ dùng cho LoginPage */
 .avatar {
-  position: absolute;
-  top: -68px;
-  left: 50%;
-  width: 136px;
-  height: 136px;
-  transform: translateX(-50%);
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 22px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #e88fab;
-  color: #ffffff;
-  font-size: 54px;
-  box-shadow: 0 18px 45px rgba(232, 143, 171, 0.35);
+  font-size: 38px;
+  color: #fff;
+  background: linear-gradient(135deg, #28b62f, #087c27);
+  box-shadow: 0 18px 36px rgba(19, 142, 42, 0.34);
 }
 
-/* ================= LOGIN INPUT GROUP ================= */
+.card h1 {
+  margin: 0 0 8px;
+  text-align: center;
+  font-size: 34px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.card > p {
+  margin: 0 0 28px;
+  text-align: center;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.error {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fff1f2;
+  color: #be123c;
+  font-size: 14px;
+  font-weight: 600;
+}
 
 .inputGroup {
-  height: 60px;
+  height: 72px;
+  margin-bottom: 16px;
+  padding: 0 18px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 18px;
-  padding: 0 22px;
+  gap: 14px;
+  border-radius: 18px;
   background: #ffffff;
+  border: 1px solid #e8efe9;
+  box-shadow: 0 12px 30px rgba(15, 75, 38, 0.08);
 }
 
 .inputGroup span {
-  width: 24px;
-  text-align: center;
-  font-size: 18px;
-  opacity: 0.75;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: #eaffee;
+  color: #159334;
 }
 
 .inputGroup input {
   flex: 1;
-  width: 100%;
-  height: 100%;
   border: 0;
   outline: 0;
-  background: #ffffff;
-  color: #2d2530;
-  font-size: 17px;
-  font-weight: 600;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 650;
+  color: #111827;
 }
 
 .inputGroup input::placeholder {
-  color: #b7adb6;
+  color: #9ca3af;
+  font-weight: 500;
 }
-
-.inputGroup input:-webkit-autofill {
-  -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
-  -webkit-text-fill-color: #2d2530;
-}
-
-/* ================= LOGIN OPTIONS ================= */
 
 .options {
-  margin: 6px 0 26px;
+  margin: 4px 0 22px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  color: #df7ca3;
+  color: #6b7280;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .options label {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 9px;
-  margin: 0;
-  color: #df7ca3;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.options input[type="checkbox"],
-.options label input[type="checkbox"] {
-  all: revert;
-  width: 15px;
-  height: 15px;
-  min-width: 15px;
-  min-height: 15px;
-  margin: 0;
-  padding: 0;
-  accent-color: #e88fab;
+  gap: 8px;
 }
 
 .forgot {
-  width: auto;
-  height: auto;
-  padding: 0;
   border: 0;
   background: transparent;
-  box-shadow: none;
-  color: #df7ca3;
-  font-size: 14px;
-  font-weight: 700;
-  white-space: nowrap;
-  text-transform: none;
-  letter-spacing: 0;
+  color: #12802a;
+  font-weight: 800;
+  cursor: pointer;
 }
 
-.forgot:hover {
-  transform: none;
-  box-shadow: none;
-  text-decoration: underline;
-}
-
-/* ================= BUTTON ================= */
-
-.loginBtn,
-.card button[type="submit"] {
+.loginBtn {
   width: 100%;
-  height: 60px;
+  height: 58px;
   border: 0;
-  background: linear-gradient(180deg, #f7a9c3 0%, #ec4899 100%);
+  border-radius: 18px;
   color: #ffffff;
-  font-size: 18px;
-  font-weight: 900;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  transition: 0.2s ease;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+  background: linear-gradient(135deg, #2bc536, #087c27);
+  box-shadow: 0 18px 36px rgba(13, 126, 39, 0.28);
 }
 
-.loginBtn:hover,
-.card button[type="submit"]:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 36px rgba(236, 72, 153, 0.28);
-}
-
-.loginBtn:disabled,
-.card button[type="submit"]:disabled {
+.loginBtn:disabled {
   opacity: 0.65;
   cursor: not-allowed;
 }
 
-/* ================= TEXT LINK ================= */
+.googleDivider {
+  margin: 24px 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #9ca3af;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.googleDivider::before,
+.googleDivider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.googleLogin {
+  display: flex;
+  justify-content: center;
+}
 
 .register,
 .switch {
-  margin-top: 20px;
+  margin: 24px 0 0;
   text-align: center;
-  color: #756576;
+  color: #6b7280;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .register a,
 .switch a {
-  color: #ec4899;
-  font-weight: 900;
-}
-
-/* ================= ERROR ================= */
-
-.error {
-  margin-bottom: 18px;
-  padding: 13px 16px;
-  background: rgba(255, 255, 255, 0.92);
-  border-left: 4px solid #ef4444;
-  color: #dc2626;
-  font-size: 14px;
+  color: #11922f;
   font-weight: 800;
+  text-decoration: none;
 }
 
-/* ================= REGISTER FORM ================= */
-
-/* Ẩn badge Create account / Welcome back nếu còn trong JSX */
-.card > span {
-  display: none;
-}
-
-.card h1 {
-  margin: 0 0 12px;
-
-  font-size: 40px;
-  line-height: 1.1;
-  letter-spacing: -0.045em;
-  text-align: center;
-  font-weight: 900;
-
-  background: linear-gradient(
-    135deg,
-    #ff4fa0 0%,
-    #d946ef 45%,
-    #7c3aed 100%
-  );
-
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.card > p {
-  max-width: 390px;
-  margin: 0 auto 28px;
-  color: #6d5f6c;
-  font-size: 15px;
-  line-height: 1.65;
-  text-align: center;
-}
-
-.card label {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 15px;
-  color: #514655;
-  font-size: 15px;
-  font-weight: 800;
-}
-
-.card label input,
-.card label select {
-  width: 100%;
-  height: 54px;
-  border: 0;
-  outline: 0;
-  padding: 0 18px;
-  background: #ffffff;
-  color: #2d2530;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.card label input::placeholder {
-  color: #b8b1b8;
-}
-
-.card label input:-webkit-autofill {
-  -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
-  -webkit-text-fill-color: #2d2530;
-}
-
-/* LoginPage không có h1/p nên form không bị ảnh hưởng.
-   RegisterPage dùng h1/p/label/input trực tiếp sẽ rõ chữ hơn. */
-
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .page {
-    padding: 100px 16px 40px;
+    padding: 28px 18px;
+    background:
+      linear-gradient(rgba(238, 255, 245, 0.92), rgba(238, 255, 245, 0.92)),
+      url("/images/courts/san3.png") center / cover no-repeat;
   }
 
   .card {
-    width: 100%;
-    padding: 86px 26px 36px;
-  }
-
-  .avatar {
-    width: 112px;
-    height: 112px;
-    top: -56px;
-    font-size: 46px;
-  }
-
-  .options {
-    align-items: flex-start;
-    flex-direction: column;
+    padding: 44px 24px 32px;
+    border-radius: 26px;
   }
 
   .card h1 {
-    font-size: 32px;
+    font-size: 28px;
   }
 
-  .card > p {
-    font-size: 14px;
+  .inputGroup {
+    height: 64px;
   }
+}
+
+.card label {
+  display: block;
+  margin-bottom: 14px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.card label input {
+  width: 100%;
+  height: 54px;
+  margin-top: 8px;
+  padding: 0 16px;
+  border-radius: 16px;
+  border: 1px solid #e4ece5;
+  outline: none;
+  background: #ffffff;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 10px 24px rgba(15, 75, 38, 0.06);
+}
+
+.card label input:focus {
+  border-color: #28b62f;
+  box-shadow: 0 0 0 4px rgba(40, 182, 47, 0.12);
+}
+
+.card > button[type="submit"] {
+  width: 100%;
+  height: 56px;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #2bc536, #087c27);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 18px 36px rgba(13, 126, 39, 0.28);
+}
+
+.card > button[type="submit"]:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.options label input[type="checkbox"] {
+  flex: 0 0 16px;
+  width: 16px !important;
+  height: 16px !important;
+  padding: 0 !important;
 }

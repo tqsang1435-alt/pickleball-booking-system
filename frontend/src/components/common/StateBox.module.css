@@ -3,29 +3,36 @@
   border-radius: 24px;
   text-align: center;
   background: #ffffff;
-  border: 1px solid #ffe0ee;
+  border: 1px solid #dff5c7;
+  box-shadow: 0 14px 34px rgba(111, 189, 0, 0.08);
 }
 
 .box h3 {
-  color: var(--pink-dark);
+  color: #2f5f2d;
   margin-bottom: 8px;
   font-size: 21px;
 }
 
 .box p {
-  color: #756779;
+  color: #667064;
   line-height: 1.6;
 }
 
 .loading {
-  border-color: #ffd5e8;
+  background: #f8ffef;
+  border-color: #cdeea5;
 }
 
 .error {
-  background: #fff6f7;
-  border-color: #ffc6ce;
+  background: #fff5f5;
+  border-color: #ffbcbc;
+}
+
+.error h3 {
+  color: #c62828;
 }
 
 .empty {
-  background: #fffafe;
+  background: #f6fff1;
+  border-color: #dff5c7;
 }
