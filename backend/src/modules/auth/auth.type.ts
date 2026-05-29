@@ -24,3 +24,9 @@ export type AuthUser = {
   role?: string;
   roles?: string[];
 };
+
+export type JwtPayload = {
+  userId: number;
+  email: string;
+  roles: string[];
+};

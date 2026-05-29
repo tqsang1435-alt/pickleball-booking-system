@@ -1,17 +1,19 @@
+// ============================================================
+// courts.service.ts — Business Logic Layer
+// Gọi các validator từ courts.validation.ts trước khi
+// chuyển xuống Repository layer.
+// ============================================================
+
 import * as courtRepo from "./courts.repository";
 import type { CreateCourtSlotInput } from "./courts.type";
+import {
+  validateTimeRange,
+  validatePrice,
+  validateNotPastDate,
+  validateCreateCourtFields,
+} from "./courts.validation";
 
-function validateTime(startTime: string, endTime: string) {
-  const [sh, sm] = startTime.split(":").map(Number);
-  const [eh, em] = endTime.split(":").map(Number);
-
-  const start = sh * 60 + sm;
-  const end = eh * 60 + em;
-
-  if (end <= start) {
-    throw new Error("End time must be greater than start time");
-  }
-}
+// ─── COURTS ──────────────────────────────────────────────────
 
 export async function getAllCourts() {
   return courtRepo.findAllCourts();
@@ -40,10 +42,84 @@ export async function getAvailableCourts(
     throw new Error("startTime and endTime are required");
   }
 
-  validateTime(startTime, endTime);
+  validateTimeRange(startTime, endTime);
 
   return courtRepo.findAvailableCourts(bookingDate, startTime, endTime);
 }
+
+export async function createCourt(data: {
+  courtCode: string;
+  courtName: string;
+  courtType: string;
+  location?: string;
+  description?: string;
+  pricePerHour: number;
+  courtImage?: string;
+  status?: string;
+  openTime: string;
+  closeTime: string;
+}) {
+  // 1. Kiểm tra trường bắt buộc
+  validateCreateCourtFields(data);
+
+  // 2. Kiểm tra giá hợp lệ
+  validatePrice(data.pricePerHour, "Giá thuê sân mỗi giờ");
+
+  // 3. Kiểm tra khoảng thời gian mở/đóng cửa
+  validateTimeRange(data.openTime, data.closeTime);
+
+  return courtRepo.createCourt(data);
+}
+
+export async function updateCourt(
+  courtId: number,
+  data: {
+    courtCode: string;
+    courtName: string;
+    courtType: string;
+    location?: string;
+    description?: string;
+    pricePerHour: number;
+    courtImage?: string;
+    status?: string;
+    openTime: string;
+    closeTime: string;
+  }
+) {
+  // 1. Kiểm tra sân tồn tại
+  const court = await courtRepo.findCourtById(courtId);
+  if (!court) {
+    throw new Error("Court not found");
+  }
+
+  // 2. Kiểm tra trường bắt buộc
+  validateCreateCourtFields(data);
+
+  // 3. Kiểm tra giá hợp lệ
+  validatePrice(data.pricePerHour, "Giá thuê sân mỗi giờ");
+
+  // 4. Kiểm tra khoảng thời gian mở/đóng cửa
+  validateTimeRange(data.openTime, data.closeTime);
+
+  return courtRepo.updateCourt(courtId, data);
+}
+
+export async function deleteCourt(courtId: number) {
+  const court = await courtRepo.findCourtById(courtId);
+  if (!court) {
+    throw new Error("Sân không tồn tại");
+  }
+  if (court.Status === "Inactive") {
+    throw new Error("Sân này đã bị xóa");
+  }
+  const result = await courtRepo.softDeleteCourt(courtId);
+  if (!result) {
+    throw new Error("Không thể xóa sân. Vui lòng thử lại.");
+  }
+  return result;
+}
+
+// ─── COURT SLOTS ─────────────────────────────────────────────
 
 export async function getCourtSlots(courtId: number, slotDate: string) {
   if (!courtId) {
@@ -64,6 +140,7 @@ export async function getCourtSlots(courtId: number, slotDate: string) {
 }
 
 export async function createCourtSlot(input: CreateCourtSlotInput) {
+  // 1. Kiểm tra sân tồn tại và đang hoạt động
   const court = await courtRepo.findCourtById(input.courtId);
 
   if (!court) {
@@ -71,10 +148,17 @@ export async function createCourtSlot(input: CreateCourtSlotInput) {
   }
 
   if (court.Status !== "Available") {
-    throw new Error("Court is not available");
+    throw new Error("Sân hiện không hoạt động, không thể tạo slot");
   }
 
-  validateTime(input.startTime, input.endTime);
+  // 2. Chặn ngày trong quá khứ (quy định nghiệm ngặt)
+  validateNotPastDate(input.slotDate);
+
+  // 3. Kiểm tra khoảng thời gian
+  validateTimeRange(input.startTime, input.endTime);
+
+  // 4. Kiểm tra giá slot hợp lệ
+  validatePrice(input.price, "Giá slot");
 
   return courtRepo.createCourtSlot({
     courtId: input.courtId,
@@ -83,4 +167,127 @@ export async function createCourtSlot(input: CreateCourtSlotInput) {
     endTime: input.endTime,
     price: input.price,
   });
+}
+
+export async function updateCourtSlotStatus(slotId: number, status: string) {
+  const allowed = ["Available", "Blocked", "Maintenance"];
+  if (!allowed.includes(status)) {
+    throw new Error(
+      `Trạng thái không hợp lệ. Chỉ chấp nhận: ${allowed.join(", ")}`
+    );
+  }
+
+  const slot = await courtRepo.findCourtSlotById(slotId);
+  if (!slot) {
+    throw new Error("Slot không tồn tại");
+  }
+
+  if (slot.Status === "Booked" || slot.Status === "Holding") {
+    throw new Error(
+      "Không thể thay đổi trạng thái slot đang có người đặt hoặc đang giữ chỗ"
+    );
+  }
+
+  // Chặn thao tác trên slot của ngày quá khứ
+  const slotDateStr =
+    slot.SlotDate instanceof Date
+      ? slot.SlotDate.toISOString().split("T")[0]
+      : String(slot.SlotDate).split("T")[0];
+
+  validateNotPastDate(slotDateStr);
+
+  const result = await courtRepo.updateCourtSlotStatus(slotId, status);
+  if (!result) {
+    throw new Error("Không thể cập nhật trạng thái slot");
+  }
+  return result;
+}
+
+export async function deleteCourtSlot(slotId: number) {
+  const slot = await courtRepo.findCourtSlotById(slotId);
+  if (!slot) {
+    throw new Error("Slot không tồn tại");
+  }
+  if (slot.Status === "Booked" || slot.Status === "Holding") {
+    throw new Error("Không thể xóa slot đang có người đặt hoặc đang giữ chỗ");
+  }
+
+  // Soft delete: đổi Status → 'Cancelled' thay vì DELETE cứng
+  const result = await courtRepo.softDeleteCourtSlot(slotId);
+  if (!result) {
+    throw new Error("Không thể xóa slot này");
+  }
+  return { SlotID: slotId };
+}
+
+// ─── UC-62: Sinh slot hàng loạt ──────────────────────────────
+
+/**
+ * Tự động sinh toàn bộ slot từ giờ mở đến giờ đóng cửa của sân,
+ * theo bước thời gian (durationMinutes). Bỏ qua các slot đã tồn tại.
+ */
+export async function generateCourtSlots(input: {
+  courtId: number;
+  slotDate: string;
+  durationMinutes: number;
+  price: number;
+}) {
+  // 1. Kiểm tra sân
+  const court = await courtRepo.findCourtById(input.courtId);
+  if (!court) throw new Error("Court not found");
+  if (court.Status !== "Available") {
+    throw new Error("Sân hiện không hoạt động, không thể tạo slot");
+  }
+
+  // 2. Chặn ngày trong quá khứ
+  validateNotPastDate(input.slotDate);
+
+  // 3. Kiểm tra thời lượng hợp lệ
+  const validDurations = [30, 60, 90, 120];
+  if (!validDurations.includes(input.durationMinutes)) {
+    throw new Error("Thời lượng slot phải là 30, 60, 90 hoặc 120 phút");
+  }
+
+  // 4. Kiểm tra giá
+  validatePrice(input.price, "Giá slot");
+
+  // 5. Sinh danh sách slot từ openTime → closeTime
+  const toMinutes = (t: string) => {
+    const [h, m] = t.split(":").map(Number);
+    return h * 60 + m;
+  };
+  const toTimeStr = (minutes: number) => {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  };
+
+  const openMin  = toMinutes(court.OpenTime);
+  const closeMin = toMinutes(court.CloseTime);
+  const { durationMinutes } = input;
+
+  const allSlots: { courtId: number; slotDate: string; startTime: string; endTime: string; price: number }[] = [];
+  for (let start = openMin; start + durationMinutes <= closeMin; start += durationMinutes) {
+    allSlots.push({
+      courtId:   input.courtId,
+      slotDate:  input.slotDate,
+      startTime: toTimeStr(start),
+      endTime:   toTimeStr(start + durationMinutes),
+      price:     input.price,
+    });
+  }
+
+  if (allSlots.length === 0) {
+    throw new Error("Không thể sinh slot: khoảng thời gian hoạt động quá ngắn so với thời lượng đã chọn");
+  }
+
+  // 6. Lọc bỏ slot đã tồn tại
+  const existingStarts = await courtRepo.findExistingSlotStartTimes(input.courtId, input.slotDate);
+  const newSlots = allSlots.filter((s) => !existingStarts.includes(s.startTime));
+
+  // 7. Bulk insert
+  const created = await courtRepo.createCourtSlotsMany(newSlots);
+  const skipped = allSlots.length - created;
+
+  return { total: allSlots.length, created, skipped };
 }

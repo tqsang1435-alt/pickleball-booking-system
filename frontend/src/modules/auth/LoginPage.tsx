@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { GoogleLogin } from "@react-oauth/google";
 
 import { googleLoginApi, loginApi } from "@/services/authApi";
-import { saveAuth } from "@/utils/authStorage";
+import { saveAuth, getDashboardPath } from "@/utils/authStorage";
 import { isValidEmail } from "@/utils/validators";
 
 import styles from "./AuthPage.module.css";
@@ -53,7 +53,8 @@ export default function LoginPage() {
       saveAuth(token, user);
       window.dispatchEvent(new Event("auth-change"));
 
-      router.push("/");
+      const role = user?.roles?.[0] || user?.role || user?.RoleName || "";
+      router.push(getDashboardPath(role));
       router.refresh();
     } catch (error) {
       setError(error instanceof Error ? error.message : "Đăng nhập thất bại");
@@ -87,7 +88,8 @@ export default function LoginPage() {
       saveAuth(token, user);
       window.dispatchEvent(new Event("auth-change"));
 
-      router.push("/");
+      const role = user?.roles?.[0] || user?.role || user?.RoleName || "";
+      router.push(getDashboardPath(role));
       router.refresh();
     } catch (error) {
       setError(

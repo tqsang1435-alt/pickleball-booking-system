@@ -89,8 +89,8 @@ export default function Navbar() {
    */
   let profilePath = "/profile";
 
-  if (role.includes("admin")) {
-    profilePath = "/admin/profile";
+  if (role.includes("admin") || role.includes("manager")) {
+    profilePath = "/admin";
   } else if (role.includes("staff")) {
     profilePath = "/staff";
   } else if (role.includes("coach")) {
@@ -98,6 +98,8 @@ export default function Navbar() {
   } else {
     profilePath = "/profile";
   }
+
+  const isAdminOrStaff = role.includes("admin") || role.includes("manager") || role.includes("staff");
 
   return (
     <header className={styles.header}>
@@ -135,6 +137,16 @@ export default function Navbar() {
         <div className={styles.actions}>
           {user ? (
             <>
+              {/* ADMIN DASHBOARD LINK */}
+              {isAdminOrStaff && (
+                <Link
+                  href={profilePath}
+                  className={styles.adminLink}
+                >
+                  ⚙️ Quản trị
+                </Link>
+              )}
+
               {/* PROFILE */}
               <Link
                 href={profilePath}

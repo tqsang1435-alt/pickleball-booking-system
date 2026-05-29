@@ -19,7 +19,7 @@ export default function FeaturedCourts({ courts, loading, error }: Props) {
     <section className="container section">
       <div className="sectionTitleRow">
         <h2>Sân nổi bật</h2>
-        <Link href="/images/home.png">Xem tất cả sân →</Link>
+        <Link href="/courts">Xem tất cả sân →</Link>
       </div>
 
       {loading ? (

@@ -182,6 +182,29 @@
   transform: translateY(-2px);
 }
 
+.adminLink {
+  padding: 13px 18px;
+
+  border: 1.5px solid #3f6b32;
+  border-radius: 14px;
+
+  background: #eef9df;
+
+  color: #2f5a24;
+
+  font-weight: 900;
+  font-size: 14px;
+
+  transition: 0.25s ease;
+}
+
+.adminLink:hover {
+  background: #3f6b32;
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+
 @media (max-width: 940px) {
   .inner {
     height: auto;

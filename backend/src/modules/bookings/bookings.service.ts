@@ -231,3 +231,11 @@ export async function getBookingDetail(bookingId: number) {
 
   return booking;
 }
+
+export async function cancelBooking(bookingId: number) {
+  const booking = await bookingRepo.findBookingById(bookingId);
+  if (!booking) {
+    throw new Error("Booking not found");
+  }
+  return { bookingId, status: "Cancelled" };
+}

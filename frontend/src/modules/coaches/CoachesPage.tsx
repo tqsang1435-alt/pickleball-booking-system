@@ -93,6 +93,12 @@ export default function CoachesPage() {
           <StateBox variant="loading" title="Đang tải Coach" />
         ) : error ? (
           <StateBox variant="error" title="Không tải được dữ liệu" description={error} />
+        ) : coaches.length === 0 ? (
+          <StateBox
+            variant="empty"
+            title="Chưa có Coach nào trên hệ thống"
+            description="Hệ thống hiện tại chưa có dữ liệu huấn luyện viên."
+          />
         ) : filtered.length === 0 ? (
           <StateBox variant="empty" title="Không có Coach phù hợp" />
         ) : (
