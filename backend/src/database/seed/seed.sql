@@ -300,7 +300,7 @@ FROM CourtSlots
 WHERE CourtID = 1
   AND SlotDate = '2026-05-25'
   AND StartTime = '18:00'
-  AND EndTime = '19:00
+  AND EndTime = '19:00'
   
   
   
@@ -318,4 +318,4 @@ WHERE Email = 'hoang.thilinh@gmail.com';
 -- Coach: le.quochuy@gmail.com và dang.mytien@gmail.com
 UPDATE Users
 SET PasswordHash = '$2b$12$KyQEE3HyFw1Ixp5WJjM2tullJCDcFNDhFbRkyvncDIWClo1fl/juu'
-WHERE Email IN ('le.quochuy@gmail.com', 'dang.mytien@gmail.com');';
+WHERE Email IN ('le.quochuy@gmail.com', 'dang.mytien@gmail.com');

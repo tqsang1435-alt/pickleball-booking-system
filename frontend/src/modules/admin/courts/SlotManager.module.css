@@ -1,0 +1,600 @@
+/* Overlay toàn màn hình */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 26, 18, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 1100;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Panel trượt từ phải */
+.panel {
+  background: #fff;
+  width: 100%;
+  max-width: 560px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -8px 0 40px rgba(18, 26, 18, 0.15);
+  animation: slideIn 0.28s ease;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+/* Header */
+.panelHeader {
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid #e4eed8;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
+.panelTitle {
+  font-size: 20px;
+  font-weight: 900;
+  color: #172017;
+  margin: 0 0 4px;
+}
+
+.panelSub {
+  font-size: 13px;
+  color: #6d7967;
+  margin: 0;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 26px;
+  color: #889481;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+  transition: color 0.2s;
+}
+
+.closeBtn:hover {
+  color: #172017;
+}
+
+/* Bộ chọn ngày */
+.dateRow {
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #e4eed8;
+  flex-shrink: 0;
+}
+
+.dateLabel {
+  font-size: 14px;
+  font-weight: 700;
+  color: #4e5948;
+  white-space: nowrap;
+}
+
+.dateInput {
+  border: 1px solid #dfe9d4;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #263024;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.dateInput:focus {
+  border-color: #3d7f1c;
+  box-shadow: 0 0 0 3px rgba(61, 127, 28, 0.1);
+}
+
+.addSlotBtn {
+  margin-left: auto;
+  background: #3d7f1c;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.addSlotBtn:hover {
+  background: #2f6215;
+}
+
+/* Form thêm slot */
+.addForm {
+  padding: 16px 24px;
+  background: #f7fbf2;
+  border-bottom: 1px solid #e4eed8;
+  flex-shrink: 0;
+}
+
+.formError {
+  color: #c0392b;
+  font-size: 13px;
+  margin-bottom: 10px;
+  background: #fff0f0;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.formGroup label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #4e5948;
+}
+
+.formInput {
+  border: 1px solid #dfe9d4;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #263024;
+  outline: none;
+}
+
+.formInput:focus {
+  border-color: #3d7f1c;
+  box-shadow: 0 0 0 3px rgba(61, 127, 28, 0.1);
+}
+
+.submitBtn {
+  background: #3d7f1c;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.submitBtn:hover {
+  background: #2f6215;
+}
+
+.submitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.cancelFormBtn {
+  background: #f5f5f5;
+  color: #555;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cancelFormBtn:hover {
+  background: #ebebeb;
+}
+
+/* Danh sách slot */
+.slotList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.emptyMsg {
+  text-align: center;
+  color: #889481;
+  font-size: 14px;
+  padding: 40px 0;
+}
+
+/* Mỗi dòng slot */
+.slotItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #fafef6;
+  border: 1px solid #e4eed8;
+  border-radius: 14px;
+  transition: box-shadow 0.2s;
+}
+
+.slotItem:hover {
+  box-shadow: 0 4px 14px rgba(39, 75, 31, 0.08);
+}
+
+.slotTime {
+  font-size: 15px;
+  font-weight: 900;
+  color: #172017;
+  min-width: 110px;
+}
+
+.slotPrice {
+  font-size: 14px;
+  color: #4e5948;
+  min-width: 100px;
+}
+
+/* Badge trạng thái */
+.statusBadge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.statusAvailable {
+  background: #eef9df;
+  color: #3d7f1c;
+}
+
+.statusBlocked {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.statusBooked {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.statusHolding {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.slotActions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Nút khóa / mở khóa */
+.btnLock {
+  background: #fff0f0;
+  color: #c0392b;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.btnLock:hover {
+  background: #f8d7da;
+}
+
+.btnLock:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnUnlock {
+  background: #eef9df;
+  color: #3d7f1c;
+  border: 1px solid #c3e6a0;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.btnUnlock:hover {
+  background: #ddf2c0;
+}
+
+.btnUnlock:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnDeleteSlot {
+  background: #fff;
+  color: #c0392b;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btnDeleteSlot:hover {
+  background: #fff0f0;
+  border-color: #c0392b;
+}
+
+.btnDeleteSlot:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bookedNote {
+  margin-left: auto;
+  font-size: 12px;
+  color: #889481;
+  font-style: italic;
+}
+
+/* ─── UC-62: Bổ sung CSS mới ───────────────────────────────── */
+
+/* Header right: countdown + close button */
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.refreshBadge {
+  font-size: 12px;
+  color: #3d7f1c;
+  background: #eef9df;
+  border: 1px solid #c3e6a0;
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Date row: actions group */
+.dateActions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+/* Nút sinh slot hàng loạt */
+.generateBtn {
+  background: #fff3e0;
+  color: #c75c00;
+  border: 1px solid #ffcc80;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.generateBtn:hover {
+  background: #ffe0b2;
+  border-color: #c75c00;
+}
+
+/* Generate form header */
+.genHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.genTitle {
+  font-size: 14px;
+  font-weight: 900;
+  color: #c75c00;
+}
+
+.genHint {
+  font-size: 12px;
+  color: #889481;
+}
+
+/* Success message */
+.formSuccess {
+  color: #2e7d32;
+  font-size: 13px;
+  margin-bottom: 10px;
+  background: #eef9df;
+  border: 1px solid #c3e6a0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-weight: 600;
+}
+
+/* Nút "Sinh tất cả slot" */
+.generateSubmitBtn {
+  background: #c75c00;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.generateSubmitBtn:hover { background: #a84e00; }
+.generateSubmitBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Bulk action bar */
+.bulkBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  background: #f0f6ff;
+  border-bottom: 1px solid #c3d9f5;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.bulkCount {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a4f9c;
+}
+
+.bulkActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bulkBtnOpen {
+  background: #eef9df;
+  color: #3d7f1c;
+  border: 1px solid #c3e6a0;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.bulkBtnOpen:hover { background: #ddf2c0; }
+.bulkBtnOpen:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.bulkBtnLock {
+  background: #fff0f0;
+  color: #c0392b;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.bulkBtnLock:hover { background: #f8d7da; }
+.bulkBtnLock:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.bulkBtnMaint {
+  background: #fff8e1;
+  color: #795548;
+  border: 1px solid #ffcc80;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.bulkBtnMaint:hover { background: #ffe0b2; }
+.bulkBtnMaint:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.bulkBtnClear {
+  background: #f5f5f5;
+  color: #555;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.bulkBtnClear:hover { background: #ebebeb; }
+
+/* Select-all row */
+.selectAllRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0 10px;
+  border-bottom: 1px dashed #e4eed8;
+  margin-bottom: 4px;
+}
+
+.checkLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4e5948;
+  cursor: pointer;
+}
+
+.slotCount {
+  font-size: 12px;
+  color: #889481;
+}
+
+/* Slot item checkbox */
+.slotCheckbox {
+  width: 16px;
+  height: 16px;
+  accent-color: #3d7f1c;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Slot selected highlight */
+.slotSelected {
+  background: #f0f9e8 !important;
+  border-color: #3d7f1c !important;
+}
+
+/* Maintenance status badge */
+.statusMaintenance {
+  background: #fff8e1;
+  color: #795548;
+}
+
+/* Nút bảo trì (🔧) */
+.btnMaintenance {
+  background: #fff8e1;
+  color: #795548;
+  border: 1px solid #ffcc80;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btnMaintenance:hover { background: #ffe0b2; }
+.btnMaintenance:disabled { opacity: 0.5; cursor: not-allowed; }
