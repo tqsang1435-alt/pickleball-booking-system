@@ -137,3 +137,12 @@ export async function getBookingDetailController(req: NextRequest) {
     return handleError(error);
   }
 }
+
+export async function cancelBookingController(bookingId: number) {
+  try {
+    const result = await bookingService.cancelBooking(bookingId);
+    return successResponse(result, "Hủy đặt sân thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}
