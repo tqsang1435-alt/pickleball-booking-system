@@ -1,84 +1,88 @@
 import Link from "next/link";
 import styles from "./HomePage.module.css";
 
-const popularTimes = ["06:00", "07:00", "08:00", "17:00", "18:00", "19:00", "20:00"];
-
 export default function HeroSection() {
   return (
-    <section className={styles.hero}>
-      <div className={styles.heroBg} />
-
-      <div className="container">
-        <div className={styles.heroGrid}>
+    <div className={styles.heroContainer}>
+      <section className={styles.hero}>
+        <div className={styles.heroInner}>
           <div className={styles.heroContent}>
             <p className={styles.script}>Play. Connect. Win.</p>
+
             <h1>
-              Đặt sân Pickleball dễ dàng, nhanh chóng <span>và hiện đại</span>
+              Đặt sân Pickleball dễ dàng,
+              <br />
+              nhanh chóng <span>và hiện đại</span>
             </h1>
+
             <p className={styles.desc}>
-              Tìm sân trống, đặt Coach, đặt Combo và kết nối người chơi chỉ trong vài bước.
+              Nền tảng đặt sân, đặt Coach và kết nối người chơi hàng đầu tại Việt Nam.
             </p>
 
             <div className={styles.heroActions}>
-              <Link href="/courts" className={styles.primary}>Đặt sân ngay →</Link>
-              <Link href="/coaches" className={styles.secondary}>Xem Coach</Link>
+              <Link href="/courts" className={styles.primary}>
+                🗓 Đặt sân ngay →
+              </Link>
+
+              <Link href="/coaches" className={styles.secondary}>
+                👤 Tìm Coach
+              </Link>
             </div>
           </div>
 
-          <div className={styles.heroImage} aria-label="Pickleball court">
-            <div className={styles.heroImageText}>
-              <strong>PICKLEBALL</strong>
-              <span>Play. Connect. Win.</span>
-            </div>
+          <div className={styles.heroImageWrapper}>
+            <img src="/images/home.png" alt="Pickleball Court" className={styles.heroImg} />
           </div>
         </div>
+      </section>
 
+      <div className={styles.searchPanelWrapper}>
         <form className={styles.searchPanel}>
-          <h2>🗓️ Xem lịch & đặt sân</h2>
+          <label>
+            <span>Ngày chơi</span>
+            <button type="button">📅 Chọn ngày</button>
+          </label>
 
-          <div className={styles.searchGrid}>
-            <label>
-              <span>Ngày chơi</span>
-              <input type="date" />
-            </label>
+          <label>
+            <span>Giờ bắt đầu</span>
+            <select defaultValue="">
+              <option value="" disabled>
+                🕘 Chọn giờ
+              </option>
+              <option>06:00</option>
+              <option>07:00</option>
+              <option>08:00</option>
+              <option>17:00</option>
+              <option>18:00</option>
+              <option>19:00</option>
+              <option>20:00</option>
+            </select>
+          </label>
 
-            <label>
-              <span>Giờ bắt đầu</span>
-              <select defaultValue="">
-                <option value="" disabled>Chọn giờ</option>
-                {popularTimes.map((time) => <option key={time}>{time}</option>)}
-              </select>
-            </label>
+          <label>
+            <span>Số người</span>
+            <select defaultValue="1">
+              <option value="1">👥 1 người</option>
+              <option value="2">👥 2 người</option>
+              <option value="4">👥 4 người</option>
+            </select>
+          </label>
 
-            <label>
-              <span>Thời lượng</span>
-              <select defaultValue="1">
-                <option value="1">1 giờ</option>
-                <option value="2">2 giờ</option>
-                <option value="3">3 giờ</option>
-                <option value="4">4 giờ</option>
-              </select>
-            </label>
+          <label>
+            <span>Loại</span>
+            <select defaultValue="all">
+              <option value="all">▦ Tất cả</option>
+              <option value="court">Đặt sân</option>
+              <option value="coach">Đặt Coach</option>
+              <option value="combo">Combo</option>
+            </select>
+          </label>
 
-            <label>
-              <span>Loại đặt lịch</span>
-              <select defaultValue="all">
-                <option value="all">Tất cả</option>
-                <option value="court">Đặt sân</option>
-                <option value="combo">Combo</option>
-              </select>
-            </label>
-
-            <Link href="/courts" className={styles.searchButton}>Tìm sân trống 🔍</Link>
-          </div>
-
-          <div className={styles.popular}>
-            <b>Giờ phổ biến</b>
-            {popularTimes.map((time) => <Link href={`/courts?time=${time}`} key={time}>{time}</Link>)}
-            <Link href="/courts" className={styles.more}>Xem thêm</Link>
-          </div>
+          <Link href="/courts" className={styles.searchButton}>
+            Tìm sân trống 🔍
+          </Link>
         </form>
       </div>
-    </section>
+    </div>
   );
-}
+}

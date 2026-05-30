@@ -319,3 +319,13 @@ WHERE Email = 'hoang.thilinh@gmail.com';
 UPDATE Users
 SET PasswordHash = '$2b$12$KyQEE3HyFw1Ixp5WJjM2tullJCDcFNDhFbRkyvncDIWClo1fl/juu'
 WHERE Email IN ('le.quochuy@gmail.com', 'dang.mytien@gmail.com');
+
+-- =====================================
+-- PROMOTIONS
+-- =====================================
+INSERT INTO Promotions 
+(PromotionCode, PromotionName, DiscountType, DiscountValue, MaxDiscountAmount, MinOrderAmount, UsageLimit, UsedCount, StartDate, EndDate, Status)
+VALUES
+('CHAOHE2026', N'Chào Hè Rực Rỡ', 'Percent', 10.00, 50000.00, 100000.00, 100, 0, '2026-05-01', '2026-08-31', 'Active'),
+('WELCOME50', N'Chào Mừng Thành Viên Mới', 'Fixed', 50000.00, 50000.00, 200000.00, 500, 0, '2026-01-01', '2026-12-31', 'Active'),
+('FREESHIP', N'Ưu Đãi Đặc Biệt', 'Fixed', 20000.00, 20000.00, 0.00, NULL, 0, '2026-01-01', '2026-12-31', 'Active');
