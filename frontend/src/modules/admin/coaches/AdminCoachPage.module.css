@@ -1,0 +1,275 @@
+.page {
+  padding: 32px 0;
+}
+
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 28px;
+}
+
+.pageTitle {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.03em;
+  margin-bottom: 4px;
+}
+
+.pageSub {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* ─── Tabs ─── */
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.tab {
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--muted);
+  background: none;
+  border: 1.5px solid var(--primary-border);
+  transition: all 0.15s;
+  cursor: pointer;
+}
+
+.tab:hover {
+  background: var(--primary-soft);
+  color: var(--text);
+}
+
+.tabActive {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+/* ─── Search ─── */
+
+.searchBar {
+  margin-bottom: 20px;
+}
+
+.searchInput {
+  width: 100%;
+  max-width: 420px;
+  border: 1.5px solid var(--primary-border);
+  border-radius: 10px;
+  padding: 11px 16px;
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+  background: #fafff5;
+  transition: border-color 0.15s;
+}
+
+.searchInput:focus {
+  border-color: var(--primary);
+}
+
+.count {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+/* ─── Table ─── */
+
+.tableWrap {
+  overflow-x: auto;
+  border-radius: 16px;
+  border: 1px solid var(--primary-border);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+  font-size: 14px;
+}
+
+.table th {
+  padding: 14px 18px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: #f8fff2;
+  border-bottom: 1.5px solid var(--primary-border);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--primary-border);
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: #fafff5;
+}
+
+/* ─── Coach cell ─── */
+
+.coachCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.coachAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid var(--primary-border);
+}
+
+.coachName {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.coachEmail {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ─── Skill badge ─── */
+
+.skillBadge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+
+/* ─── Status badges ─── */
+
+.statusBadge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.statusPending {
+  background: #fff7e0;
+  color: #c48a00;
+}
+
+.statusApproved {
+  background: #e6ffd0;
+  color: var(--primary-dark);
+}
+
+.statusRejected {
+  background: #fff0f0;
+  color: #c0392b;
+}
+
+.statusInactive {
+  background: #f0f0f0;
+  color: #888;
+}
+
+/* ─── Action buttons ─── */
+
+.actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.btnApprove {
+  padding: 6px 14px;
+  background: var(--primary-soft);
+  border: 1px solid var(--primary-border);
+  color: var(--primary-dark);
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  transition: all 0.15s;
+  cursor: pointer;
+}
+
+.btnApprove:hover:not(:disabled) {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.btnReject {
+  padding: 6px 14px;
+  background: #fff0f0;
+  border: 1px solid #fcc;
+  color: #c0392b;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  transition: all 0.15s;
+  cursor: pointer;
+}
+
+.btnReject:hover:not(:disabled) {
+  background: #fcc;
+}
+
+.btnInactive {
+  padding: 6px 14px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  color: #666;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  transition: all 0.15s;
+  cursor: pointer;
+}
+
+.btnInactive:hover:not(:disabled) {
+  background: #ddd;
+}
+
+.btnApprove:disabled,
+.btnReject:disabled,
+.btnInactive:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Responsive ─── */
+
+@media (max-width: 768px) {
+  .table th:nth-child(3),
+  .table td:nth-child(3),
+  .table th:nth-child(5),
+  .table td:nth-child(5) {
+    display: none;
+  }
+}

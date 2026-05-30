@@ -96,46 +96,156 @@
 
 .filter {
   margin-top: -42px;
-  padding: 24px;
+  padding: 20px 24px;
   display: grid;
-  grid-template-columns: 1fr 160px;
+  grid-template-columns: 1fr 148px;
   gap: 16px;
   align-items: end;
   border-radius: 24px;
   background: #ffffff;
-  border: 1px solid #dff5c7;
+  border: 1px solid #caf0a0;
   box-shadow: 0 18px 44px rgba(39, 75, 31, 0.09);
 }
 
-.filter label {
-  display: grid;
-  gap: 8px;
-  font-weight: 800;
-  color: #5f6b5b;
+/* ─── Custom dropdown ─── */
+
+.dropdownWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
 }
 
-.filter select,
-.filter button {
-  height: 54px;
-  border: 1px solid #dff5c7;
+.dropdownLabel {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #3f6b32;
+}
+
+.dropdownTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  height: 52px;
+  padding: 0 16px;
+  background: #f6fff0;
+  border: 1.5px solid #b6e07a;
   border-radius: 14px;
-  background: #ffffff;
-  padding: 0 18px;
+  color: #1a2e15;
+  font-size: 15px;
   font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 2px 6px rgba(63, 107, 50, 0.06);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
-.filter select {
-  color: var(--text);
+.dropdownTrigger:hover {
+  border-color: #5a9946;
+  background-color: #ffffff;
 }
 
-.filter button {
+.dropdownTriggerOpen {
+  border-color: #3f6b32;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(63, 107, 50, 0.14);
+}
+
+.dropdownArrow {
+  font-size: 18px;
+  color: #3f6b32;
+  line-height: 1;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.dropdownArrowUp {
+  transform: rotate(-180deg);
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  background: #ffffff;
+  border: 1.5px solid #b6e07a;
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(39, 75, 31, 0.14), 0 4px 12px rgba(39, 75, 31, 0.08);
+  animation: dropdownFadeIn 0.15s ease;
+}
+
+@keyframes dropdownFadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #2a3d27;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  user-select: none;
+}
+
+.dropdownItem:hover {
+  background: #f0fadf;
+  color: #1a2e15;
+}
+
+.dropdownItemActive {
+  background: #e2f7c2;
+  color: #2f5a24;
+  font-weight: 900;
+}
+
+.dropdownItemActive:hover {
+  background: #d4f0ad;
+}
+
+.checkmark {
+  font-size: 13px;
+  color: #3f6b32;
+  font-weight: 900;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* ─── Reset button ─── */
+
+.resetBtn {
+  height: 52px;
+  padding: 0 18px;
   color: #ffffff;
   background: linear-gradient(135deg, #3f6b32 0%, #274b1f 100%);
   border: 0;
+  border-radius: 14px;
+  font-weight: 800;
+  font-size: 14px;
+  font-family: inherit;
+  letter-spacing: 0.01em;
+  cursor: pointer;
   transition: 0.25s ease;
+  white-space: nowrap;
+  align-self: flex-end;
 }
 
-.filter button:hover {
+.resetBtn:hover {
   transform: translateY(-2px);
   box-shadow: 0 14px 28px rgba(39, 75, 31, 0.22);
 }
@@ -238,23 +348,44 @@
   color: #ffffff;
   background: linear-gradient(135deg, #3f6b32 0%, #274b1f 100%);
   font-weight: 800;
+  font-family: inherit;
+  font-size: 14px;
   transition: 0.25s ease;
 }
 
-.price button:hover {
+.price button:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 16px 30px rgba(39, 75, 31, 0.24);
 }
 
+.price button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
 .price .outline {
-  color: #2f5a24;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 50px;
+  border-radius: 14px;
+  border: 1.5px solid #3f6b32;
   background: #ffffff;
-  border: 1px solid #3f6b32;
+  color: #2f5a24;
+  font-weight: 800;
+  font-size: 14px;
+  text-align: center;
+  padding: 0 16px;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  text-decoration: none;
 }
 
 .price .outline:hover {
   color: #ffffff;
   background: #3f6b32;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(39, 75, 31, 0.18);
 }
 
 @media (max-width: 980px) {
