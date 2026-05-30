@@ -94,7 +94,7 @@ export default function Navbar() {
   } else if (role.includes("staff")) {
     profilePath = "/staff";
   } else if (role.includes("coach")) {
-    profilePath = "/coach/profile";
+    profilePath = "/coach-dashboard";
   } else {
     profilePath = "/profile";
   }

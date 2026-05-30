@@ -42,7 +42,7 @@ export function getDashboardPath(role?: string): string {
   }
 
   if (normalizedRole.includes("coach")) {
-    return "/coach";
+    return "/coach-dashboard";
   }
 
   return "/";
