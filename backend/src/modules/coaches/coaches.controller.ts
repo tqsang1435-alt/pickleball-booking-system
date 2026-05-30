@@ -1,17 +1,48 @@
+// ============================================================
+// coaches.controller.ts — HTTP Controllers for Coaches module
+// Follows the same pattern as courts.controller.ts
+// ============================================================
+
 import { NextRequest } from "next/server";
 import * as coachService from "./coaches.service";
 import { successResponse } from "@/utils/response";
 import { handleError } from "@/middlewares/error";
+import { requireAuth } from "@/middlewares/auth.middleware";
+import { requireRoles } from "@/middlewares/role.middleware";
+import type { CoachListFilter } from "./coaches.type";
 
-export async function getAllCoachesController() {
+// ─── PUBLIC: List active coaches ──────────────────────────────
+
+export async function getAllCoachesController(req: NextRequest) {
   try {
-    const result = await coachService.getAllCoaches();
+    const { searchParams } = new URL(req.url);
 
-    return successResponse(result, "Get coaches successfully");
+    const filter: CoachListFilter = {};
+
+    const skillLevel = searchParams.get("skillLevel");
+    if (skillLevel) filter.skillLevel = skillLevel as CoachListFilter["skillLevel"];
+
+    const specialization = searchParams.get("specialization");
+    if (specialization) filter.specialization = specialization;
+
+    const minRate = searchParams.get("minRate");
+    if (minRate) filter.minRate = Number(minRate);
+
+    const maxRate = searchParams.get("maxRate");
+    if (maxRate) filter.maxRate = Number(maxRate);
+
+    const minRating = searchParams.get("minRating");
+    if (minRating) filter.minRating = Number(minRating);
+
+    const result = await coachService.getAllCoaches(filter);
+
+    return successResponse(result, "Lấy danh sách Coach thành công");
   } catch (error) {
     return handleError(error);
   }
 }
+
+// ─── PUBLIC: Coach detail ─────────────────────────────────────
 
 export async function getCoachByIdController(
   req: NextRequest,
@@ -21,55 +52,21 @@ export async function getCoachByIdController(
     const { id } = await context.params;
     const coachId = Number(id);
 
-    if (!coachId) {
-      throw new Error("coachId is required");
+    if (!coachId || isNaN(coachId)) {
+      throw new Error("coachId không hợp lệ");
     }
 
     const result = await coachService.getCoachById(coachId);
 
-    return successResponse(result, "Get coach detail successfully");
+    return successResponse(result, "Lấy thông tin Coach thành công");
   } catch (error) {
     return handleError(error);
   }
 }
 
-export async function getCoachSchedulesController(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const coachId = Number(searchParams.get("coachId"));
+// ─── PUBLIC: Available schedules ─────────────────────────────
 
-    if (!coachId) {
-      throw new Error("coachId is required");
-    }
-
-    const result = await coachService.getCoachSchedules(coachId);
-
-    return successResponse(result, "Get coach schedules successfully");
-  } catch (error) {
-    return handleError(error);
-  }
-}
-
-export async function createCoachScheduleController(req: NextRequest) {
-  try {
-    const body = await req.json();
-
-    const result = await coachService.createCoachSchedule({
-      coachId: Number(body.coachId),
-      workingDate: body.workingDate,
-      startTime: body.startTime,
-      endTime: body.endTime,
-    });
-
-    return successResponse(result, "Create coach schedule successfully", 201);
-  } catch (error) {
-    return handleError(error);
-  }
-}
-
-export async function getAvailableCoachSchedulesController(
-  req: NextRequest
-) {
+export async function getAvailableCoachSchedulesController(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
 
@@ -83,10 +80,285 @@ export async function getAvailableCoachSchedulesController(
       endTime
     );
 
-    return successResponse(
-      result,
-      "Get available coach schedules successfully"
-    );
+    return successResponse(result, "Lấy danh sách lịch Coach khả dụng thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+// ─── AUTH COACH: Get my profile ───────────────────────────────
+
+export async function getMyCoachProfileController(req: NextRequest) {
+  try {
+    const user = requireAuth(req);
+    if (user instanceof Response) return user;
+
+    const forbidden = requireRoles(user, ["Coach"]);
+    if (forbidden) return forbidden;
+
+    const result = await coachService.getMyCoachProfile(user.userId);
+
+    return successResponse(result, "Lấy hồ sơ Coach thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+// ─── AUTH COACH: Update my profile ───────────────────────────
+
+export async function updateMyProfileController(req: NextRequest) {
+  try {
+    const user = requireAuth(req);
+    if (user instanceof Response) return user;
+
+    const forbidden = requireRoles(user, ["Coach"]);
+    if (forbidden) return forbidden;
+
+    const body = await req.json();
+
+    const result = await coachService.updateMyProfile(user.userId, {
+      experienceYears:
+        body.experienceYears !== undefined
+          ? Number(body.experienceYears)
+          : undefined,
+      biography: body.biography,
+      specialization: body.specialization,
+    });
+
+    return successResponse(result, "Cập nhật hồ sơ thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+// ─── AUTH COACH: Update my expertise ─────────────────────────
+
+export async function updateMyExpertiseController(req: NextRequest) {
+  try {
+    const user = requireAuth(req);
+    if (user instanceof Response) return user;
+
+    const forbidden = requireRoles(user, ["Coach"]);
+    if (forbidden) return forbidden;
+
+    const body = await req.json();
+
+    const result = await coachService.updateMyExpertise(user.userId, {
+      skillLevel: body.skillLevel,
+      specialization: body.specialization,
+      certifications: body.certifications,
+      experienceYears:
+        body.experienceYears !== undefined
+          ? Number(body.experienceYears)
+          : undefined,
+    });
+
+    return successResponse(result, "Cập nhật chuyên môn thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+// ─── AUTH COACH: Update teaching fee ─────────────────────────
+
+export async function updateMyFeeController(req: NextRequest) {
+  try {
+    const user = requireAuth(req);
+    if (user instanceof Response) return user;
+
+    const forbidden = requireRoles(user, ["Coach"]);
+    if (forbidden) return forbidden;
+
+    const body = await req.json();
+
+    if (body.hourlyRate === undefined) {
+      throw new Error("hourlyRate là bắt buộc");
+    }
+
+    const result = await coachService.updateMyFee(user.userId, {
+      hourlyRate: Number(body.hourlyRate),
+    });
+
+    return successResponse(result, "Cập nhật học phí thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+// ─── AUTH COACH: Get my schedules ────────────────────────────
+
+export async function getMySchedulesController(req: NextRequest) {
+  try {
+    const user = requireAuth(req);
+    if (user instanceof Response) return user;
+
+    const forbidden = requireRoles(user, ["Coach"]);
+    if (forbidden) return forbidden;
+
+    const result = await coachService.getMySchedules(user.userId);
+
+    return successResponse(result, "Lấy danh sách lịch thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+// ─── AUTH COACH: Create schedule ─────────────────────────────
+
+export async function createMyScheduleController(req: NextRequest) {
+  try {
+    const user = requireAuth(req);
+    if (user instanceof Response) return user;
+
+    const forbidden = requireRoles(user, ["Coach"]);
+    if (forbidden) return forbidden;
+
+    const body = await req.json();
+
+    if (!body.workingDate || !body.startTime || !body.endTime) {
+      throw new Error("workingDate, startTime và endTime là bắt buộc");
+    }
+
+    const result = await coachService.createMySchedule(user.userId, {
+      workingDate: body.workingDate,
+      startTime: body.startTime,
+      endTime: body.endTime,
+    });
+
+    return successResponse(result, "Tạo lịch thành công", 201);
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+// ─── AUTH COACH: Update schedule ─────────────────────────────
+
+export async function updateMyScheduleController(
+  req: NextRequest,
+  context: { params: Promise<{ scheduleId: string }> }
+) {
+  try {
+    const user = requireAuth(req);
+    if (user instanceof Response) return user;
+
+    const forbidden = requireRoles(user, ["Coach"]);
+    if (forbidden) return forbidden;
+
+    const { scheduleId } = await context.params;
+    const id = Number(scheduleId);
+
+    if (!id || isNaN(id)) {
+      throw new Error("scheduleId không hợp lệ");
+    }
+
+    const body = await req.json();
+
+    const result = await coachService.updateMySchedule(user.userId, id, {
+      workingDate: body.workingDate,
+      startTime: body.startTime,
+      endTime: body.endTime,
+      status: body.status,
+    });
+
+    return successResponse(result, "Cập nhật lịch thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+// ─── AUTH COACH: Delete schedule ─────────────────────────────
+
+export async function deleteMyScheduleController(
+  req: NextRequest,
+  context: { params: Promise<{ scheduleId: string }> }
+) {
+  try {
+    const user = requireAuth(req);
+    if (user instanceof Response) return user;
+
+    const forbidden = requireRoles(user, ["Coach"]);
+    if (forbidden) return forbidden;
+
+    const { scheduleId } = await context.params;
+    const id = Number(scheduleId);
+
+    if (!id || isNaN(id)) {
+      throw new Error("scheduleId không hợp lệ");
+    }
+
+    const result = await coachService.deleteMySchedule(user.userId, id);
+
+    return successResponse(result, "Xóa lịch thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+// ─── ADMIN: List all coaches ──────────────────────────────────
+
+export async function getAllCoachesAdminController(req: NextRequest) {
+  try {
+    const user = requireAuth(req);
+    if (user instanceof Response) return user;
+
+    const forbidden = requireRoles(user, ["Admin"]);
+    if (forbidden) return forbidden;
+
+    const result = await coachService.getAllCoachesAdmin();
+
+    return successResponse(result, "Lấy danh sách Coach thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+// ─── ADMIN: Pending coaches ───────────────────────────────────
+
+export async function getPendingCoachesController(req: NextRequest) {
+  try {
+    const user = requireAuth(req);
+    if (user instanceof Response) return user;
+
+    const forbidden = requireRoles(user, ["Admin"]);
+    if (forbidden) return forbidden;
+
+    const result = await coachService.getPendingCoaches();
+
+    return successResponse(result, "Lấy danh sách Coach chờ duyệt thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+// ─── ADMIN: Update coach status ───────────────────────────────
+
+export async function updateCoachStatusController(
+  req: NextRequest,
+  context: { params: Promise<{ coachId: string }> }
+) {
+  try {
+    const user = requireAuth(req);
+    if (user instanceof Response) return user;
+
+    const forbidden = requireRoles(user, ["Admin"]);
+    if (forbidden) return forbidden;
+
+    const { coachId } = await context.params;
+    const id = Number(coachId);
+
+    if (!id || isNaN(id)) {
+      throw new Error("coachId không hợp lệ");
+    }
+
+    const body = await req.json();
+
+    if (!body.status) {
+      throw new Error("status là bắt buộc");
+    }
+
+    const result = await coachService.updateCoachStatus(id, body.status);
+
+    return successResponse(result, "Cập nhật trạng thái Coach thành công");
   } catch (error) {
     return handleError(error);
   }

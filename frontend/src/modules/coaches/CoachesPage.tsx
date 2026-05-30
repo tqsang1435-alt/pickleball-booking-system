@@ -1,18 +1,40 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { getCoaches } from "@/services/coachApi";
 import type { Coach } from "@/types/coach";
 import { formatCurrency } from "@/utils/formatCurrency";
 import StateBox from "@/components/common/StateBox";
 import styles from "./CoachesPage.module.css";
 
+const SKILL_OPTIONS = [
+  { value: "all", label: "Tất cả kỹ năng" },
+  { value: "Beginner", label: "Beginner" },
+  { value: "Intermediate", label: "Intermediate" },
+  { value: "Advanced", label: "Advanced" },
+  { value: "Professional", label: "Professional" },
+];
+
 export default function CoachesPage() {
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [keyword, setKeyword] = useState("");
   const [skill, setSkill] = useState("all");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -74,18 +96,47 @@ export default function CoachesPage() {
       </section>
 
       <section className={`container ${styles.filter}`}>
-        <label>
-          Kỹ năng
-          <select value={skill} onChange={(event) => setSkill(event.target.value)}>
-            <option value="all">Tất cả kỹ năng</option>
-            <option value="Beginner">Beginner</option>
-            <option value="Intermediate">Intermediate</option>
-            <option value="Advanced">Advanced</option>
-            <option value="Professional">Professional</option>
-          </select>
-        </label>
+        <div className={styles.dropdownWrap} ref={dropdownRef}>
+          <span className={styles.dropdownLabel}>Kỹ năng</span>
+          <button
+            type="button"
+            className={`${styles.dropdownTrigger} ${dropdownOpen ? styles.dropdownTriggerOpen : ""}`}
+            onClick={() => setDropdownOpen((prev) => !prev)}
+            aria-haspopup="listbox"
+            aria-expanded={dropdownOpen}
+          >
+            <span>{SKILL_OPTIONS.find((o) => o.value === skill)?.label ?? "Tất cả kỹ năng"}</span>
+            <span className={`${styles.dropdownArrow} ${dropdownOpen ? styles.dropdownArrowUp : ""}`}>▾</span>
+          </button>
 
-        <button type="button" onClick={() => { setKeyword(""); setSkill("all"); }}>Bộ lọc</button>
+          {dropdownOpen && (
+            <ul className={styles.dropdownMenu} role="listbox">
+              {SKILL_OPTIONS.map((opt) => (
+                <li
+                  key={opt.value}
+                  role="option"
+                  aria-selected={skill === opt.value}
+                  className={`${styles.dropdownItem} ${skill === opt.value ? styles.dropdownItemActive : ""}`}
+                  onClick={() => {
+                    setSkill(opt.value);
+                    setDropdownOpen(false);
+                  }}
+                >
+                  {skill === opt.value && <span className={styles.checkmark}>✓</span>}
+                  {opt.label}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <button
+          type="button"
+          className={styles.resetBtn}
+          onClick={() => { setKeyword(""); setSkill("all"); setDropdownOpen(false); }}
+        >
+          Xóa bộ lọc
+        </button>
       </section>
 
       <section className={`container ${styles.content}`}>
@@ -123,8 +174,8 @@ export default function CoachesPage() {
                   <div className={styles.price}>
                     <strong>{formatCurrency(coach.HourlyRate)}</strong>
                     <span>/ giờ</span>
-                    <button type="button">Xem lịch & đặt Coach</button>
-                    <button type="button" className={styles.outline}>Xem hồ sơ chi tiết</button>
+                    <button type="button" disabled style={{ opacity: 0.5, cursor: "not-allowed" }}>Xem lịch &amp; đặt Coach (sắp có)</button>
+                    <Link href={`/coaches/${coach.CoachID}`} className={styles.outline}>Xem hồ sơ chi tiết</Link>
                   </div>
                 </article>
               ))}

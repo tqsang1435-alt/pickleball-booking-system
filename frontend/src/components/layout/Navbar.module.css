@@ -76,6 +76,7 @@
   color: #1f2533;
 
   padding: 29px 0;
+  white-space: nowrap;
 
   transition: 0.25s ease;
 }
@@ -109,7 +110,8 @@
 .actions {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
+  flex-shrink: 0;
 
   font-weight: 900;
 }
@@ -124,7 +126,11 @@
 }
 
 .register {
-  padding: 15px 23px;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 13px 20px;
 
   border-radius: 16px;
 
@@ -163,7 +169,11 @@
 }
 
 .logout {
-  padding: 13px 18px;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 11px 16px;
 
   border: 1px solid #dff5c7;
   border-radius: 14px;
@@ -173,6 +183,7 @@
   color: #2f5a24;
 
   font-weight: 900;
+  font-size: 14px;
 
   transition: 0.25s ease;
 }
@@ -183,7 +194,11 @@
 }
 
 .adminLink {
-  padding: 13px 18px;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 11px 16px;
 
   border: 1.5px solid #3f6b32;
   border-radius: 14px;
