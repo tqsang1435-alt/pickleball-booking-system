@@ -174,7 +174,9 @@ export default function CoachesPage() {
                   <div className={styles.price}>
                     <strong>{formatCurrency(coach.HourlyRate)}</strong>
                     <span>/ giờ</span>
-                    <button type="button" disabled style={{ opacity: 0.5, cursor: "not-allowed" }}>Xem lịch &amp; đặt Coach (sắp có)</button>
+                    <Link href={`/coaches/${coach.CoachID}#booking-section`} className={styles.primaryBtn}>
+                      Xem lịch &amp; đặt Coach
+                    </Link>
                     <Link href={`/coaches/${coach.CoachID}`} className={styles.outline}>Xem hồ sơ chi tiết</Link>
                   </div>
                 </article>

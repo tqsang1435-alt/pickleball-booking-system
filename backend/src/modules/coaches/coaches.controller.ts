@@ -64,6 +64,35 @@ export async function getCoachByIdController(
   }
 }
 
+// ─── PUBLIC: Coach schedules ──────────────────────────────────
+
+export async function getCoachSchedulesPublicController(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await context.params;
+    const coachId = Number(id);
+
+    if (!coachId || isNaN(coachId)) {
+      throw new Error("coachId không hợp lệ");
+    }
+
+    const { searchParams } = new URL(req.url);
+    const date = searchParams.get("date");
+
+    if (!date) {
+      throw new Error("Tham số date là bắt buộc (YYYY-MM-DD)");
+    }
+
+    const result = await coachService.getCoachAvailableSlots(coachId, date);
+
+    return successResponse(result, "Lấy lịch Coach thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
 // ─── PUBLIC: Available schedules ─────────────────────────────
 
 export async function getAvailableCoachSchedulesController(req: NextRequest) {
