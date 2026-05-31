@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { releaseExpiredController } from "@/modules/bookings/bookings.controller";
+import { releaseExpiredController } from "@/modules/bookings/bookings.module";
 
 /**
  * BR-26: Auto-cancel booking Holding qua 10 phut.

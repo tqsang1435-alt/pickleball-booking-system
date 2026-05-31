@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
 export function successResponse<T>(
   data: T,
   message = "Success",
@@ -11,7 +17,10 @@ export function successResponse<T>(
       message,
       data,
     },
-    { status }
+    { 
+      status,
+      headers: corsHeaders
+    }
   );
 }
 
@@ -22,6 +31,9 @@ export function errorResponse(message = "Error", status = 500, errors?: unknown)
       message,
       errors,
     },
-    { status }
+    { 
+      status,
+      headers: corsHeaders
+    }
   );
 }

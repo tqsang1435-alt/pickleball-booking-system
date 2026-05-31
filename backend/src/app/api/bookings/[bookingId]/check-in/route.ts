@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { checkInController } from "@/modules/bookings/bookings.controller";
+import { checkInController } from "@/modules/bookings/bookings.module";
 
 export async function POST(
   req: NextRequest,
@@ -8,3 +8,4 @@ export async function POST(
   const { bookingId } = await params;
   return checkInController(req, Number(bookingId));
 }
+

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { mockPayController } from "@/modules/bookings/bookings.controller";
+import { mockPayController } from "@/modules/bookings/bookings.module";
 
 /**
  * Mock payment endpoint.
@@ -16,3 +16,4 @@ export async function POST(
   const { bookingId } = await params;
   return mockPayController(req, Number(bookingId));
 }
+

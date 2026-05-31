@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { cancelBookingController } from "@/modules/bookings/bookings.controller";
+import { cancelBookingController } from "@/modules/bookings/bookings.module";
 
 export async function POST(
   req: NextRequest,
