@@ -120,6 +120,7 @@ export async function findCourtSlots(courtId: number, slotDate: string) {
       FROM CourtSlots
       WHERE CourtID = @CourtID
         AND SlotDate = @SlotDate
+        AND Status <> 'Cancelled'
       ORDER BY StartTime ASC
     `);
 
@@ -282,7 +283,7 @@ export async function softDeleteCourt(courtId: number) {
         INSERTED.CourtName,
         INSERTED.Status
       WHERE CourtID = @CourtID
-        AND Status <> 'Inactive'
+        AND (Status IS NULL OR Status <> 'Inactive')
     `);
   return result.recordset[0] ?? null;
 }
@@ -364,7 +365,7 @@ export async function softDeleteCourtSlot(slotId: number) {
         INSERTED.Price,
         INSERTED.Status
       WHERE SlotID = @SlotID
-        AND Status NOT IN ('Booked', 'Holding')
+        AND (Status IS NULL OR Status NOT IN ('Booked', 'Holding'))
     `);
   return result.recordset[0] ?? null;
 }

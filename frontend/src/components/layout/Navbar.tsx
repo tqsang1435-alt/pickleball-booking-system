@@ -19,7 +19,7 @@ const navItems = [
   { href: "/coaches", label: "Coach" },
   { href: "/combo", label: "Combo" },
   { href: "/matching", label: "Tìm người chơi" },
-  { href: "/pricing", label: "Bảng giá" },
+  { href: "/bookings", label: "Lịch sử booking" },
 ];
 
 export default function Navbar() {

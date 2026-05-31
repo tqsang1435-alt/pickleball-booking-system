@@ -26,7 +26,7 @@ export default function AdminLayout({
           </Link>
 
           <Link href="/admin/bookings">
-            Đặt sân
+            Quản lý Booking
           </Link>
 
           <Link href="/admin/prices">

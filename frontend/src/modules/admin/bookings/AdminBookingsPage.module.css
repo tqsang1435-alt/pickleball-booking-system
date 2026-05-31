@@ -1,0 +1,291 @@
+.page {
+  padding: 0 0 24px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.titleArea h1 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #171a2a;
+  margin-bottom: 4px;
+}
+
+.titleArea p {
+  color: #667064;
+  font-size: 14px;
+}
+
+.headerRight {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.datePicker {
+  padding: 10px 14px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  outline: none;
+  background: #fff;
+}
+
+.datePicker:focus {
+  border-color: #8bd80f;
+  box-shadow: 0 0 0 3px #f3ffe4;
+}
+
+.refreshButton {
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.refreshButton:hover {
+  background: #e2e8f0;
+}
+
+/* ── Summary Grid ── */
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.summaryCard {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.summaryCard h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.summaryValue {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.textSuccess { color: #16a34a; }
+.textWarning { color: #d97706; }
+.textError { color: #dc2626; }
+
+/* ── Table & Tabs ── */
+.tabsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.tabBtn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tabBtn:hover {
+  background: #e2e8f0;
+}
+
+.tabActive {
+  background: #ecfccb;
+  color: #3f6212;
+  border-color: #8bd80f;
+}
+
+.courtSection {
+  margin-bottom: 32px;
+}
+
+.courtTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.courtTitle::before {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 20px;
+  background: #8bd80f;
+  border-radius: 4px;
+}
+
+.tablePanel {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  padding: 16px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: middle;
+}
+
+.table tbody tr:hover {
+  background: #f8fdf3;
+}
+
+.rowActioning {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* ── Cell Contents ── */
+.bookingCode {
+  font-family: monospace;
+  font-weight: 700;
+  color: #3b82f6;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.bookingTime {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.playerName {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.playerContact {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.serviceItem {
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  margin-bottom: 2px;
+}
+
+.amount {
+  font-weight: 700;
+  color: #16a34a;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.paymentMethod {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* ── Badges ── */
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badgeSuccess { background: #dcfce7; color: #16a34a; }
+.badgeCheckedIn { background: #dbeafe; color: #2563eb; }
+.badgeWarning { background: #fef3c7; color: #d97706; }
+.badgeError { background: #fee2e2; color: #dc2626; }
+.badgeDefault { background: #f1f5f9; color: #64748b; }
+
+.checkInTime {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* ── Actions ── */
+.actionCell {
+  display: flex;
+  gap: 8px;
+}
+
+.btnCheckIn, .btnCancel {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btnCheckIn {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.btnCheckIn:hover:not(:disabled) {
+  background: #bbf7d0;
+}
+
+.btnCancel {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.btnCancel:hover:not(:disabled) {
+  background: #fecaca;
+}
+
+.noAction {
+  color: #94a3b8;
+  font-size: 13px;
+  padding-left: 8px;
+}

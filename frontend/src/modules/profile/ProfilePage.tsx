@@ -2,23 +2,25 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  getMyBookingHistory,
-  getMyProfile,
-  updateMyProfile,
-} from "@/services/profileApi";
+import { getMyBookings, mockPayBooking, checkInBooking } from "@/services/bookingApi";
+import type { Booking } from "@/services/bookingApi";
 import { getToken } from "@/utils/authStorage";
 import { formatCurrency } from "@/utils/formatCurrency";
-import type { BookingHistory, Profile } from "@/types/profile";
+import type { Profile } from "@/types/profile";
+import { getMyProfile, updateMyProfile } from "@/services/profileApi";
+import CancelBookingModal from "@/modules/booking/CancelBookingModal";
 import styles from "./ProfilePage.module.css";
 
 export default function ProfilePage() {
   const router = useRouter();
 
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [bookings, setBookings] = useState<BookingHistory[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [actioningId, setActioningId] = useState<number | null>(null);
+  // UC-17: Replace window.prompt với modal đẹp
+  const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -46,7 +48,7 @@ const token = getToken();
 
       const [profileData, bookingData] = await Promise.all([
         getMyProfile(token),
-        getMyBookingHistory(token),
+        getMyBookings(token),
       ]);
 
       setProfile(profileData);
@@ -97,6 +99,56 @@ const token = getToken();
     }
   }
 
+  async function handleMockPay(booking: Booking) {
+    const token = getToken();
+    if (!token) return;
+    if (!window.confirm("Thanh toán giả lập cho Booking này?")) return;
+
+    try {
+      setActioningId(booking.BookingID);
+      await mockPayBooking(token, booking.BookingID, "VNPay");
+      const bookingData = await getMyBookings(token);
+      setBookings(bookingData);
+      setSuccess("Thanh toán thành công (Mock)!");
+    } catch (err: any) {
+      alert(err.message || "Thanh toán thất bại");
+    } finally {
+      setActioningId(null);
+    }
+  }
+
+  async function handleCancel(booking: Booking) {
+    // UC-17: Mở CancelBookingModal thay vì window.prompt
+    setCancelTarget(booking);
+  }
+
+  async function handleCancelSuccess() {
+    setCancelTarget(null);
+    const token = getToken();
+    if (token) {
+      const bookingData = await getMyBookings(token);
+      setBookings(bookingData);
+    }
+    setSuccess("Hủy booking thành công.");
+  }
+
+  async function handleCheckIn(booking: Booking) {
+    const token = getToken();
+    if (!token) return;
+
+    try {
+      setActioningId(booking.BookingID);
+      await checkInBooking(token, booking.BookingID);
+      const bookingData = await getMyBookings(token);
+      setBookings(bookingData);
+      setSuccess("Check-in thành công!");
+    } catch (err: any) {
+      alert(err.message || "Check-in thất bại");
+    } finally {
+      setActioningId(null);
+    }
+  }
+
   if (loading) {
     return (
       <main className={styles.page}>
@@ -115,6 +167,15 @@ const token = getToken();
 
   return (
     <main className={styles.page}>
+      {/* UC-17: CancelBookingModal */}
+      {cancelTarget && (
+        <CancelBookingModal
+          booking={cancelTarget}
+          onClose={() => setCancelTarget(null)}
+          onSuccess={handleCancelSuccess}
+        />
+      )}
+
       <section className={styles.hero}>
         <div>
           <span>Player Profile</span>
@@ -227,39 +288,113 @@ const token = getToken();
 
       <section className={styles.history}>
         <div className={styles.historyHeader}>
-          <h2>Lịch sử booking</h2>
-          <p>UC-19: Xem lịch sử đặt sân và thanh toán</p>
+          <div>
+            <h2>Lịch sử booking gần đây</h2>
+            <p>UC-19: Xem lịch sử đặt sân và thanh toán</p>
+          </div>
+          <a href="/bookings" className={styles.viewAllBtn}>
+            Xem tất cả →
+          </a>
         </div>
 
         {bookings.length === 0 ? (
           <div className={styles.empty}>Bạn chưa có booking nào.</div>
         ) : (
           <div className={styles.tableWrap}>
-            <table>
+            <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>Mã booking</th>
-                  <th>Loại</th>
-                  <th>Ngày đặt</th>
+                  <th>Mã Booking</th>
+                  <th>Dịch vụ</th>
+                  <th>Thời gian</th>
                   <th>Tổng tiền</th>
-                  <th>Booking</th>
-                  <th>Thanh toán</th>
-                  <th>Check-in</th>
+                  <th>Trạng thái</th>
+                  <th>Hành động</th>
                 </tr>
               </thead>
 
               <tbody>
-                {bookings.map((booking) => (
-                  <tr key={booking.BookingID}>
-                    <td>{booking.BookingCode}</td>
-                    <td>{booking.BookingType}</td>
-                    <td>{new Date(booking.BookingDate).toLocaleDateString("vi-VN")}</td>
-                    <td>{formatCurrency(booking.TotalAmount)}</td>
-                    <td>{booking.BookingStatus}</td>
-                    <td>{booking.PaymentStatus}</td>
-                    <td>{booking.CheckInStatus}</td>
-                  </tr>
-                ))}
+                {bookings.map((booking) => {
+                  const canCancel = ["PendingPayment", "Confirmed", "Paid"].includes(booking.Status);
+                  const canPay = booking.Status === "PendingPayment";
+                  const canCheckIn = booking.Status === "Confirmed";
+                  const isActioning = actioningId === booking.BookingID;
+
+                  return (
+                    <tr key={booking.BookingID} className={isActioning ? styles.rowActioning : ""}>
+                      <td>
+                        <div className={styles.bookingCode}>{booking.BookingCode}</div>
+                        <div className={styles.bookingDate}>
+                          Đặt ngày: {new Date(booking.CreatedAt).toLocaleDateString("vi-VN")}
+                        </div>
+                      </td>
+                      <td>
+                        <div className={styles.serviceType}>
+                          {booking.BookingType === "Court" ? "🏟️ Đặt sân" : booking.BookingType === "Coach" ? "👨‍🏫 Đặt HLV" : "🔥 Combo"}
+                        </div>
+                        {(booking.CourtName) && <div className={styles.serviceDetail}>Sân: {booking.CourtName}</div>}
+                        {(booking.CoachName) && <div className={styles.serviceDetail}>HLV: {booking.CoachName}</div>}
+                      </td>
+                      <td>
+                        <div className={styles.playDate}>
+                          📅 {new Date(booking.BookingDate).toLocaleDateString("vi-VN")}
+                        </div>
+                        <div className={styles.playTime}>
+                          ⏱️ {booking.StartTime} - {booking.EndTime}
+                        </div>
+                      </td>
+                      <td>
+                        <div className={styles.amount}>{formatCurrency(booking.TotalAmount)}</div>
+                        {booking.PaymentMethod && (
+                          <div className={styles.paymentMethod}>💳 {booking.PaymentMethod}</div>
+                        )}
+                      </td>
+                      <td>
+                        <span className={`${styles.badge} ${styles["badge" + booking.Status]}`}>
+                          {booking.Status}
+                        </span>
+                        {booking.CheckInTime && (
+                          <div className={styles.checkInTime}>
+                            Check-in: {new Date(booking.CheckInTime).toLocaleTimeString("vi-VN")}
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        <div className={styles.actionCell}>
+                          {canCheckIn && (
+                            <button
+                              className={styles.btnPay}
+                              onClick={() => handleCheckIn(booking)}
+                              disabled={isActioning}
+                              style={{ backgroundColor: "#22c55e" }}
+                            >
+                              Check-In
+                            </button>
+                          )}
+                          {canPay && (
+                            <button
+                              className={styles.btnPay}
+                              onClick={() => handleMockPay(booking)}
+                              disabled={isActioning}
+                            >
+                              Thanh toán
+                            </button>
+                          )}
+                          {canCancel && (
+                            <button
+                              className={styles.btnCancel}
+                              onClick={() => handleCancel(booking)}
+                              disabled={isActioning}
+                            >
+                              Hủy
+                            </button>
+                          )}
+                          {!canPay && !canCancel && !canCheckIn && <span className={styles.noAction}>-</span>}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -52,12 +52,38 @@ export function validateNotPastDate(slotDate: string): void {
   const nowVN = new Date(
     new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" })
   );
-  const todayStr = nowVN.toISOString().split("T")[0];
+  
+  const year = nowVN.getFullYear();
+  const month = String(nowVN.getMonth() + 1).padStart(2, "0");
+  const day = String(nowVN.getDate()).padStart(2, "0");
+  const todayStr = `${year}-${month}-${day}`;
 
   if (slotDate < todayStr) {
     throw new Error(
       "Không thể tạo hoặc quản lý slot cho các ngày trong quá khứ"
     );
+  }
+}
+
+/**
+ * Kiểm tra giờ không được nhỏ hơn giờ hiện tại nếu ngày là hôm nay.
+ */
+export function validateNotPastTime(slotDate: string, startTime: string): void {
+  const nowVN = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" })
+  );
+  
+  const year = nowVN.getFullYear();
+  const month = String(nowVN.getMonth() + 1).padStart(2, "0");
+  const day = String(nowVN.getDate()).padStart(2, "0");
+  const todayStr = `${year}-${month}-${day}`;
+
+  if (slotDate === todayStr) {
+    const currentMin = nowVN.getHours() * 60 + nowVN.getMinutes();
+    const [sh, sm] = startTime.split(":").map(Number);
+    if (sh * 60 + sm <= currentMin) {
+      throw new Error(`Giờ bắt đầu (${startTime}) không được trong quá khứ`);
+    }
   }
 }
 

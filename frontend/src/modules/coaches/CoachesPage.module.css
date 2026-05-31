@@ -341,7 +341,10 @@
   color: #5f6b5b;
 }
 
-.price button {
+.primaryBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   height: 50px;
   border: 0;
   border-radius: 14px;
@@ -350,15 +353,16 @@
   font-weight: 800;
   font-family: inherit;
   font-size: 14px;
+  text-decoration: none;
   transition: 0.25s ease;
 }
 
-.price button:hover:not(:disabled) {
+.primaryBtn:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 16px 30px rgba(39, 75, 31, 0.24);
 }
 
-.price button:disabled {
+.primaryBtn:disabled {
   opacity: 0.48;
   cursor: not-allowed;
 }
