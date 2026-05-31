@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { cancelBookingByCoachController } from "@/modules/bookings/bookings.controller";
+import { cancelBookingByCoachController } from "@/modules/bookings/bookings.module";
 
 /**
  * BR-54: Coach chu dong huy booking Confirmed.
@@ -14,3 +14,4 @@ export async function POST(
   const { bookingId } = await params;
   return cancelBookingByCoachController(req, Number(bookingId));
 }
+

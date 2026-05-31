@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { createTeamBookingController } from "@/modules/bookings/bookings.controller";
+import { createTeamBookingController } from "@/modules/bookings/bookings.module";
 
 /**
  * UC-36: Dat san sau khi ghep nhom thanh cong.

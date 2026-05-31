@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getDailyBookingsController } from "@/modules/bookings/bookings.controller";
+import { getDailyBookingsController } from "@/modules/bookings/bookings.module";
 
 /**
  * UC-49: Staff xem booking trong ngay.
