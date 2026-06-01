@@ -9,6 +9,12 @@
   background: #fff;
   border-right: 1px solid #e4edd9;
   padding: 28px 20px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .logo {
@@ -22,6 +28,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex: 1; /* Pushes the logout button to the bottom */
 }
 
 .nav a {
@@ -39,4 +46,43 @@
 
 .main {
   padding: 34px;
+}
+
+.userProfileBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #e4edd9;
+}
+
+.userName {
+  font-weight: 800;
+  color: #274c1a;
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logoutBtnOutlined {
+  padding: 10px 16px;
+  background: white;
+  color: #1a4f15;
+  border: 1px solid #c9dfb7;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.logoutBtnOutlined:hover {
+  background: #eef9df;
+  border-color: #3d7f1c;
+  color: #3d7f1c;
 }

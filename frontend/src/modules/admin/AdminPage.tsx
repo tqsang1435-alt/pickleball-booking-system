@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./AdminPage.module.css";
 import { getDashboardStats, DashboardStats } from "@/services/adminApi";
 import { getDailyBookings, DailyBooking } from "@/services/bookingApi";
 import { getToken, getUser } from "@/utils/authStorage";
 
 export default function AdminPage() {
+  const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
   const [role, setRole] = useState<string | undefined>(undefined);
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -21,7 +23,14 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (!token || role !== "Admin") return;
+    if (!token || !role) return;
+
+    if (role.toLowerCase().includes("staff")) {
+      router.push("/admin/bookings");
+      return;
+    }
+
+    if (!role.toLowerCase().includes("admin") && !role.toLowerCase().includes("manager")) return;
 
     async function loadData() {
       try {

@@ -1,4 +1,4 @@
-import BookingHistoryPage from "@/modules/booking/BookingHistoryPage";
+import BookingHistoryPage from "@/modules/bookings/BookingHistoryPage";
 
 export const metadata = {
   title: "Lịch sử Booking | Pickleball Booking",

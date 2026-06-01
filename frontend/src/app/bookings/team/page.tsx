@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import TeamBookingStubPage from "@/modules/booking/TeamBookingStubPage";
+import TeamBookingStubPage from "@/modules/bookings/TeamBookingStubPage";
 
 export const metadata = {
   title: "Đặt sân nhóm | Pickleball Booking",

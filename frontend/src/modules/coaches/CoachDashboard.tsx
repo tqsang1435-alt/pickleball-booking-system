@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   getMyCoachProfile,
   updateMyProfile,
@@ -46,7 +47,9 @@ interface Props {
 }
 
 export default function CoachDashboard({ token }: Props) {
-  const [activeTab, setActiveTab] = useState<Tab>("profile");
+  const searchParams = useSearchParams();
+  const activeTab = (searchParams.get("tab") || "profile") as Tab;
+
   const [coach, setCoach] = useState<Coach | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState("");
@@ -403,27 +406,6 @@ export default function CoachDashboard({ token }: Props) {
           </span>
         </div>
       </div>
-
-      {/* Tabs */}
-      <nav className={styles.tabs}>
-        {(
-          [
-            { id: "profile", label: "📋 Hồ sơ" },
-            { id: "expertise", label: "🎯 Chuyên môn" },
-            { id: "fee", label: "💰 Học phí" },
-            { id: "schedules", label: "📅 Lịch dạy" },
-            { id: "bookings", label: "📜 Đơn đặt lịch" },
-          ] as { id: Tab; label: string }[]
-        ).map((tab) => (
-          <button
-            key={tab.id}
-            className={`${styles.tab} ${activeTab === tab.id ? styles.tabActive : ""}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
 
       <div className={styles.content}>
         {/* ── Tab: Profile ─────────────────────────────── */}
@@ -869,7 +851,18 @@ export default function CoachDashboard({ token }: Props) {
               />
             ) : (
               <div className={styles.scheduleList}>
-                {bookings.map((b) => {
+                {bookings
+                  .slice()
+                  .sort((a, b) => {
+                    const dateA = new Date(a.BookingDate).getTime();
+                    const dateB = new Date(b.BookingDate).getTime();
+                    if (dateA !== dateB) return dateB - dateA; // Mới nhất lên đầu
+                    
+                    const timeA = a.StartTime || "00:00";
+                    const timeB = b.StartTime || "00:00";
+                    return timeB.localeCompare(timeA); // Giờ trễ hơn lên đầu
+                  })
+                  .map((b) => {
                   const canCancel = b.Status === "Confirmed";
                   const isActioning = bookingActionId === b.BookingID;
                   return (

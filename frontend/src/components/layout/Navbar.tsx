@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import {
   clearAuth,
@@ -24,6 +24,8 @@ const navItems = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams.get("tab") || "profile";
   const router = useRouter();
 
   /**
@@ -84,22 +86,40 @@ export default function Navbar() {
   ""
 ).toLowerCase();
 
-  /**
-   * route profile theo role
-   */
   let profilePath = "/profile";
 
-  if (role.includes("admin") || role.includes("manager")) {
+  if (role.includes("admin") || role.includes("manager") || role.includes("staff")) {
     profilePath = "/admin";
-  } else if (role.includes("staff")) {
-    profilePath = "/staff";
   } else if (role.includes("coach")) {
     profilePath = "/coach-dashboard";
   } else {
     profilePath = "/profile";
   }
 
+  let navItems = [
+    { href: "/", label: "Trang chủ" },
+    { href: "/courts", label: "Sân" },
+    { href: "/coaches", label: "Coach" },
+    { href: "/combo", label: "Combo" },
+    { href: "/matching", label: "Tìm người chơi" },
+    { href: "/bookings", label: "Lịch sử booking" },
+  ];
+
+  if (role.includes("coach")) {
+    navItems = [
+      { href: "/coach-dashboard?tab=profile", label: "Hồ sơ" },
+      { href: "/coach-dashboard?tab=expertise", label: "Chuyên môn" },
+      { href: "/coach-dashboard?tab=fee", label: "Học phí" },
+      { href: "/coach-dashboard?tab=schedules", label: "Lịch dạy" },
+      { href: "/coach-dashboard?tab=bookings", label: "Đơn đặt lịch" },
+    ];
+  }
+
   const isAdminOrStaff = role.includes("admin") || role.includes("manager") || role.includes("staff");
+
+  if (pathname.startsWith("/admin")) {
+    return null;
+  }
 
   return (
     <header className={styles.header}>
@@ -113,13 +133,19 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* NAVIGATION */}
         <nav className={styles.nav}>
           {navItems.map((item) => {
-            const active =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href);
+            let active = false;
+            
+            if (item.href.includes("?tab=")) {
+              // Đối với coach dashboard tabs
+              const urlTab = new URLSearchParams(item.href.split("?")[1]).get("tab");
+              active = pathname === item.href.split("?")[0] && currentTab === urlTab;
+            } else if (item.href === "/") {
+              active = pathname === "/";
+            } else {
+              active = pathname.startsWith(item.href);
+            }
 
             return (
               <Link
