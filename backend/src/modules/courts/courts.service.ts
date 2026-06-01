@@ -7,10 +7,11 @@
 import * as courtRepo from "./courts.repository";
 import type { CreateCourtSlotInput } from "./courts.type";
 import {
-  validateTimeRange,
-  validatePrice,
-  validateNotPastDate,
   validateCreateCourtFields,
+  validateNotPastDate,
+  validateNotPastTime,
+  validatePrice,
+  validateTimeRange,
 } from "./courts.validation";
 
 // ─── COURTS ──────────────────────────────────────────────────
@@ -112,10 +113,13 @@ export async function deleteCourt(courtId: number) {
   if (court.Status === "Inactive") {
     throw new Error("Sân này đã bị xóa");
   }
+
+  // Soft delete court
   const result = await courtRepo.softDeleteCourt(courtId);
   if (!result) {
-    throw new Error("Không thể xóa sân. Vui lòng thử lại.");
+    throw new Error("Không thể xóa sân (có thể do lỗi dữ liệu hoặc sân đang được cập nhật). Vui lòng tải lại trang và thử lại.");
   }
+  
   return result;
 }
 
@@ -156,6 +160,9 @@ export async function createCourtSlot(input: CreateCourtSlotInput) {
 
   // 3. Kiểm tra khoảng thời gian
   validateTimeRange(input.startTime, input.endTime);
+  
+  // 3.5 Chặn giờ quá khứ nếu là hôm nay
+  validateNotPastTime(input.slotDate, input.startTime);
 
   // 4. Kiểm tra giá slot hợp lệ
   validatePrice(input.price, "Giá slot");
@@ -215,7 +222,7 @@ export async function deleteCourtSlot(slotId: number) {
   // Soft delete: đổi Status → 'Cancelled' thay vì DELETE cứng
   const result = await courtRepo.softDeleteCourtSlot(slotId);
   if (!result) {
-    throw new Error("Không thể xóa slot này");
+    throw new Error("Không thể xóa slot này (có thể do lỗi dữ liệu hoặc slot đã bị khóa/có người đặt).");
   }
   return { SlotID: slotId };
 }
@@ -283,7 +290,34 @@ export async function generateCourtSlots(input: {
 
   // 6. Lọc bỏ slot đã tồn tại
   const existingStarts = await courtRepo.findExistingSlotStartTimes(input.courtId, input.slotDate);
-  const newSlots = allSlots.filter((s) => !existingStarts.includes(s.startTime));
+  let newSlots = allSlots.filter((s) => !existingStarts.includes(s.startTime));
+
+  // 6.1 Lọc bỏ slot đã qua giờ (nếu tạo cho hôm nay)
+  const nowVN = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" })
+  );
+  const year = nowVN.getFullYear();
+  const month = String(nowVN.getMonth() + 1).padStart(2, "0");
+  const day = String(nowVN.getDate()).padStart(2, "0");
+  const todayStr = `${year}-${month}-${day}`;
+
+  if (input.slotDate === todayStr) {
+    newSlots = newSlots.filter((s) => {
+      try {
+        validateNotPastTime(input.slotDate, s.startTime);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    if (newSlots.length === 0) {
+      throw new Error("Tất cả các khung giờ trong ngày hôm nay đã trôi qua. Vui lòng chọn ngày khác.");
+    }
+  }
+
+  if (newSlots.length === 0) {
+    throw new Error("Không có slot nào được tạo (có thể đã tồn tại tất cả các slot trong khung giờ này).");
+  }
 
   // 7. Bulk insert
   const created = await courtRepo.createCourtSlotsMany(newSlots);

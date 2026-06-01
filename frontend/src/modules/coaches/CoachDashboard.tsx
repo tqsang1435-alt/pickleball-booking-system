@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   getMyCoachProfile,
   updateMyProfile,
@@ -10,13 +11,15 @@ import {
   createMySchedule,
   updateMySchedule,
   deleteMySchedule,
+  getMyReceivedBookings,
 } from "@/services/coachApi";
+import { cancelBookingByCoach } from "@/services/bookingApi";
 import type { Coach, CoachSchedule } from "@/types/coach";
 import { formatCurrency } from "@/utils/formatCurrency";
 import StateBox from "@/components/common/StateBox";
 import styles from "./CoachDashboard.module.css";
 
-type Tab = "profile" | "expertise" | "fee" | "schedules";
+type Tab = "profile" | "expertise" | "fee" | "schedules" | "bookings";
 
 const SKILL_OPTIONS = [
   { value: "Beginner", label: "Beginner — Mới bắt đầu" },
@@ -44,7 +47,9 @@ interface Props {
 }
 
 export default function CoachDashboard({ token }: Props) {
-  const [activeTab, setActiveTab] = useState<Tab>("profile");
+  const searchParams = useSearchParams();
+  const activeTab = (searchParams.get("tab") || "profile") as Tab;
+
   const [coach, setCoach] = useState<Coach | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState("");
@@ -85,6 +90,11 @@ export default function CoachDashboard({ token }: Props) {
   const [scheduleFormError, setScheduleFormError] = useState("");
   const [scheduleSubmitting, setScheduleSubmitting] = useState(false);
   const [scheduleActionId, setScheduleActionId] = useState<number | null>(null);
+
+  // ── Bookings ──────────────────────────────────────────────
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [bookingActionId, setBookingActionId] = useState<number | null>(null);
 
   // ── Load profile ──────────────────────────────────────────
   useEffect(() => {
@@ -143,6 +153,25 @@ export default function CoachDashboard({ token }: Props) {
       loadSchedules();
     }
   }, [activeTab, loadSchedules]);
+
+  // ── Load bookings ─────────────────────────────────────────
+  const loadBookings = useCallback(async () => {
+    try {
+      setBookingsLoading(true);
+      const data = await getMyReceivedBookings(token);
+      setBookings(data);
+    } catch {
+      setBookings([]);
+    } finally {
+      setBookingsLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (activeTab === "bookings") {
+      loadBookings();
+    }
+  }, [activeTab, loadBookings]);
 
   // ── Save profile ──────────────────────────────────────────
   async function handleSaveProfile(e: React.FormEvent) {
@@ -307,6 +336,22 @@ export default function CoachDashboard({ token }: Props) {
     }
   }
 
+  // ── Cancel booking ────────────────────────────────────────
+  async function handleCancelBooking(bookingId: number) {
+    if (!window.confirm("Bạn có chắc muốn hủy đơn đặt lịch này? Hệ thống sẽ tự động hoàn 100% tiền cho Player.")) return;
+    
+    try {
+      setBookingActionId(bookingId);
+      await cancelBookingByCoach(token, bookingId);
+      alert("Hủy lịch thành công!");
+      await loadBookings();
+    } catch (err: any) {
+      alert(err.message || "Hủy lịch thất bại");
+    } finally {
+      setBookingActionId(null);
+    }
+  }
+
   // ─────────────────────────────────────────────────────────
   if (loadingProfile) {
     return (
@@ -361,26 +406,6 @@ export default function CoachDashboard({ token }: Props) {
           </span>
         </div>
       </div>
-
-      {/* Tabs */}
-      <nav className={styles.tabs}>
-        {(
-          [
-            { id: "profile", label: "📋 Hồ sơ" },
-            { id: "expertise", label: "🎯 Chuyên môn" },
-            { id: "fee", label: "💰 Học phí" },
-            { id: "schedules", label: "📅 Lịch dạy" },
-          ] as { id: Tab; label: string }[]
-        ).map((tab) => (
-          <button
-            key={tab.id}
-            className={`${styles.tab} ${activeTab === tab.id ? styles.tabActive : ""}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
 
       <div className={styles.content}>
         {/* ── Tab: Profile ─────────────────────────────── */}
@@ -801,6 +826,71 @@ export default function CoachDashboard({ token }: Props) {
                         <span className={styles.lockedNote}>
                           Không thể thay đổi
                         </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+        {/* ── Tab: Bookings ─────────────────────────────── */}
+        {activeTab === "bookings" && (
+          <div className={styles.scheduleWrap}>
+            <div className={styles.scheduleHeader}>
+              <h2 className={styles.formTitle}>Danh sách đơn đặt lịch</h2>
+            </div>
+            
+            {bookingsLoading ? (
+              <StateBox variant="loading" title="Đang tải danh sách..." />
+            ) : bookings.length === 0 ? (
+              <StateBox
+                variant="empty"
+                title="Chưa có đơn đặt lịch nào"
+                description="Bạn sẽ thấy danh sách học viên đặt lịch ở đây."
+              />
+            ) : (
+              <div className={styles.scheduleList}>
+                {bookings
+                  .slice()
+                  .sort((a, b) => {
+                    const dateA = new Date(a.BookingDate).getTime();
+                    const dateB = new Date(b.BookingDate).getTime();
+                    if (dateA !== dateB) return dateB - dateA; // Mới nhất lên đầu
+                    
+                    const timeA = a.StartTime || "00:00";
+                    const timeB = b.StartTime || "00:00";
+                    return timeB.localeCompare(timeA); // Giờ trễ hơn lên đầu
+                  })
+                  .map((b) => {
+                  const canCancel = b.Status === "Confirmed";
+                  const isActioning = bookingActionId === b.BookingID;
+                  return (
+                    <div key={b.BookingID} className={`${styles.scheduleItem} ${styles.scheduleBooked}`}>
+                      <div className={styles.scheduleDate}>
+                        📅 {new Date(b.BookingDate).toLocaleDateString("vi-VN")}
+                      </div>
+                      <div className={styles.scheduleTime}>
+                        ⏰ {b.StartTime} – {b.EndTime}
+                      </div>
+                      
+                      <div style={{ marginTop: 10, fontSize: "0.95rem" }}>
+                        <strong>Mã:</strong> {b.BookingCode} <br />
+                        <strong>Học viên:</strong> {b.PlayerName} <br />
+                        <strong>Trạng thái:</strong> {b.Status} <br />
+                        <strong>Sân:</strong> {b.CourtName || "Không kèm sân"}
+                      </div>
+
+                      {canCancel && (
+                        <div className={styles.scheduleActions}>
+                          <button
+                            className={styles.btnDelete}
+                            onClick={() => handleCancelBooking(b.BookingID)}
+                            disabled={isActioning}
+                          >
+                            {isActioning ? "Đang hủy..." : "❌ Hủy đơn"}
+                          </button>
+                        </div>
                       )}
                     </div>
                   );

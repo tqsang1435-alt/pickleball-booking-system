@@ -1,0 +1,326 @@
+/* ── Overlay ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 15, 8, 0.6);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Modal box ── */
+.modal {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 460px;
+  padding: 36px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+  animation: slideUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Header ── */
+.header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.headerIcon {
+  font-size: 44px;
+  margin-bottom: 10px;
+}
+
+.header h2 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #171a2a;
+  margin-bottom: 4px;
+}
+
+.header p {
+  color: #667064;
+  font-size: 14px;
+}
+
+/* ── Info card ── */
+.infoCard {
+  background: #f8fdf3;
+  border: 1.5px solid #dff5c7;
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.infoLabel {
+  color: #667064;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.infoValue {
+  font-weight: 600;
+  color: #171a2a;
+  font-size: 14px;
+  text-align: right;
+}
+
+.price {
+  color: #6fbd00;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.bookingCode {
+  font-family: monospace;
+  background: #f0f9e0;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.paidBadge {
+  color: #16a34a;
+  font-size: 13px;
+}
+
+/* ── Notice ── */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fffbeb;
+  border: 1.5px solid #fde68a;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: #78350f;
+}
+
+.notice span {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.notice p {
+  line-height: 1.5;
+}
+
+/* ── Payment method ── */
+.payMethodSection {
+  margin-bottom: 20px;
+}
+
+.payMethodLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #667064;
+  margin-bottom: 10px;
+}
+
+.payMethods {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.payMethodCard {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.payMethodCard input {
+  display: none;
+}
+
+.payMethodCard:hover {
+  border-color: #8bd80f;
+  background: #f8fdf3;
+}
+
+.payMethodActive {
+  border-color: #6fbd00;
+  background: #f3ffe4;
+  color: #3a6800;
+}
+
+.payMethodIcon {
+  font-size: 28px;
+}
+
+.mockBadge {
+  background: #f1f5f9;
+  border: 1px dashed #94a3b8;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #64748b;
+  text-align: center;
+}
+
+/* ── Actions ── */
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btnCancel {
+  flex: 1;
+  padding: 13px;
+  border-radius: 12px;
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.18s;
+}
+
+.btnCancel:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.btnConfirm {
+  flex: 2;
+  padding: 13px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #8bd80f, #6fbd00);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  transition: all 0.18s;
+  box-shadow: 0 4px 12px rgba(111, 189, 0, 0.35);
+}
+
+.btnConfirm:hover:not(:disabled) {
+  background: linear-gradient(135deg, #9de820, #7dce0f);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(111, 189, 0, 0.4);
+}
+
+.btnConfirm:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Success ── */
+.successHeader {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.successIcon {
+  font-size: 56px;
+  margin-bottom: 10px;
+  animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes pop {
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.successHeader h2 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #16a34a;
+  margin-bottom: 4px;
+}
+
+.successHeader p {
+  color: #667064;
+  font-size: 14px;
+}
+
+.btnFullSuccess {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #8bd80f, #6fbd00);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  transition: all 0.18s;
+  box-shadow: 0 4px 12px rgba(111, 189, 0, 0.35);
+  margin-top: 8px;
+}
+
+.btnFullSuccess:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(111, 189, 0, 0.4);
+}
+
+/* ── Error ── */
+.errorHeader {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.errorIcon {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+
+.errorHeader h2 {
+  font-size: 20px;
+  font-weight: 800;
+  color: #dc2626;
+  margin-bottom: 6px;
+}
+
+.errorHeader p {
+  color: #7f1d1d;
+  font-size: 14px;
+  background: #fef2f2;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #fecaca;
+  line-height: 1.5;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .modal {
+    padding: 24px 20px;
+    border-radius: 16px;
+  }
+}

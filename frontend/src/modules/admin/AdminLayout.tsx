@@ -1,6 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { clearAuth, getUser } from "@/utils/authStorage";
+import type { AuthUser } from "@/types/auth";
 
 import styles from "./AdminLayout.module.css";
 
@@ -9,6 +13,23 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+  const [user, setUser] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    setUser(getUser());
+  }, []);
+
+  const role = String(user?.RoleName || user?.role || user?.roles?.[0] || "").toLowerCase();
+  const isStaff = role.includes("staff");
+
+  function handleLogout() {
+    clearAuth();
+    window.dispatchEvent(new Event("auth-change"));
+    router.push("/");
+    router.refresh();
+  }
+
   return (
     <div className={styles.admin}>
       <aside className={styles.sidebar}>
@@ -17,20 +38,20 @@ export default function AdminLayout({
         </div>
 
         <nav className={styles.nav}>
-          <Link href="/admin">
-            Tổng quan
-          </Link>
+          {!isStaff && (
+            <>
+              <Link href="/admin">
+                Tổng quan
+              </Link>
 
-          <Link href="/admin/courts">
-            Sân
-          </Link>
+              <Link href="/admin/courts">
+                Sân
+              </Link>
+            </>
+          )}
 
           <Link href="/admin/bookings">
-            Đặt sân
-          </Link>
-
-          <Link href="/admin/prices">
-            Bảng giá
+            Quản lý Booking
           </Link>
 
           <Link href="/admin/combos">
@@ -45,34 +66,36 @@ export default function AdminLayout({
             Coach
           </Link>
 
-          <Link href="/admin/news">
-            Tin tức
-          </Link>
-
           <Link href="/admin/events">
             Sự kiện
           </Link>
 
-          <Link href="/admin/banners">
-            Banner
-          </Link>
+          {!isStaff && (
+            <>
+              <Link href="/admin/revenue">
+                Doanh thu
+              </Link>
 
-          <Link href="/admin/revenue">
-            Doanh thu
-          </Link>
+              <Link href="/admin/statistics">
+                Thống kê
+              </Link>
+            </>
+          )}
 
-          <Link href="/admin/statistics">
-            Thống kê
-          </Link>
-
-          <Link href="/admin/settings">
-            Cài đặt
-          </Link>
-
-          <Link href="/admin/accounts">
-            Tài khoản
-          </Link>
         </nav>
+
+        <div className={styles.userProfileBottom}>
+          <span className={styles.userName}>
+            {user?.FullName || user?.fullName || user?.Email || user?.email || "Admin"}
+          </span>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className={styles.logoutBtnOutlined}
+          >
+            Đăng xuất
+          </button>
+        </div>
       </aside>
 
       <main className={styles.main}>

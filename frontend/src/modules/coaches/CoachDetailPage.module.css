@@ -116,18 +116,7 @@
   margin-left: 4px;
 }
 
-.bookBtn {
-  width: 100%;
-  padding: 14px;
-  background: var(--primary);
-  color: #fff;
-  border-radius: 12px;
-  font-weight: 700;
-  font-size: 14px;
-  transition: background 0.15s;
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+
 
 /* ─── Detail ─── */
 
@@ -226,4 +215,125 @@
   .infoGrid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ─── Schedule Booking ─── */
+
+.bookBtn {
+  width: 100%;
+  padding: 14px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  text-align: center;
+  text-decoration: none;
+  transition: all 0.2s;
+  display: inline-block;
+  border: none;
+  cursor: pointer;
+}
+
+.bookBtn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(39, 75, 31, 0.2);
+}
+
+.bookBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.scheduleTools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  background: #f8fff2;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--primary-border);
+}
+
+.scheduleTools label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dateInput {
+  border: 1px solid var(--primary-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.dateInput:focus {
+  border-color: var(--primary);
+}
+
+.slotsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.slotCard {
+  background: #fff;
+  border: 1px solid var(--primary-border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+}
+
+.slotCard:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(39, 75, 31, 0.08);
+  transform: translateY(-2px);
+}
+
+.slotTime {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.slotBookBtn {
+  background: var(--mint);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+  width: 100%;
+}
+
+.slotBookBtn:hover {
+  background: #348e3a; /* darker mint */
+}
+
+.loadingSlots, .emptySlots {
+  padding: 32px;
+  text-align: center;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px dashed #cbd5e1;
+  color: #64748b;
+  font-size: 14px;
 }
