@@ -67,7 +67,7 @@ export default function CourtDetailPage({ courtId }: { courtId: string }) {
     <main className={styles.page}>
       <div className={styles.heroSection}>
         <div className={styles.heroBg}>
-          <img src={court.CourtImage || "/images/courts/san1.png"} alt={court.CourtName} />
+          <img src={court.CourtImage || "/images/courts/c1.jpg"} alt={court.CourtName} />
           <div className={styles.overlay}></div>
         </div>
         <div className={`container ${styles.heroContent}`}>

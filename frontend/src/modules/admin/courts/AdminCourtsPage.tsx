@@ -16,6 +16,7 @@ export default function AdminCourtsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [token, setToken] = useState<string | null>(null);
+  const [isStaff, setIsStaff] = useState(false);
 
   // Modal & Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -46,12 +47,13 @@ export default function AdminCourtsPage() {
       user?.RoleName || user?.role || user?.roles?.[0] || ""
     ).toLowerCase();
 
-    if (!userToken || !role.includes("admin")) {
+    if (!userToken || !(role.includes("admin") || role.includes("manager") || role.includes("staff"))) {
       router.push("/login");
       return;
     }
 
     setToken(userToken);
+    setIsStaff(role.includes("staff"));
     loadCourts();
   }, [router]);
 
@@ -195,9 +197,11 @@ export default function AdminCourtsPage() {
           <h1>Quản lý Sân</h1>
           <p>Danh sách sân pickleball của hệ thống và thiết lập giờ mở cửa, bảng giá.</p>
         </div>
-        <button onClick={handleOpenAdd} className={styles.addButton}>
-          ➕ Thêm sân mới
-        </button>
+        {!isStaff && (
+          <button onClick={handleOpenAdd} className={styles.addButton}>
+            ➕ Thêm sân mới
+          </button>
+        )}
       </header>
 
       {loading ? (
@@ -257,22 +261,26 @@ export default function AdminCourtsPage() {
                   </td>
                   <td>
                     <div className={styles.actionCell}>
-                      <button onClick={() => handleOpenEdit(court)} className={styles.editButton}>
-                        ✏️ Sửa
-                      </button>
+                      {!isStaff && (
+                        <button onClick={() => handleOpenEdit(court)} className={styles.editButton}>
+                          ✏️ Sửa
+                        </button>
+                      )}
                       <button
                         onClick={() => setSelectedCourtForSlot(court)}
                         className={styles.slotButton}
                       >
                         📅 Lịch slot
                       </button>
-                      <button
-                        onClick={() => handleDelete(court)}
-                        className={styles.deleteButton}
-                        disabled={deletingId === court.CourtID}
-                      >
-                        {deletingId === court.CourtID ? "Đang xóa..." : "🗑️ Xóa"}
-                      </button>
+                      {!isStaff && (
+                        <button
+                          onClick={() => handleDelete(court)}
+                          className={styles.deleteButton}
+                          disabled={deletingId === court.CourtID}
+                        >
+                          {deletingId === court.CourtID ? "Đang xóa..." : "🗑️ Xóa"}
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

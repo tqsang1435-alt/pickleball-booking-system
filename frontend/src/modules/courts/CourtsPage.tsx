@@ -79,7 +79,7 @@ export default function CourtsPage() {
             </div>
             <div className={styles.heroVisual}>
               <div className={styles.heroImage}>
-                <img src="/images/courts/san1.png" alt="Pickleball court" />
+                <img src="/images/courts/c1.jpg" alt="Pickleball court" />
               </div>
             </div>
           </div>
@@ -135,7 +135,7 @@ export default function CourtsPage() {
               <article className={styles.card} key={court.CourtID}>
                 <div className={styles.imageWrap}>
                   <img
-                    src={court.CourtImage || "/images/courts/san1.png"}
+                    src={court.CourtImage || "/images/courts/c1.jpg"}
                     alt={court.CourtName}
                   />
                   <span className={styles.status}>

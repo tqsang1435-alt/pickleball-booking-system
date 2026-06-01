@@ -8,7 +8,7 @@ import { getToken } from "@/utils/authStorage";
 import { formatCurrency } from "@/utils/formatCurrency";
 import type { Profile } from "@/types/profile";
 import { getMyProfile, updateMyProfile } from "@/services/profileApi";
-import CancelBookingModal from "@/modules/booking/CancelBookingModal";
+import CancelBookingModal from "@/modules/bookings/CancelBookingModal";
 import styles from "./ProfilePage.module.css";
 
 export default function ProfilePage() {
@@ -34,25 +34,25 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
-  async function loadData() {
-    try {
-      setLoading(true);
+    async function loadData() {
+      try {
+        setLoading(true);
 
-     // ✅ THAY BẰNG
-const token = getToken();
+        // ✅ THAY BẰNG
+        const token = getToken();
 
-      if (!token) {
-        router.push("/login");
-        return;
-      }
+        if (!token) {
+          router.push("/login");
+          return;
+        }
 
-      const [profileData, bookingData] = await Promise.all([
-        getMyProfile(token),
-        getMyBookings(token),
-      ]);
+        const [profileData, bookingData] = await Promise.all([
+          getMyProfile(token),
+          getMyBookings(token),
+        ]);
 
-      setProfile(profileData);
-      setBookings(bookingData);
+        setProfile(profileData);
+        setBookings(bookingData);
 
         setForm({
           fullName: profileData.FullName || "",

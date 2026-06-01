@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { cancelBookingByCoachController } from "@/modules/bookings/bookings.module";
+import { cancelBookingByCoachController } from "@/modules/bookings/bookings.controller";
 
 /**
  * BR-54: Coach chu dong huy booking Confirmed.

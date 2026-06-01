@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { mockPayController } from "@/modules/bookings/bookings.module";
+import { mockPayController } from "@/modules/bookings/bookings.controller";
 
 /**
  * Mock payment endpoint.
