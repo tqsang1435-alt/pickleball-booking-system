@@ -3,6 +3,7 @@
 // ============================================================
 
 import * as coachRepo from "./coaches.repository";
+import { validateAndSaveFile, deleteFile } from "../../utils/upload";
 import type {
   UpdateCoachProfileInput,
   UpdateCoachExpertiseInput,
@@ -78,7 +79,8 @@ export async function getMyCoachProfile(userId: number) {
 
 export async function updateMyProfile(
   userId: number,
-  data: UpdateCoachProfileInput
+  data: UpdateCoachProfileInput,
+  avatarFile?: File
 ) {
   const coach = await coachRepo.findCoachByUserId(userId);
 
@@ -97,20 +99,36 @@ export async function updateMyProfile(
     validateSpecialization(data.specialization);
   }
 
-  const updated = await coachRepo.updateCoachProfile(coach.CoachID, data);
+  let newAvatarPath: string | null = null;
+  try {
+    if (avatarFile) {
+      newAvatarPath = await validateAndSaveFile(avatarFile, "avatar", coach.CoachID);
+    }
 
-  if (!updated) {
-    throw new Error("Cập nhật hồ sơ thất bại");
+    const updated = await coachRepo.updateCoachProfile(coach.CoachID, data);
+    if (!updated) {
+      throw new Error("Cập nhật hồ sơ thất bại");
+    }
+
+    if (newAvatarPath) {
+      await coachRepo.updateUserAvatar(userId, newAvatarPath);
+    }
+
+    return updated;
+  } catch (error) {
+    if (newAvatarPath) {
+      deleteFile(newAvatarPath);
+    }
+    throw error;
   }
-
-  return updated;
 }
 
 // ─── AUTH: Update my expertise ────────────────────────────────
 
 export async function updateMyExpertise(
   userId: number,
-  data: UpdateCoachExpertiseInput
+  data: UpdateCoachExpertiseInput,
+  certFile?: File
 ) {
   const coach = await coachRepo.findCoachByUserId(userId);
 
@@ -129,13 +147,25 @@ export async function updateMyExpertise(
     validateExperienceYears(data.experienceYears);
   }
 
-  const updated = await coachRepo.updateCoachExpertise(coach.CoachID, data);
+  let newCertPath: string | null = null;
+  try {
+    if (certFile) {
+      newCertPath = await validateAndSaveFile(certFile, "certificate", coach.CoachID);
+      data.certifications = newCertPath;
+    }
 
-  if (!updated) {
-    throw new Error("Cập nhật chuyên môn thất bại");
+    const updated = await coachRepo.updateCoachExpertise(coach.CoachID, data);
+    if (!updated) {
+      throw new Error("Cập nhật chuyên môn thất bại");
+    }
+
+    return updated;
+  } catch (error) {
+    if (newCertPath) {
+      deleteFile(newCertPath);
+    }
+    throw error;
   }
-
-  return updated;
 }
 
 // ─── AUTH: Update teaching fee ────────────────────────────────

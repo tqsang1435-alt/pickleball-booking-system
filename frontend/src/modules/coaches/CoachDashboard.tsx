@@ -18,6 +18,7 @@ import type { Coach, CoachSchedule } from "@/types/coach";
 import { formatCurrency } from "@/utils/formatCurrency";
 import StateBox from "@/components/common/StateBox";
 import styles from "./CoachDashboard.module.css";
+import { getImageUrl } from "@/utils/image";
 
 type Tab = "profile" | "expertise" | "fee" | "schedules" | "bookings";
 
@@ -49,6 +50,75 @@ interface Props {
 export default function CoachDashboard({ token }: Props) {
   const searchParams = useSearchParams();
   const activeTab = (searchParams.get("tab") || "profile") as Tab;
+
+  // ── File upload states ────────────────────────────────────
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarError, setAvatarError] = useState("");
+
+  const [certFile, setCertFile] = useState<File | null>(null);
+  const [certPreview, setCertPreview] = useState<string | null>(null);
+  const [certError, setCertError] = useState("");
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAvatarError("");
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 3 * 1024 * 1024) {
+      setAvatarError("❌ Ảnh đại diện không được vượt quá 3MB");
+      return;
+    }
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      setAvatarError("❌ Chỉ hỗ trợ định dạng ảnh JPG, PNG hoặc WEBP");
+      return;
+    }
+
+    setAvatarFile(file);
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarPreview(previewUrl);
+  };
+
+  const handleCancelAvatar = () => {
+    setAvatarFile(null);
+    if (avatarPreview) {
+      URL.revokeObjectURL(avatarPreview);
+    }
+    setAvatarPreview(null);
+    setAvatarError("");
+  };
+
+  const handleCertChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCertError("");
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setCertError("❌ Chứng chỉ không được vượt quá 5MB");
+      return;
+    }
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      setCertError("❌ Chỉ hỗ trợ định dạng ảnh JPG, PNG hoặc WEBP");
+      return;
+    }
+
+    setCertFile(file);
+    const previewUrl = URL.createObjectURL(file);
+    setCertPreview(previewUrl);
+  };
+
+  const handleCancelCert = () => {
+    setCertFile(null);
+    if (certPreview) {
+      URL.revokeObjectURL(certPreview);
+    }
+    setCertPreview(null);
+    setCertError("");
+  };
 
   const [coach, setCoach] = useState<Coach | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -97,43 +167,40 @@ export default function CoachDashboard({ token }: Props) {
   const [bookingActionId, setBookingActionId] = useState<number | null>(null);
 
   // ── Load profile ──────────────────────────────────────────
+  const loadProfile = useCallback(async () => {
+    try {
+      setProfileError("");
+      const data = await getMyCoachProfile(token);
+      setCoach(data);
+      setProfileForm({
+        experienceYears: data.ExperienceYears || 0,
+        biography: data.Biography || "",
+        specialization: data.Specialization || "",
+      });
+      setExpertiseForm({
+        skillLevel: data.SkillLevel || "",
+        specialization: data.Specialization || "",
+        certifications: data.Certifications || "",
+        experienceYears: data.ExperienceYears || 0,
+      });
+      setHourlyRate(data.HourlyRate || 150000);
+    } catch (err) {
+      setProfileError(
+        err instanceof Error ? err.message : "Không tải được hồ sơ"
+      );
+    }
+  }, [token]);
+
   useEffect(() => {
     let mounted = true;
-
-    async function load() {
-      try {
-        setLoadingProfile(true);
-        setProfileError("");
-        const data = await getMyCoachProfile(token);
-        if (!mounted) return;
-        setCoach(data);
-        setProfileForm({
-          experienceYears: data.ExperienceYears || 0,
-          biography: data.Biography || "",
-          specialization: data.Specialization || "",
-        });
-        setExpertiseForm({
-          skillLevel: data.SkillLevel || "",
-          specialization: data.Specialization || "",
-          certifications: data.Certifications || "",
-          experienceYears: data.ExperienceYears || 0,
-        });
-        setHourlyRate(data.HourlyRate || 150000);
-      } catch (err) {
-        if (mounted)
-          setProfileError(
-            err instanceof Error ? err.message : "Không tải được hồ sơ"
-          );
-      } finally {
-        if (mounted) setLoadingProfile(false);
-      }
-    }
-
-    load();
+    setLoadingProfile(true);
+    loadProfile().finally(() => {
+      if (mounted) setLoadingProfile(false);
+    });
     return () => {
       mounted = false;
     };
-  }, [token]);
+  }, [loadProfile]);
 
   // ── Load schedules ────────────────────────────────────────
   const loadSchedules = useCallback(async () => {
@@ -196,12 +263,24 @@ export default function CoachDashboard({ token }: Props) {
 
     try {
       setProfileSaving(true);
-      await updateMyProfile(token, {
-        experienceYears: profileForm.experienceYears,
-        biography: profileForm.biography || null,
-        specialization: profileForm.specialization || null,
-      });
+      if (avatarFile) {
+        const formData = new FormData();
+        formData.append("experienceYears", String(profileForm.experienceYears));
+        formData.append("biography", profileForm.biography || "");
+        formData.append("specialization", profileForm.specialization || "");
+        formData.append("avatar", avatarFile);
+
+        await updateMyProfile(token, formData);
+      } else {
+        await updateMyProfile(token, {
+          experienceYears: profileForm.experienceYears,
+          biography: profileForm.biography || null,
+          specialization: profileForm.specialization || null,
+        });
+      }
       setProfileMsg("✅ Cập nhật hồ sơ thành công!");
+      handleCancelAvatar();
+      await loadProfile();
     } catch (err) {
       setProfileMsg(
         "❌ " + (err instanceof Error ? err.message : "Cập nhật thất bại")
@@ -223,13 +302,25 @@ export default function CoachDashboard({ token }: Props) {
 
     try {
       setExpertiseSaving(true);
-      await updateMyExpertise(token, {
-        skillLevel: expertiseForm.skillLevel as any,
-        specialization: expertiseForm.specialization || null,
-        certifications: expertiseForm.certifications || null,
-        experienceYears: expertiseForm.experienceYears,
-      });
+      if (certFile) {
+        const formData = new FormData();
+        formData.append("skillLevel", expertiseForm.skillLevel);
+        formData.append("specialization", expertiseForm.specialization || "");
+        formData.append("experienceYears", String(expertiseForm.experienceYears));
+        formData.append("certificate", certFile);
+
+        await updateMyExpertise(token, formData);
+      } else {
+        await updateMyExpertise(token, {
+          skillLevel: expertiseForm.skillLevel as any,
+          specialization: expertiseForm.specialization || null,
+          certifications: expertiseForm.certifications || null,
+          experienceYears: expertiseForm.experienceYears,
+        });
+      }
       setExpertiseMsg("✅ Cập nhật chuyên môn thành công!");
+      handleCancelCert();
+      await loadProfile();
     } catch (err) {
       setExpertiseMsg(
         "❌ " + (err instanceof Error ? err.message : "Cập nhật thất bại")
@@ -378,7 +469,7 @@ export default function CoachDashboard({ token }: Props) {
       {/* Header */}
       <div className={styles.header}>
         <img
-          src={coach?.AvatarURL || "/images/home/avatar-placeholder.jpg"}
+          src={getImageUrl(coach?.AvatarURL)}
           alt={coach?.FullName}
           className={styles.avatar}
         />
@@ -386,7 +477,7 @@ export default function CoachDashboard({ token }: Props) {
           <h1 className={styles.name}>{coach?.FullName}</h1>
           <p className={styles.meta}>
             ⭐ {Number(coach?.AverageRating || 0).toFixed(1)} &nbsp;·&nbsp;{" "}
-            {coach?.ExperienceYears || 0} năm kinh nghiệm &nbsp;·&nbsp;{" "}
+            {coach?.ExperienceYears || 0}  năm kinh nghiệm &nbsp;·&nbsp;{" "}
             {coach?.TotalStudents || 0} học viên
           </p>
           <span
@@ -412,6 +503,47 @@ export default function CoachDashboard({ token }: Props) {
         {activeTab === "profile" && (
           <form className={styles.form} onSubmit={handleSaveProfile}>
             <h2 className={styles.formTitle}>Thông tin hồ sơ</h2>
+
+            <div className={styles.field}>
+              <label htmlFor="avatar">Ảnh đại diện (Avatar)</label>
+              <input
+                id="avatar"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleAvatarChange}
+                className={styles.input}
+              />
+              {avatarError && <p className={styles.error} style={{ marginTop: "4px" }}>{avatarError}</p>}
+              
+              {(avatarPreview || coach?.AvatarURL) && (
+                <div style={{ marginTop: "10px" }}>
+                  <img
+                    src={avatarPreview || getImageUrl(coach?.AvatarURL)}
+                    alt="Avatar Preview"
+                    style={{ width: "100px", height: "100px", borderRadius: "50%", objectFit: "cover", border: "1px solid #ddd" }}
+                  />
+                  {avatarPreview && (
+                    <button
+                      type="button"
+                      onClick={handleCancelAvatar}
+                      style={{
+                        display: "block",
+                        marginTop: "5px",
+                        fontSize: "0.85rem",
+                        color: "#ff4d4f",
+                        cursor: "pointer",
+                        background: "none",
+                        border: "none",
+                        padding: 0,
+                        textDecoration: "underline"
+                      }}
+                    >
+                      Hủy chọn
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
 
             <div className={styles.field}>
               <label htmlFor="expYears">Số năm kinh nghiệm</label>
@@ -538,21 +670,50 @@ export default function CoachDashboard({ token }: Props) {
             </div>
 
             <div className={styles.field}>
-              <label htmlFor="certs">Chứng chỉ / Giải thưởng</label>
+              <label htmlFor="certs">Chứng chỉ / Giải thưởng (Chọn file ảnh)</label>
               <input
                 id="certs"
-                type="text"
-                maxLength={255}
-                value={expertiseForm.certifications}
-                onChange={(e) =>
-                  setExpertiseForm((p) => ({
-                    ...p,
-                    certifications: e.target.value,
-                  }))
-                }
-                placeholder="Ví dụ: Chứng chỉ HLV Quốc gia 2023..."
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleCertChange}
                 className={styles.input}
               />
+              {certError && <p className={styles.error} style={{ marginTop: "4px" }}>{certError}</p>}
+              
+              {(certPreview || (expertiseForm.certifications && expertiseForm.certifications.startsWith("/uploads"))) && (
+                <div style={{ marginTop: "10px" }}>
+                  <img
+                    src={certPreview || getImageUrl(expertiseForm.certifications)}
+                    alt="Certificate Preview"
+                    style={{ maxWidth: "200px", maxHeight: "150px", borderRadius: "6px", objectFit: "contain", border: "1px solid #ddd" }}
+                  />
+                  {certPreview && (
+                    <button
+                      type="button"
+                      onClick={handleCancelCert}
+                      style={{
+                        display: "block",
+                        marginTop: "5px",
+                        fontSize: "0.85rem",
+                        color: "#ff4d4f",
+                        cursor: "pointer",
+                        background: "none",
+                        border: "none",
+                        padding: 0,
+                        textDecoration: "underline"
+                      }}
+                    >
+                      Hủy chọn
+                    </button>
+                  )}
+                </div>
+              )}
+              
+              {expertiseForm.certifications && !expertiseForm.certifications.startsWith("/uploads") && !certPreview && (
+                <p style={{ marginTop: "5px", fontSize: "0.9rem", color: "#666" }}>
+                  Hiện tại: <strong>{expertiseForm.certifications}</strong>
+                </p>
+              )}
             </div>
 
             <div className={styles.field}>

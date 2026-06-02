@@ -579,3 +579,16 @@ export async function findCoachByIdAdmin(coachId: number) {
 
   return result.recordset[0] ?? null;
 }
+
+export async function updateUserAvatar(userId: number, avatarUrl: string | null) {
+  const pool = await getPool();
+  await pool
+    .request()
+    .input("UserID", sql.Int, userId)
+    .input("AvatarURL", sql.NVarChar(255), avatarUrl ?? null)
+    .query(`
+      UPDATE Users
+      SET AvatarURL = @AvatarURL, UpdatedAt = GETDATE()
+      WHERE UserID = @UserID
+    `);
+}
