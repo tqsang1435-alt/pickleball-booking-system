@@ -11,13 +11,24 @@ export async function apiClient<T>(
   endpoint: string,
   options: ApiOptions = {}
 ): Promise<T> {
+  const isFormData = options.body instanceof FormData;
+
+  const headers: Record<string, string> = {};
+  if (!isFormData) {
+    headers["Content-Type"] = "application/json";
+  }
+  if (options.token) {
+    headers["Authorization"] = `Bearer ${options.token}`;
+  }
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: options.method || "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    headers,
+    body: options.body
+      ? isFormData
+        ? (options.body as any)
+        : JSON.stringify(options.body)
+      : undefined,
     cache: "no-store",
   });
 

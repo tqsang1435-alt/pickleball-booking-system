@@ -32,6 +32,16 @@ export async function getCoachById(id: number | string): Promise<Coach> {
   return response.data;
 }
 
+export async function getCoachSchedulesPublic(
+  id: number | string,
+  date: string
+): Promise<CoachSchedule[]> {
+  const response = await apiClient<ApiResponse<CoachSchedule[]>>(
+    `/api/coaches/${id}/schedules?date=${date}`
+  );
+  return response.data;
+}
+
 // ─── AUTH COACH ───────────────────────────────────────────────
 
 export async function getMyCoachProfile(token: string): Promise<Coach> {
@@ -43,7 +53,7 @@ export async function getMyCoachProfile(token: string): Promise<Coach> {
 
 export async function updateMyProfile(
   token: string,
-  payload: {
+  payload: FormData | {
     experienceYears?: number;
     biography?: string | null;
     specialization?: string | null;
@@ -58,7 +68,7 @@ export async function updateMyProfile(
 
 export async function updateMyExpertise(
   token: string,
-  payload: {
+  payload: FormData | {
     skillLevel?: string;
     specialization?: string | null;
     certifications?: string | null;
@@ -131,6 +141,14 @@ export async function deleteMySchedule(
     method: "DELETE",
     token,
   });
+  return response.data;
+}
+
+export async function getMyReceivedBookings(token: string): Promise<any[]> {
+  const response = await apiClient<ApiResponse<any[]>>(
+    "/api/coaches/me/bookings",
+    { token }
+  );
   return response.data;
 }
 

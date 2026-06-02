@@ -9,6 +9,7 @@ import StateBox from "@/components/common/StateBox";
 import SlotManager from "./SlotManager";
 import styles from "./AdminCourtsPage.module.css";
 import { formatCurrency } from "@/utils/formatCurrency";
+import { getImageUrl } from "@/utils/image";
 
 export default function AdminCourtsPage() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function AdminCourtsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [token, setToken] = useState<string | null>(null);
+  const [isStaff, setIsStaff] = useState(false);
 
   // Modal & Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,6 +26,11 @@ export default function AdminCourtsPage() {
   const [formError, setFormError] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [selectedCourtForSlot, setSelectedCourtForSlot] = useState<Court | null>(null);
+
+  // File Upload State
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [fileError, setFileError] = useState("");
 
   const [formData, setFormData] = useState({
     CourtCode: "",
@@ -46,12 +53,13 @@ export default function AdminCourtsPage() {
       user?.RoleName || user?.role || user?.roles?.[0] || ""
     ).toLowerCase();
 
-    if (!userToken || !role.includes("admin")) {
+    if (!userToken || !(role.includes("admin") || role.includes("manager") || role.includes("staff"))) {
       router.push("/login");
       return;
     }
 
     setToken(userToken);
+    setIsStaff(role.includes("staff"));
     loadCourts();
   }, [router]);
 
@@ -82,6 +90,9 @@ export default function AdminCourtsPage() {
       OpenTime: "05:00",
       CloseTime: "22:00",
     });
+    setSelectedFile(null);
+    setImagePreview(null);
+    setFileError("");
     setFormError("");
     setIsModalOpen(true);
   }
@@ -100,6 +111,9 @@ export default function AdminCourtsPage() {
       OpenTime: court.OpenTime || "05:00",
       CloseTime: court.CloseTime || "22:00",
     });
+    setSelectedFile(null);
+    setImagePreview(court.CourtImage ? getImageUrl(court.CourtImage, "") : null);
+    setFileError("");
     setFormError("");
     setIsModalOpen(true);
   }
@@ -130,22 +144,43 @@ export default function AdminCourtsPage() {
       return;
     }
 
+    if (fileError) {
+      setFormError("Vui lòng chọn file hình ảnh hợp lệ.");
+      return;
+    }
+
     try {
       setSubmitting(true);
       setFormError("");
 
-      const payload = {
-        CourtCode: formData.CourtCode.trim(),
-        CourtName: formData.CourtName.trim(),
-        CourtType: formData.CourtType,
-        Location: formData.Location.trim(),
-        Description: formData.Description.trim() || null,
-        PricePerHour: Number(formData.PricePerHour),
-        CourtImage: formData.CourtImage.trim() || null,
-        Status: formData.Status,
-        OpenTime: formData.OpenTime,
-        CloseTime: formData.CloseTime,
-      };
+      let payload: any;
+      if (selectedFile) {
+        const fd = new FormData();
+        fd.append("CourtCode", formData.CourtCode.trim());
+        fd.append("CourtName", formData.CourtName.trim());
+        fd.append("CourtType", formData.CourtType);
+        fd.append("Location", formData.Location.trim());
+        fd.append("Description", formData.Description.trim() || "");
+        fd.append("PricePerHour", String(formData.PricePerHour));
+        fd.append("Status", formData.Status);
+        fd.append("OpenTime", formData.OpenTime);
+        fd.append("CloseTime", formData.CloseTime);
+        fd.append("CourtImage", selectedFile);
+        payload = fd;
+      } else {
+        payload = {
+          CourtCode: formData.CourtCode.trim(),
+          CourtName: formData.CourtName.trim(),
+          CourtType: formData.CourtType,
+          Location: formData.Location.trim(),
+          Description: formData.Description.trim() || null,
+          PricePerHour: Number(formData.PricePerHour),
+          CourtImage: formData.CourtImage || null,
+          Status: formData.Status,
+          OpenTime: formData.OpenTime,
+          CloseTime: formData.CloseTime,
+        };
+      }
 
       if (editingCourt) {
         await updateCourt(token, editingCourt.CourtID, payload);
@@ -188,6 +223,43 @@ export default function AdminCourtsPage() {
     }));
   }
 
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    setFileError("");
+
+    if (!file) {
+      setSelectedFile(null);
+      setImagePreview(editingCourt?.CourtImage ? getImageUrl(editingCourt.CourtImage, "") : null);
+      return;
+    }
+
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setFileError("Hình ảnh sân không được vượt quá 5MB");
+      setSelectedFile(null);
+      setImagePreview(null);
+      return;
+    }
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      setFileError("Chỉ được chọn ảnh JPG, PNG hoặc WEBP");
+      setSelectedFile(null);
+      setImagePreview(null);
+      return;
+    }
+
+    setSelectedFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setImagePreview(objectUrl);
+  }
+
+  function handleResetFile() {
+    setSelectedFile(null);
+    setImagePreview(editingCourt?.CourtImage ? getImageUrl(editingCourt.CourtImage, "") : null);
+    setFileError("");
+  }
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -195,9 +267,11 @@ export default function AdminCourtsPage() {
           <h1>Quản lý Sân</h1>
           <p>Danh sách sân pickleball của hệ thống và thiết lập giờ mở cửa, bảng giá.</p>
         </div>
-        <button onClick={handleOpenAdd} className={styles.addButton}>
-          ➕ Thêm sân mới
-        </button>
+        {!isStaff && (
+          <button onClick={handleOpenAdd} className={styles.addButton}>
+            ➕ Thêm sân mới
+          </button>
+        )}
       </header>
 
       {loading ? (
@@ -225,7 +299,7 @@ export default function AdminCourtsPage() {
                   <td>
                     <div className={styles.courtInfo}>
                       <img
-                        src={court.CourtImage || "/images/home/court-placeholder.jpg"}
+                        src={getImageUrl(court.CourtImage, "/images/home/court-placeholder.jpg")}
                         alt={court.CourtName}
                         className={styles.courtThumb}
                       />
@@ -257,22 +331,26 @@ export default function AdminCourtsPage() {
                   </td>
                   <td>
                     <div className={styles.actionCell}>
-                      <button onClick={() => handleOpenEdit(court)} className={styles.editButton}>
-                        ✏️ Sửa
-                      </button>
+                      {!isStaff && (
+                        <button onClick={() => handleOpenEdit(court)} className={styles.editButton}>
+                          ✏️ Sửa
+                        </button>
+                      )}
                       <button
                         onClick={() => setSelectedCourtForSlot(court)}
                         className={styles.slotButton}
                       >
                         📅 Lịch slot
                       </button>
-                      <button
-                        onClick={() => handleDelete(court)}
-                        className={styles.deleteButton}
-                        disabled={deletingId === court.CourtID}
-                      >
-                        {deletingId === court.CourtID ? "Đang xóa..." : "🗑️ Xóa"}
-                      </button>
+                      {!isStaff && (
+                        <button
+                          onClick={() => handleDelete(court)}
+                          className={styles.deleteButton}
+                          disabled={deletingId === court.CourtID}
+                        >
+                          {deletingId === court.CourtID ? "Đang xóa..." : "🗑️ Xóa"}
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -292,7 +370,7 @@ export default function AdminCourtsPage() {
                 &times;
               </button>
             </div>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0, flex: 1 }}>
               <div className={styles.modalBody}>
                 {formError && <div className={styles.errorMsg}>{formError}</div>}
 
@@ -406,15 +484,44 @@ export default function AdminCourtsPage() {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label>Đường dẫn hình ảnh (URL)</label>
+                  <label>Hình ảnh sân</label>
                   <input
-                    type="text"
-                    name="CourtImage"
-                    value={formData.CourtImage}
-                    onChange={handleInputChange}
-                    placeholder="/images/courts/c1.jpg"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleFileChange}
                     className={styles.input}
                   />
+                  {fileError && (
+                    <div style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}>
+                      {fileError}
+                    </div>
+                  )}
+                  {imagePreview && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "6px" }}>
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        style={{ width: "60px", height: "60px", objectFit: "cover", borderRadius: "4px" }}
+                      />
+                      {selectedFile && (
+                        <button
+                          type="button"
+                          onClick={handleResetFile}
+                          style={{
+                            fontSize: "12px",
+                            color: "#3b82f6",
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: 0,
+                            textDecoration: "underline"
+                          }}
+                        >
+                          Xóa chọn ảnh
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className={styles.formGroup}>

@@ -35,22 +35,13 @@ export default function FeaturedCoaches({ coaches, loading, error }: Props) {
           description={error}
         />
       ) : coaches.length === 0 ? (
-        <StateBox
-          variant="empty"
-          title="Chưa có Coach khả dụng"
-        />
+        <StateBox variant="empty" title="Chưa có Coach khả dụng" />
       ) : (
         <div className={styles.coachGrid}>
           {coaches.map((coach) => (
-            <article
-              className={styles.coachCard}
-              key={coach.CoachID}
-            >
+            <article className={styles.coachCard} key={coach.CoachID}>
               <div className={styles.coachImage}>
-                <img
-                  src={getCoachImage(coach)}
-                  alt={coach.FullName}
-                />
+                <img src={getCoachImage(coach)} alt={coach.FullName} />
 
                 <button type="button">♡</button>
               </div>

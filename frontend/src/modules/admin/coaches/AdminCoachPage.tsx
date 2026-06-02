@@ -6,6 +6,7 @@ import {
   adminGetPendingCoaches,
   adminUpdateCoachStatus,
 } from "@/services/coachApi";
+import { getImageUrl } from "@/utils/image";
 import type { Coach, CoachStatus } from "@/types/coach";
 import StateBox from "@/components/common/StateBox";
 import styles from "./AdminCoachPage.module.css";
@@ -175,10 +176,7 @@ export default function AdminCoachPage({ token }: Props) {
                       <td>
                         <div className={styles.coachCell}>
                           <img
-                            src={
-                              coach.AvatarURL ||
-                              "/images/home/avatar-placeholder.jpg"
-                            }
+                            src={getImageUrl(coach.AvatarURL)}
                             alt={coach.FullName}
                             className={styles.coachAvatar}
                           />

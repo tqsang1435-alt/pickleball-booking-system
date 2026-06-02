@@ -64,6 +64,35 @@ export async function getCoachByIdController(
   }
 }
 
+// ─── PUBLIC: Coach schedules ──────────────────────────────────
+
+export async function getCoachSchedulesPublicController(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await context.params;
+    const coachId = Number(id);
+
+    if (!coachId || isNaN(coachId)) {
+      throw new Error("coachId không hợp lệ");
+    }
+
+    const { searchParams } = new URL(req.url);
+    const date = searchParams.get("date");
+
+    if (!date) {
+      throw new Error("Tham số date là bắt buộc (YYYY-MM-DD)");
+    }
+
+    const result = await coachService.getCoachAvailableSlots(coachId, date);
+
+    return successResponse(result, "Lấy lịch Coach thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
 // ─── PUBLIC: Available schedules ─────────────────────────────
 
 export async function getAvailableCoachSchedulesController(req: NextRequest) {
@@ -114,16 +143,37 @@ export async function updateMyProfileController(req: NextRequest) {
     const forbidden = requireRoles(user, ["Coach"]);
     if (forbidden) return forbidden;
 
-    const body = await req.json();
+    const contentType = req.headers.get("content-type") || "";
+    let experienceYears: number | undefined;
+    let biography: string | undefined;
+    let specialization: string | undefined;
+    let avatarFile: File | undefined;
 
-    const result = await coachService.updateMyProfile(user.userId, {
-      experienceYears:
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await req.formData();
+      const expStr = formData.get("experienceYears");
+      experienceYears = expStr !== null && expStr !== "" ? Number(expStr) : undefined;
+      biography = formData.get("biography") !== null ? (formData.get("biography") as string) : undefined;
+      specialization = formData.get("specialization") !== null ? (formData.get("specialization") as string) : undefined;
+      const file = formData.get("avatar");
+      if (file && (file as any).name) {
+        avatarFile = file as File;
+      }
+    } else {
+      const body = await req.json();
+      experienceYears =
         body.experienceYears !== undefined
           ? Number(body.experienceYears)
-          : undefined,
-      biography: body.biography,
-      specialization: body.specialization,
-    });
+          : undefined;
+      biography = body.biography;
+      specialization = body.specialization;
+    }
+
+    const result = await coachService.updateMyProfile(user.userId, {
+      experienceYears,
+      biography: biography !== undefined ? (biography === "" ? null : biography) : undefined,
+      specialization: specialization !== undefined ? (specialization === "" ? null : specialization) : undefined,
+    }, avatarFile);
 
     return successResponse(result, "Cập nhật hồ sơ thành công");
   } catch (error) {
@@ -141,17 +191,43 @@ export async function updateMyExpertiseController(req: NextRequest) {
     const forbidden = requireRoles(user, ["Coach"]);
     if (forbidden) return forbidden;
 
-    const body = await req.json();
+    const contentType = req.headers.get("content-type") || "";
+    let skillLevel: string | undefined;
+    let specialization: string | undefined;
+    let certifications: string | undefined;
+    let experienceYears: number | undefined;
+    let certFile: File | undefined;
 
-    const result = await coachService.updateMyExpertise(user.userId, {
-      skillLevel: body.skillLevel,
-      specialization: body.specialization,
-      certifications: body.certifications,
-      experienceYears:
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await req.formData();
+      skillLevel = formData.get("skillLevel") !== null ? (formData.get("skillLevel") as string) : undefined;
+      specialization = formData.get("specialization") !== null ? (formData.get("specialization") as string) : undefined;
+      certifications = formData.get("certifications") !== null ? (formData.get("certifications") as string) : undefined;
+      
+      const expStr = formData.get("experienceYears");
+      experienceYears = expStr !== null && expStr !== "" ? Number(expStr) : undefined;
+      
+      const file = formData.get("certificate");
+      if (file && (file as any).name) {
+        certFile = file as File;
+      }
+    } else {
+      const body = await req.json();
+      skillLevel = body.skillLevel;
+      specialization = body.specialization;
+      certifications = body.certifications;
+      experienceYears =
         body.experienceYears !== undefined
           ? Number(body.experienceYears)
-          : undefined,
-    });
+          : undefined;
+    }
+
+    const result = await coachService.updateMyExpertise(user.userId, {
+      skillLevel: skillLevel as any,
+      specialization: specialization !== undefined ? (specialization === "" ? null : specialization) : undefined,
+      certifications: certifications !== undefined ? (certifications === "" ? null : certifications) : undefined,
+      experienceYears,
+    }, certFile);
 
     return successResponse(result, "Cập nhật chuyên môn thành công");
   } catch (error) {

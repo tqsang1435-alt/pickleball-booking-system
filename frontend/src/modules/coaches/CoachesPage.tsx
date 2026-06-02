@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { getCoaches } from "@/services/coachApi";
+import { getImageUrl } from "@/utils/image";
 import type { Coach } from "@/types/coach";
 import { formatCurrency } from "@/utils/formatCurrency";
 import StateBox from "@/components/common/StateBox";
@@ -158,7 +159,7 @@ export default function CoachesPage() {
             <div className={styles.list}>
               {filtered.map((coach) => (
                 <article className={styles.card} key={coach.CoachID}>
-                  <img src={coach.AvatarURL || "/images/home/avatar-placeholder.jpg"} alt={coach.FullName} />
+                  <img src={getImageUrl(coach.AvatarURL)} alt={coach.FullName} />
 
                   <div className={styles.info}>
                     <h3>{coach.FullName} <span>●</span></h3>
@@ -174,7 +175,9 @@ export default function CoachesPage() {
                   <div className={styles.price}>
                     <strong>{formatCurrency(coach.HourlyRate)}</strong>
                     <span>/ giờ</span>
-                    <button type="button" disabled style={{ opacity: 0.5, cursor: "not-allowed" }}>Xem lịch &amp; đặt Coach (sắp có)</button>
+                    <Link href={`/coaches/${coach.CoachID}#booking-section`} className={styles.primaryBtn}>
+                      Xem lịch &amp; đặt Coach
+                    </Link>
                     <Link href={`/coaches/${coach.CoachID}`} className={styles.outline}>Xem hồ sơ chi tiết</Link>
                   </div>
                 </article>

@@ -171,7 +171,36 @@ export async function createCourtController(req: NextRequest) {
     const forbidden = requireRoles(user, ["Admin"]);
     if (forbidden) return forbidden;
 
-    const body = await req.json();
+    const contentType = req.headers.get("content-type") || "";
+    let body: any = {};
+    let courtFile: File | undefined = undefined;
+
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await req.formData();
+      body.courtCode = formData.get("courtCode") || formData.get("CourtCode");
+      body.courtName = formData.get("courtName") || formData.get("CourtName");
+      body.courtType = formData.get("courtType") || formData.get("CourtType");
+      body.location = formData.get("location") || formData.get("Location");
+      body.description = formData.get("description") || formData.get("Description");
+      body.status = formData.get("status") || formData.get("Status");
+      body.openTime = formData.get("openTime") || formData.get("OpenTime");
+      body.closeTime = formData.get("closeTime") || formData.get("CloseTime");
+
+      const price = formData.get("pricePerHour") || formData.get("PricePerHour");
+      if (price !== null && price !== undefined) {
+        body.pricePerHour = Number(price);
+      }
+
+      const file = formData.get("courtImage") || formData.get("CourtImage");
+      if (file instanceof File) {
+        courtFile = file;
+      } else if (typeof file === "string") {
+        body.courtImage = file;
+      }
+    } else {
+      body = await req.json();
+    }
+
     const mappedData = {
       courtCode: body.courtCode || body.CourtCode,
       courtName: body.courtName || body.CourtName,
@@ -185,7 +214,7 @@ export async function createCourtController(req: NextRequest) {
       closeTime: body.closeTime || body.CloseTime,
     };
 
-    const result = await courtService.createCourt(mappedData);
+    const result = await courtService.createCourt(mappedData, courtFile);
 
     return successResponse(result, "Tạo sân mới thành công", 201);
   } catch (error) {
@@ -211,7 +240,36 @@ export async function updateCourtController(
       throw new Error("courtId is required");
     }
 
-    const body = await req.json();
+    const contentType = req.headers.get("content-type") || "";
+    let body: any = {};
+    let courtFile: File | undefined = undefined;
+
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await req.formData();
+      body.courtCode = formData.get("courtCode") || formData.get("CourtCode");
+      body.courtName = formData.get("courtName") || formData.get("CourtName");
+      body.courtType = formData.get("courtType") || formData.get("CourtType");
+      body.location = formData.get("location") || formData.get("Location");
+      body.description = formData.get("description") || formData.get("Description");
+      body.status = formData.get("status") || formData.get("Status");
+      body.openTime = formData.get("openTime") || formData.get("OpenTime");
+      body.closeTime = formData.get("closeTime") || formData.get("CloseTime");
+
+      const price = formData.get("pricePerHour") || formData.get("PricePerHour");
+      if (price !== null && price !== undefined) {
+        body.pricePerHour = Number(price);
+      }
+
+      const file = formData.get("courtImage") || formData.get("CourtImage");
+      if (file instanceof File) {
+        courtFile = file;
+      } else if (typeof file === "string") {
+        body.courtImage = file;
+      }
+    } else {
+      body = await req.json();
+    }
+
     const mappedData = {
       courtCode: body.courtCode || body.CourtCode,
       courtName: body.courtName || body.CourtName,
@@ -225,7 +283,7 @@ export async function updateCourtController(
       closeTime: body.closeTime || body.CloseTime,
     };
 
-    const result = await courtService.updateCourt(courtId, mappedData);
+    const result = await courtService.updateCourt(courtId, mappedData, courtFile);
 
     return successResponse(result, "Cập nhật sân thành công");
   } catch (error) {

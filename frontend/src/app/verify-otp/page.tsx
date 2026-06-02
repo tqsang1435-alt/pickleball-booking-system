@@ -4,7 +4,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { verifyRegisterOtpApi } from "@/services/authApi";
 
-export default function VerifyOtpPage() {
+import { Suspense } from "react";
+
+function VerifyOtpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -61,5 +63,13 @@ export default function VerifyOtpPage() {
         </button>
       </form>
     </main>
+  );
+}
+
+export default function VerifyOtpPage() {
+  return (
+    <Suspense fallback={<main style={{ maxWidth: 420, margin: "80px auto", padding: 24 }}>Đang tải...</main>}>
+      <VerifyOtpContent />
+    </Suspense>
   );
 }

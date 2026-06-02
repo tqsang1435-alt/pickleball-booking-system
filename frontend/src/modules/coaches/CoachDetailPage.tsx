@@ -2,11 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getCoachById } from "@/services/coachApi";
-import type { Coach } from "@/types/coach";
+import { getCoachById, getCoachSchedulesPublic } from "@/services/coachApi";
+import { getImageUrl } from "@/utils/image";
+import type { Coach, CoachSchedule } from "@/types/coach";
 import { formatCurrency } from "@/utils/formatCurrency";
 import StateBox from "@/components/common/StateBox";
+import CoachBookingModal from "./CoachBookingModal";
 import styles from "./CoachDetailPage.module.css";
+
+const todayVN = () => {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().split("T")[0];
+};
 
 const SKILL_LABELS: Record<string, string> = {
   Beginner: "Mới bắt đầu",
@@ -21,6 +29,11 @@ export default function CoachDetailPage() {
   const [coach, setCoach] = useState<Coach | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [date, setDate] = useState(todayVN());
+  const [schedules, setSchedules] = useState<CoachSchedule[]>([]);
+  const [loadingSchedules, setLoadingSchedules] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState<CoachSchedule | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -48,6 +61,28 @@ export default function CoachDetailPage() {
       mounted = false;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (!coach) return;
+    let mounted = true;
+
+    async function loadSchedules() {
+      try {
+        setLoadingSchedules(true);
+        const data = await getCoachSchedulesPublic(coach!.CoachID, date);
+        if (mounted) setSchedules(data);
+      } catch (err) {
+        console.error("Failed to load coach schedules", err);
+      } finally {
+        if (mounted) setLoadingSchedules(false);
+      }
+    }
+
+    loadSchedules();
+    return () => {
+      mounted = false;
+    };
+  }, [coach, date]);
 
   if (loading) {
     return (
@@ -83,7 +118,7 @@ export default function CoachDetailPage() {
         <aside className={styles.sidebar}>
           <div className={styles.avatarWrap}>
             <img
-              src={coach.AvatarURL || "/images/home/avatar-placeholder.jpg"}
+              src={getImageUrl(coach.AvatarURL)}
               alt={coach.FullName}
               className={styles.avatar}
             />
@@ -115,9 +150,9 @@ export default function CoachDetailPage() {
             <span className={styles.feeUnit}>/ giờ</span>
           </div>
 
-          <button className={styles.bookBtn} type="button" disabled>
-            📅 Đặt lịch học (sắp có)
-          </button>
+          <a href="#booking-section" className={styles.bookBtn}>
+            📅 Đặt lịch học
+          </a>
         </aside>
 
         {/* Right: Detail */}
@@ -162,19 +197,75 @@ export default function CoachDetailPage() {
                 <div className={styles.infoItem}>
                   <span className={styles.infoLabel}>Chứng chỉ</span>
                   <span className={styles.infoValue}>
-                    {coach.Certifications}
+                    {coach.Certifications.startsWith("/uploads") ? (
+                      <a
+                        href={getImageUrl(coach.Certifications)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: "#0070f3", textDecoration: "underline" }}
+                      >
+                        Xem ảnh chứng chỉ
+                      </a>
+                    ) : (
+                      coach.Certifications
+                    )}
                   </span>
                 </div>
               )}
             </div>
           </div>
 
-          <div className={styles.notice}>
-            💡 Tính năng đặt lịch học Coach sẽ sớm ra mắt. Hãy theo dõi để
-            không bỏ lỡ!
+          {/* Schedule Picker */}
+          <div id="booking-section" className={styles.section}>
+            <h2>Lịch dạy của HLV</h2>
+            <div className={styles.scheduleTools}>
+              <label>📅 Chọn ngày:</label>
+              <input 
+                type="date" 
+                value={date} 
+                min={todayVN()} 
+                onChange={(e) => setDate(e.target.value)}
+                className={styles.dateInput}
+              />
+            </div>
+
+            {loadingSchedules ? (
+              <div className={styles.loadingSlots}>Đang tải lịch học...</div>
+            ) : schedules.length === 0 ? (
+              <div className={styles.emptySlots}>HLV chưa có lịch trống trong ngày này.</div>
+            ) : (
+              <div className={styles.slotsGrid}>
+                {schedules.map((sch) => (
+                  <div key={sch.CoachScheduleID} className={styles.slotCard}>
+                    <div className={styles.slotTime}>{sch.StartTime} - {sch.EndTime}</div>
+                    <button 
+                      className={styles.slotBookBtn}
+                      onClick={() => setSelectedSchedule(sch)}
+                    >
+                      Đặt lịch
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       </div>
+
+      {selectedSchedule && coach && (
+        <CoachBookingModal 
+          coach={coach}
+          schedule={selectedSchedule}
+          bookingDate={date}
+          onClose={() => setSelectedSchedule(null)}
+          onSuccess={() => {
+            setSelectedSchedule(null);
+            // Refresh schedules
+            getCoachSchedulesPublic(coach.CoachID, date).then(setSchedules);
+            router.push("/profile");
+          }}
+        />
+      )}
     </main>
   );
 }

@@ -1,0 +1,450 @@
+/* BookingHistoryPage.module.css */
+
+.page {
+  min-height: 100vh;
+  padding: 42px 0 70px;
+  background: linear-gradient(135deg, #fbfff5, #f4ffdf, #e8fff5);
+  font-family: "Inter", "Segoe UI", sans-serif;
+  color: var(--text, #1e293b);
+}
+
+.inner {
+  width: min(1200px, calc(100% - 40px));
+  margin: 0 auto;
+}
+
+/* Loading */
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 1rem;
+  color: #5f6b5b;
+}
+
+.loadingSpinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(63, 107, 50, 0.2);
+  border-top-color: #3f6b32;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 24px;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 800;
+  margin: 0 0 0.25rem;
+  color: #1e293b;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #2f5a24;
+  font-weight: 700;
+}
+
+.backBtn {
+  background: #ffffff;
+  border: 1px solid #dff5c7;
+  color: #3f6b32;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition: all 0.15s;
+  box-shadow: 0 2px 8px rgba(39, 75, 31, 0.05);
+}
+
+.backBtn:hover {
+  background: #f4ffdf;
+  transform: translateY(-1px);
+}
+
+/* Toast */
+.successToast {
+  background: #effaf3;
+  border: 1px solid #c8f0d5;
+  border-radius: 12px;
+  padding: 0.875rem 1.25rem;
+  color: #1d6d34;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.errorToast {
+  background: #fff1f1;
+  border: 1px solid #ffcaca;
+  border-radius: 12px;
+  padding: 0.875rem 1.25rem;
+  color: #d71920;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.errorToast button {
+  background: none;
+  border: 1px solid #d71920;
+  color: #d71920;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Stats grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.statCard {
+  background: #ffffff;
+  border: 1px solid #dff5c7;
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(39, 75, 31, 0.04);
+}
+
+.statCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(39, 75, 31, 0.08);
+}
+
+.statValue {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.statLabel {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.statWarning .statValue { color: #d97706; }
+.statSuccess .statValue { color: #16a34a; }
+.statBlue .statValue { color: #2563eb; }
+.statPurple .statValue { color: #7c3aed; font-size: 18px; }
+
+/* Filters */
+.filtersPanel {
+  background: #ffffff;
+  border: 1px solid #dff5c7;
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 24px rgba(39, 75, 31, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.searchInput, .filterSelect, .dateInput {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #334155;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.searchInput { flex: 1; min-width: 200px; }
+
+.searchInput:focus, .filterSelect:focus, .dateInput:focus {
+  border-color: #3f6b32;
+  box-shadow: 0 0 0 3px rgba(63, 107, 50, 0.1);
+}
+
+.dateRange {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+}
+
+.resetBtn {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.resetBtn:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.resultCount {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* History block */
+.history {
+  background: #ffffff;
+  border: 1px solid #dff5c7;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 8px 24px rgba(39, 75, 31, 0.04);
+}
+
+.emptyState {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+}
+
+/* Table */
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 850px;
+}
+
+.table th {
+  padding: 16px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: middle;
+}
+
+.table tbody tr:hover {
+  background: #f8fdf3;
+}
+
+.rowActioning {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.bookingCode {
+  font-family: monospace;
+  font-weight: 700;
+  color: #3b82f6;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.bookingDate {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.serviceType {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.serviceDetail {
+  font-size: 13px;
+  color: #475569;
+}
+
+.playDate {
+  font-weight: 600;
+  color: #334155;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+.playTime {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.amount {
+  font-weight: 700;
+  color: #16a34a;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.paymentMethod {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badgeConfirmed, .badgePaid { background: #dcfce7; color: #16a34a; }
+.badgeCheckedIn { background: #dbeafe; color: #2563eb; }
+.badgePendingPayment { background: #fef3c7; color: #d97706; }
+.badgeCancelled, .badgeRefunded, .badgeNoShow { background: #fee2e2; color: #dc2626; }
+.badgeCompleted { background: #f1f5f9; color: #64748b; }
+
+.checkInTime {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* Countdown badge */
+.countdownBadge {
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: #d97706;
+  text-align: center;
+  font-weight: 600;
+  margin-top: 6px;
+  display: inline-block;
+}
+
+.countdownUrgent {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #dc2626;
+  animation: pulse 1s infinite;
+}
+
+.expiredBadge {
+  background: rgba(100, 116, 139, 0.12);
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: #64748b;
+  text-align: center;
+  margin-top: 6px;
+  display: inline-block;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.actionCell {
+  display: flex;
+  gap: 8px;
+}
+
+.btnPay, .btnCancel {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+}
+
+.btnPay { background: #dcfce7; color: #16a34a; }
+.btnPay:hover:not(:disabled) { background: #bbf7d0; }
+.btnCancel { background: #fee2e2; color: #dc2626; }
+.btnCancel:hover:not(:disabled) { background: #fecaca; }
+
+.noAction {
+  color: #94a3b8;
+  font-size: 13px;
+  padding-left: 8px;
+}
+
+/* Pagination */
+.pagination {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.pageBtn {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pageBtn:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.pageBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pageBtnActive {
+  background: #3f6b32;
+  color: white;
+  border-color: #3f6b32;
+}
+
+.pageBtnActive:hover:not(:disabled) {
+  background: #2f5a24;
+}

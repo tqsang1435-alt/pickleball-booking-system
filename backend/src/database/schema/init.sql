@@ -120,7 +120,7 @@ CREATE TABLE CourtSlots (
     Price DECIMAL(18,2) NOT NULL,
 
     Status NVARCHAR(30) NOT NULL DEFAULT 'Available'
-        CHECK (Status IN ('Available', 'Holding', 'Booked', 'Blocked', 'Maintenance')),
+        CHECK (Status IN ('Available', 'Holding', 'Booked', 'Blocked', 'Maintenance', 'Cancelled')),
 
     HoldUntil DATETIME NULL,
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
