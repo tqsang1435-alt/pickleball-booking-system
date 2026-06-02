@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getImageUrl } from "@/utils/image";
 import StateBox from "@/components/common/StateBox";
 import type { Coach } from "@/types/coach";
 import { formatCurrency } from "@/utils/formatCurrency";
@@ -28,7 +29,7 @@ export default function FeaturedCoaches({ coaches, loading, error }: Props) {
         <div className={styles.coachGrid}>
           {coaches.map((coach) => (
             <article className={styles.coachCard} key={coach.CoachID}>
-              <img src={coach.AvatarURL || "/images/home/avatar-placeholder.jpg"} alt={coach.FullName} />
+              <img src={getImageUrl(coach.AvatarURL)} alt={coach.FullName} />
 
               <div className={styles.coachInfo}>
                 <h3>{coach.FullName}</h3>

@@ -9,7 +9,8 @@ export function handleError(error: unknown) {
   }
 
   if (error instanceof Error) {
-    return errorResponse(error.message, 500);
+    const statusCode = (error as any).statusCode || (error as any).status || 500;
+    return errorResponse(error.message, statusCode);
   }
 
   return errorResponse("Lỗi hệ thống", 500);

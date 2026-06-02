@@ -12,7 +12,7 @@ export async function getCourtById(id: number | string): Promise<Court> {
   return response.data;
 }
 
-export async function createCourt(token: string, payload: Omit<Court, "CourtID">): Promise<Court> {
+export async function createCourt(token: string, payload: Omit<Court, "CourtID"> | FormData): Promise<Court> {
   const response = await apiClient<ApiResponse<Court>>("/api/courts", {
     method: "POST",
     token,
@@ -21,7 +21,7 @@ export async function createCourt(token: string, payload: Omit<Court, "CourtID">
   return response.data;
 }
 
-export async function updateCourt(token: string, id: number, payload: Partial<Court>): Promise<Court> {
+export async function updateCourt(token: string, id: number, payload: Partial<Court> | FormData): Promise<Court> {
   const response = await apiClient<ApiResponse<Court>>(`/api/courts/${id}`, {
     method: "PUT",
     token,

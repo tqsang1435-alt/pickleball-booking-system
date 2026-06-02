@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getCoachById, getCoachSchedulesPublic } from "@/services/coachApi";
+import { getImageUrl } from "@/utils/image";
 import type { Coach, CoachSchedule } from "@/types/coach";
 import { formatCurrency } from "@/utils/formatCurrency";
 import StateBox from "@/components/common/StateBox";
@@ -117,7 +118,7 @@ export default function CoachDetailPage() {
         <aside className={styles.sidebar}>
           <div className={styles.avatarWrap}>
             <img
-              src={coach.AvatarURL || "/images/home/avatar-placeholder.jpg"}
+              src={getImageUrl(coach.AvatarURL)}
               alt={coach.FullName}
               className={styles.avatar}
             />
@@ -196,7 +197,18 @@ export default function CoachDetailPage() {
                 <div className={styles.infoItem}>
                   <span className={styles.infoLabel}>Chứng chỉ</span>
                   <span className={styles.infoValue}>
-                    {coach.Certifications}
+                    {coach.Certifications.startsWith("/uploads") ? (
+                      <a
+                        href={getImageUrl(coach.Certifications)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: "#0070f3", textDecoration: "underline" }}
+                      >
+                        Xem ảnh chứng chỉ
+                      </a>
+                    ) : (
+                      coach.Certifications
+                    )}
                   </span>
                 </div>
               )}

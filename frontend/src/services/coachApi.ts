@@ -53,7 +53,7 @@ export async function getMyCoachProfile(token: string): Promise<Coach> {
 
 export async function updateMyProfile(
   token: string,
-  payload: {
+  payload: FormData | {
     experienceYears?: number;
     biography?: string | null;
     specialization?: string | null;
@@ -68,7 +68,7 @@ export async function updateMyProfile(
 
 export async function updateMyExpertise(
   token: string,
-  payload: {
+  payload: FormData | {
     skillLevel?: string;
     specialization?: string | null;
     certifications?: string | null;

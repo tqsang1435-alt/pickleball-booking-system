@@ -6,6 +6,7 @@
 
 import * as courtRepo from "./courts.repository";
 import type { CreateCourtSlotInput } from "./courts.type";
+import { validateAndSaveCourtFile, deleteFile } from "../../utils/upload";
 import {
   validateCreateCourtFields,
   validateNotPastDate,
@@ -48,18 +49,21 @@ export async function getAvailableCourts(
   return courtRepo.findAvailableCourts(bookingDate, startTime, endTime);
 }
 
-export async function createCourt(data: {
-  courtCode: string;
-  courtName: string;
-  courtType: string;
-  location?: string;
-  description?: string;
-  pricePerHour: number;
-  courtImage?: string;
-  status?: string;
-  openTime: string;
-  closeTime: string;
-}) {
+export async function createCourt(
+  data: {
+    courtCode: string;
+    courtName: string;
+    courtType: string;
+    location?: string;
+    description?: string;
+    pricePerHour: number;
+    courtImage?: string;
+    status?: string;
+    openTime: string;
+    closeTime: string;
+  },
+  courtFile?: File
+) {
   // 1. Kiểm tra trường bắt buộc
   validateCreateCourtFields(data);
 
@@ -69,7 +73,30 @@ export async function createCourt(data: {
   // 3. Kiểm tra khoảng thời gian mở/đóng cửa
   validateTimeRange(data.openTime, data.closeTime);
 
-  return courtRepo.createCourt(data);
+  if (!courtFile) {
+    return courtRepo.createCourt(data);
+  }
+
+  // Create court first to get the ID
+  const newCourt = await courtRepo.createCourt(data);
+  const courtId = newCourt.CourtID;
+
+  let newImagePath: string | null = null;
+  try {
+    newImagePath = await validateAndSaveCourtFile(courtFile, courtId);
+    
+    const updatedData = {
+      ...data,
+      courtImage: newImagePath,
+    };
+    const finalCourt = await courtRepo.updateCourt(courtId, updatedData);
+    return finalCourt;
+  } catch (error) {
+    if (newImagePath) {
+      deleteFile(newImagePath);
+    }
+    throw error;
+  }
 }
 
 export async function updateCourt(
@@ -85,7 +112,8 @@ export async function updateCourt(
     status?: string;
     openTime: string;
     closeTime: string;
-  }
+  },
+  courtFile?: File
 ) {
   // 1. Kiểm tra sân tồn tại
   const court = await courtRepo.findCourtById(courtId);
@@ -102,7 +130,35 @@ export async function updateCourt(
   // 4. Kiểm tra khoảng thời gian mở/đóng cửa
   validateTimeRange(data.openTime, data.closeTime);
 
-  return courtRepo.updateCourt(courtId, data);
+  let newImagePath: string | null = null;
+  const oldImagePath = court.CourtImage;
+
+  try {
+    if (courtFile) {
+      newImagePath = await validateAndSaveCourtFile(courtFile, courtId);
+      data.courtImage = newImagePath;
+    } else {
+      if (!data.courtImage) {
+        data.courtImage = oldImagePath || undefined;
+      }
+    }
+
+    const result = await courtRepo.updateCourt(courtId, data);
+    if (!result) {
+      throw new Error("Không thể cập nhật thông tin sân");
+    }
+
+    if (newImagePath && oldImagePath && oldImagePath.startsWith("/uploads/courts/")) {
+      deleteFile(oldImagePath);
+    }
+
+    return result;
+  } catch (error) {
+    if (newImagePath) {
+      deleteFile(newImagePath);
+    }
+    throw error;
+  }
 }
 
 export async function deleteCourt(courtId: number) {
