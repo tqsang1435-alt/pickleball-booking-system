@@ -11,15 +11,18 @@ import styles from "./HomePage.module.css";
 import { getCourts } from "@/services/courtApi";
 import { getCoaches } from "@/services/coachApi";
 import { getPromotions } from "@/services/promotionApi";
+import { getPublicReviews } from "@/services/reviewApi";
 
 import type { Court } from "@/types/court";
 import type { Coach } from "@/types/coach";
 import type { Promotion } from "@/types/promotion";
+import type { Review } from "@/types/review";
 
 export default function HomePage() {
   const [courts, setCourts] = useState<Court[]>([]);
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   const [courtsLoading, setCourtsLoading] = useState(true);
@@ -48,7 +51,7 @@ export default function HomePage() {
         setCourtsError(
           error instanceof Error
             ? error.message
-            : "Không tải được danh sách sân."
+            : "Không tải được danh sách sân.",
         );
       } finally {
         if (!mounted) return;
@@ -71,7 +74,7 @@ export default function HomePage() {
         setCoachesError(
           error instanceof Error
             ? error.message
-            : "Không tải được danh sách Coach."
+            : "Không tải được danh sách Coach.",
         );
       } finally {
         if (!mounted) return;
@@ -94,7 +97,7 @@ export default function HomePage() {
         setPromotionsError(
           error instanceof Error
             ? error.message
-            : "Không tải được danh sách khuyến mãi."
+            : "Không tải được danh sách khuyến mãi.",
         );
       } finally {
         if (!mounted) return;
@@ -102,9 +105,20 @@ export default function HomePage() {
       }
     }
 
+    async function loadReviews() {
+      try {
+        const data = await getPublicReviews();
+        if (!mounted) return;
+        setReviews(data);
+      } catch {
+        // Silently fail - reviews are not critical
+      }
+    }
+
     loadCourts();
     loadCoaches();
     loadPromotions();
+    loadReviews();
 
     return () => {
       mounted = false;
@@ -112,19 +126,16 @@ export default function HomePage() {
   }, []);
 
   const featuredCourts = useMemo(() => {
-    return courts
-      .filter((court) => court.Status === "Available")
-      .slice(0, 4);
+    return courts.filter((court) => court.Status === "Available").slice(0, 4);
   }, [courts]);
 
   const featuredCoaches = useMemo(() => {
     return coaches
       .filter((coach) =>
-        ["Approved", "Active", "Available"].includes(String(coach.Status))
+        ["Approved", "Active", "Available"].includes(String(coach.Status)),
       )
       .sort(
-        (a, b) =>
-          Number(b.AverageRating || 0) - Number(a.AverageRating || 0)
+        (a, b) => Number(b.AverageRating || 0) - Number(a.AverageRating || 0),
       )
       .slice(0, 4);
   }, [coaches]);
@@ -141,7 +152,7 @@ export default function HomePage() {
     }
 
     return `Giảm ${Number(promotion.DiscountValue || 0).toLocaleString(
-      "vi-VN"
+      "vi-VN",
     )}đ`;
   }
 
@@ -158,8 +169,6 @@ export default function HomePage() {
       <HeroSection />
 
       <div className={styles.container}>
-        <QuickActions />
-
         <FeaturedCourts
           courts={featuredCourts}
           loading={courtsLoading}
@@ -172,117 +181,149 @@ export default function HomePage() {
           error={coachesError}
         />
 
-        <section className={styles.howItWorks}>
-          <h2>Cách hoạt động</h2>
-
-          <div className={styles.steps}>
-            <div>
-              <span>01</span>
-              <h3>Chọn sân / Coach</h3>
-              <p>Tìm sân hoặc Coach phù hợp với nhu cầu.</p>
+        <section className={styles.promoReviewLayout}>
+          <section className={styles.promo}>
+            <div className={styles.promoHeader}>
+              <span>Ưu đãi</span>
+              <h2>Ưu đãi hấp dẫn</h2>
+              <p>Áp dụng khi đặt sân, đặt Coach hoặc combo tại PickleClub.</p>
             </div>
 
-            <div>
-              <span>02</span>
-              <h3>Chọn lịch</h3>
-              <p>Chọn ngày, giờ thuận tiện.</p>
-            </div>
-
-            <div>
-              <span>03</span>
-              <h3>Thanh toán</h3>
-              <p>Thanh toán online an toàn, nhanh chóng.</p>
-            </div>
-
-            <div>
-              <span>04</span>
-              <h3>Xác nhận</h3>
-              <p>Nhận xác nhận và sẵn sàng trải nghiệm.</p>
-            </div>
-          </div>
-        </section>
-
-        <section className={styles.testimonials}>
-          <h2>Khách hàng nói gì về PickleClub</h2>
-
-          <div className={styles.reviewGrid}>
-            <div className={styles.reviewCard}>
-              <p>“Đặt sân rất nhanh, giao diện dễ dùng.”</p>
-              <strong>Minh Anh</strong>
-              <span>⭐⭐⭐⭐⭐</span>
-            </div>
-
-            <div className={styles.reviewCard}>
-              <p>“Coach hướng dẫn rất nhiệt tình.”</p>
-              <strong>Quốc Bảo</strong>
-              <span>⭐⭐⭐⭐⭐</span>
-            </div>
-
-            <div className={styles.reviewCard}>
-              <p>“Tìm được nhiều bạn đánh cùng trình độ.”</p>
-              <strong>Thảo Vy</strong>
-              <span>⭐⭐⭐⭐⭐</span>
-            </div>
-          </div>
-        </section>
-
-        <section className={styles.promo}>
-          <div className={styles.promoHeader}>
-            <span>Ưu đãi</span>
-            <h2>Khuyến mãi dành cho bạn</h2>
-            <p>Áp dụng khi đặt sân, đặt Coach hoặc combo tại PickleClub.</p>
-          </div>
-
-          {promotionsLoading && <p className={styles.promoStatus}>Đang tải khuyến mãi...</p>}
-
-          {promotionsError && <p className={styles.error}>{promotionsError}</p>}
-
-          {!promotionsLoading &&
-            !promotionsError &&
-            activePromotions.length === 0 && (
-              <p className={styles.promoStatus}>Hiện chưa có khuyến mãi khả dụng.</p>
+            {promotionsLoading && (
+              <p className={styles.promoStatus}>Đang tải khuyến mãi...</p>
             )}
 
-          <div className={styles.voucherGrid}>
-            {activePromotions.map((promotion) => (
-              <div className={styles.voucherCard} key={promotion.PromotionID}>
-                <div className={styles.voucherLeft}>
-                  <div className={styles.voucherDiscount}>
-                    {formatDiscount(promotion)}
+            {promotionsError && (
+              <p className={styles.error}>{promotionsError}</p>
+            )}
+
+            {!promotionsLoading &&
+              !promotionsError &&
+              activePromotions.length === 0 && (
+                <p className={styles.promoStatus}>
+                  Hiện chưa có khuyến mãi khả dụng.
+                </p>
+              )}
+
+            <div className={styles.voucherGrid}>
+              {activePromotions.map((promotion) => (
+                <div className={styles.voucherCard} key={promotion.PromotionID}>
+                  <div className={styles.voucherLeft}>
+                    <div className={styles.voucherDiscount}>
+                      {formatDiscount(promotion)}
+                    </div>
+                    <div className={styles.voucherMinOrder}>
+                      {promotion.MinOrderAmount ? (
+                        <span>
+                          Đơn tối thiểu{" "}
+                          {Number(promotion.MinOrderAmount).toLocaleString(
+                            "vi-VN",
+                          )}
+                          đ
+                        </span>
+                      ) : (
+                        <span>Không giới hạn</span>
+                      )}
+                    </div>
                   </div>
-                  <div className={styles.voucherMinOrder}>
-                    {promotion.MinOrderAmount ? (
-                      <span>Đơn tối thiểu {Number(promotion.MinOrderAmount).toLocaleString("vi-VN")}đ</span>
-                    ) : (
-                      <span>Không giới hạn</span>
-                    )}
+
+                  <div className={styles.voucherDivider}>
+                    <span className={styles.dividerDotTop}></span>
+                    <span className={styles.dividerLine}></span>
+                    <span className={styles.dividerDotBottom}></span>
+                  </div>
+
+                  <div className={styles.voucherRight}>
+                    <h3 className={styles.voucherName}>
+                      {promotion.PromotionName}
+                    </h3>
+                    <div className={styles.voucherActionRow}>
+                      <span className={styles.voucherCode}>
+                        {promotion.PromotionCode}
+                      </span>
+                      <button
+                        type="button"
+                        className={
+                          copiedCode === promotion.PromotionCode
+                            ? styles.copyBtnSuccess
+                            : styles.copyBtn
+                        }
+                        onClick={() => handleCopyCode(promotion.PromotionCode)}
+                      >
+                        {copiedCode === promotion.PromotionCode
+                          ? "Đã chép!"
+                          : "Sao chép"}
+                      </button>
+                    </div>
                   </div>
                 </div>
+              ))}
+            </div>
+          </section>
 
-                <div className={styles.voucherDivider}>
-                  <span className={styles.dividerDotTop}></span>
-                  <span className={styles.dividerLine}></span>
-                  <span className={styles.dividerDotBottom}></span>
-                </div>
+          <section className={styles.testimonials}>
+            <div className={styles.reviewSummary}>
+              <span>Đánh giá từ khách hàng</span>
+              <h2>
+                4.8<small>/5</small>
+              </h2>
+              <p>Dựa trên trải nghiệm đặt sân, đặt Coach và sử dụng ưu đãi.</p>
+            </div>
 
-                <div className={styles.voucherRight}>
-                  <h3 className={styles.voucherName}>{promotion.PromotionName}</h3>
-                  <div className={styles.voucherActionRow}>
-                    <span className={styles.voucherCode}>
-                      {promotion.PromotionCode}
-                    </span>
-                    <button
-                      className={copiedCode === promotion.PromotionCode ? styles.copyBtnSuccess : styles.copyBtn}
-                      onClick={() => handleCopyCode(promotion.PromotionCode)}
-                    >
-                      {copiedCode === promotion.PromotionCode ? "Đã chép!" : "Sao chép"}
-                    </button>
+            {reviews.length === 0 ? (
+              <div className={styles.reviewCard}>
+                <div className={styles.reviewStars}>★★★★★</div>
+                <p className={styles.reviewComment}>
+                  Sân đẹp, dịch vụ tốt, đặt lịch nhanh chóng. Sẽ ủng hộ lâu dài!
+                </p>
+                <div className={styles.reviewAuthor}>
+                  <div className={styles.reviewAvatar}>M</div>
+                  <div>
+                    <strong>Minh Anh</strong>
+                    <small>Khách hàng PickleClub</small>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+            ) : (
+              <div className={styles.reviewGrid}>
+                {reviews.slice(0, 2).map((review) => (
+                  <div className={styles.reviewCard} key={review.ReviewID}>
+                    <div className={styles.reviewStars}>
+                      {Array.from({ length: 5 }, (_, i) => (
+                        <span
+                          key={i}
+                          className={
+                            i < review.Rating
+                              ? styles.starFilled
+                              : styles.starEmpty
+                          }
+                        >
+                          ★
+                        </span>
+                      ))}
+                    </div>
+                    <p className={styles.reviewComment}>"{review.Comment}"</p>
+                    <div className={styles.reviewAuthor}>
+                      <div className={styles.reviewAvatar}>
+                        {review.AvatarURL ? (
+                          <img src={review.AvatarURL} alt={review.FullName} />
+                        ) : (
+                          <span>{review.FullName.charAt(0).toUpperCase()}</span>
+                        )}
+                      </div>
+                      <div>
+                        <strong>{review.FullName}</strong>
+                        {review.CourtName && <small>{review.CourtName}</small>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         </section>
+
+        <QuickActions />
       </div>
     </main>
   );
