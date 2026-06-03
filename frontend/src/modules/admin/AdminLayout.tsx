@@ -34,7 +34,9 @@ export default function AdminLayout({
     <div className={styles.admin}>
       <aside className={styles.sidebar}>
         <div className={styles.logo}>
-          🟢 PickleClub
+          <Link href="/" style={{ color: "inherit", textDecoration: "none" }}>
+            🟢 PickleClub
+          </Link>
         </div>
 
         <nav className={styles.nav}>

@@ -1,0 +1,228 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import * as api from "@/services/matchingApi";
+import styles from "./MatchingLayout.module.css";
+
+interface ProfileTabProps {
+  token: string;
+  onProfileUpdated: (profile: api.PlayerProfile) => void;
+  showToast: (msg: string, type?: "success" | "error") => void;
+}
+
+export default function ProfileTab({ token, onProfileUpdated, showToast }: ProfileTabProps) {
+  const [loading, setLoading] = useState(false);
+  const [profileForm, setProfileForm] = useState<api.PlayerProfile>({
+    PlayingRole: "All-rounder",
+    ExperienceYears: 1,
+    SkillLevel: "Intermediate",
+    PlayStyle: "",
+    Goal: "",
+    MatchingStatus: "Available",
+    AvailableStartTime: "08:00",
+    AvailableEndTime: "10:00",
+  });
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setLoading(true);
+        const data = await api.getPlayerProfile(token);
+        if (data) {
+          setProfileForm({
+            PlayingRole: data.PlayingRole || "All-rounder",
+            ExperienceYears: data.ExperienceYears || 0,
+            SkillLevel: data.SkillLevel || "Intermediate",
+            PlayStyle: data.PlayStyle || "",
+            Goal: data.Goal || "",
+            MatchingStatus: data.MatchingStatus || "Available",
+            AvailableStartTime: formatTimeForInput(data.AvailableStartTime, "08:00"),
+            AvailableEndTime: formatTimeForInput(data.AvailableEndTime, "10:00"),
+          });
+          onProfileUpdated(data);
+        }
+      } catch (err: any) {
+        showToast(err.message || "Không thể tải hồ sơ chơi bóng", "error");
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, [token]);
+
+  function formatTimeForInput(timeVal: any, defaultVal = ""): string {
+    if (!timeVal) return defaultVal;
+    const valStr = String(timeVal);
+    if (valStr.includes("T")) {
+      const parts = valStr.split("T")[1];
+      return parts ? parts.substring(0, 5) : valStr.substring(0, 5);
+    }
+    return valStr.substring(0, 5);
+  }
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!profileForm.AvailableStartTime || !profileForm.AvailableStartTime.trim()) {
+      showToast("Vui lòng nhập giờ bắt đầu rảnh.", "error");
+      return;
+    }
+    if (!profileForm.AvailableEndTime || !profileForm.AvailableEndTime.trim()) {
+      showToast("Vui lòng nhập giờ kết thúc rảnh.", "error");
+      return;
+    }
+
+    const start = profileForm.AvailableStartTime.trim().substring(0, 5);
+    const end = profileForm.AvailableEndTime.trim().substring(0, 5);
+
+    if (start >= end) {
+      showToast("Giờ kết thúc phải lớn hơn giờ bắt đầu.", "error");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const payload: api.PlayerProfile = {
+        ...profileForm,
+        PlayingRole: profileForm.PlayingRole,
+        ExperienceYears: Number(profileForm.ExperienceYears),
+        SkillLevel: profileForm.SkillLevel,
+        PlayStyle: profileForm.PlayStyle || "",
+        Goal: profileForm.Goal || "",
+        MatchingStatus: profileForm.MatchingStatus,
+        AvailableStartTime: start,
+        AvailableEndTime: end,
+      };
+
+      const saved = await api.savePlayerProfile(token, payload);
+      setProfileForm({
+        ...saved,
+        AvailableStartTime: formatTimeForInput(saved.AvailableStartTime, "08:00"),
+        AvailableEndTime: formatTimeForInput(saved.AvailableEndTime, "10:00"),
+      });
+      onProfileUpdated(saved);
+      showToast("Cập nhật hồ sơ chơi bóng thành công!");
+    } catch (err: any) {
+      showToast(err.message || "Cập nhật hồ sơ thất bại", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <h3 style={{ fontSize: "20px", fontWeight: "700", marginBottom: "1.5rem" }}>Hồ sơ chơi bóng của tôi</h3>
+      {loading && <div className={styles.loadingInner}>Đang tải dữ liệu hồ sơ...</div>}
+      
+      <form onSubmit={handleSave} style={{ display: loading ? "none" : "block" }}>
+        <div className={styles.formRow}>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Vai trò thi đấu (Playing Role)</label>
+            <select
+              value={profileForm.PlayingRole}
+              onChange={(e) => setProfileForm({ ...profileForm, PlayingRole: e.target.value })}
+              className={styles.select}
+            >
+              <option value="All-rounder">Toàn diện (All-rounder)</option>
+              <option value="Attacker">Tấn công (Attacker)</option>
+              <option value="Defender">Phòng thủ (Defender)</option>
+            </select>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Trình độ (Skill Level)</label>
+            <select
+              value={profileForm.SkillLevel}
+              onChange={(e) => setProfileForm({ ...profileForm, SkillLevel: e.target.value })}
+              className={styles.select}
+            >
+              <option value="Beginner">Mới chơi (Beginner)</option>
+              <option value="Intermediate">Khá (Intermediate)</option>
+              <option value="Advanced">Giỏi (Advanced)</option>
+              <option value="Professional">Chuyên nghiệp (Professional)</option>
+            </select>
+          </div>
+        </div>
+
+        <div className={styles.formRow}>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Số năm kinh nghiệm</label>
+            <input
+              type="number"
+              min="0"
+              value={profileForm.ExperienceYears}
+              onChange={(e) => setProfileForm({ ...profileForm, ExperienceYears: Number(e.target.value) })}
+              className={styles.input}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Trạng thái Matching</label>
+            <select
+              value={profileForm.MatchingStatus}
+              onChange={(e) => setProfileForm({ ...profileForm, MatchingStatus: e.target.value })}
+              className={styles.select}
+            >
+              <option value="Available">Sẵn sàng ghép cặp (Available)</option>
+              <option value="Busy">Bận (Busy)</option>
+              <option value="Unavailable">Không hoạt động (Unavailable)</option>
+              <option value="Hidden">Ẩn hồ sơ (Hidden)</option>
+            </select>
+          </div>
+        </div>
+
+        <div className={styles.formRow}>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Thời gian rảnh bắt đầu <span style={{ color: "#ef4444" }}>*</span></label>
+            <input
+              type="time"
+              value={profileForm.AvailableStartTime || ""}
+              onChange={(e) => setProfileForm({ ...profileForm, AvailableStartTime: e.target.value })}
+              className={styles.input}
+              required
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Thời gian rảnh kết thúc <span style={{ color: "#ef4444" }}>*</span></label>
+            <input
+              type="time"
+              value={profileForm.AvailableEndTime || ""}
+              onChange={(e) => setProfileForm({ ...profileForm, AvailableEndTime: e.target.value })}
+              className={styles.input}
+              required
+            />
+          </div>
+        </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Phong cách chơi (Play Style)</label>
+          <input
+            type="text"
+            placeholder="Ví dụ: Thích ép trái bóng, tấn công nhanh, bám lưới..."
+            value={profileForm.PlayStyle || ""}
+            onChange={(e) => setProfileForm({ ...profileForm, PlayStyle: e.target.value })}
+            className={styles.input}
+          />
+        </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.label}>Mục tiêu tập luyện/thi đấu (Goal)</label>
+          <input
+            type="text"
+            placeholder="Ví dụ: Tìm đối tác lên trình nhanh, giao lưu vui vẻ..."
+            value={profileForm.Goal || ""}
+            onChange={(e) => setProfileForm({ ...profileForm, Goal: e.target.value })}
+            className={styles.input}
+          />
+        </div>
+
+        <div style={{ marginTop: "1.5rem" }}>
+          <button type="submit" className={styles.primaryBtn} disabled={loading}>
+            {loading ? "Đang lưu..." : "Cập nhật hồ sơ"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}

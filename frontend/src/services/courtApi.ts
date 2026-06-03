@@ -114,3 +114,14 @@ export async function generateSlots(
   });
   return response.data;
 }
+
+export async function getAvailableCourts(
+  bookingDate: string,
+  startTime: string,
+  endTime: string
+): Promise<any[]> {
+  const response = await apiClient<ApiResponse<any[]>>(
+    `/api/courts/available?bookingDate=${bookingDate}&startTime=${startTime}&endTime=${endTime}`
+  );
+  return response.data;
+}

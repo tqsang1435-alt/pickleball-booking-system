@@ -7,9 +7,11 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   clearAuth,
   getUser,
+  getToken,
 } from "@/utils/authStorage";
 
 import type { AuthUser } from "@/types/auth";
+import { getPendingInvitationCount } from "@/services/matchingApi";
 
 import styles from "./Navbar.module.css";
 
@@ -32,23 +34,48 @@ export default function Navbar() {
    * user đang login
    */
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [pendingCount, setPendingCount] = useState(0);
 
   /**
-   * đọc localStorage mỗi lần đổi route
+   * đọc localStorage mỗi lần đổi route và đồng bộ số thông báo
    */
   useEffect(() => {
     function syncUser() {
       setUser(getUser());
     }
 
+    async function fetchPendingCount() {
+      const token = getToken();
+      if (!token) {
+        setPendingCount(0);
+        return;
+      }
+      try {
+        const res = await getPendingInvitationCount(token);
+        setPendingCount(res.count);
+      } catch (err) {
+        console.error("Failed to fetch pending count", err);
+      }
+    }
+
     syncUser();
+    fetchPendingCount();
 
     window.addEventListener("storage", syncUser);
+    window.addEventListener("storage", fetchPendingCount);
     window.addEventListener("auth-change", syncUser);
+    window.addEventListener("auth-change", fetchPendingCount);
+    window.addEventListener("invitation-count-change", fetchPendingCount);
+
+    const interval = setInterval(fetchPendingCount, 15000);
 
     return () => {
       window.removeEventListener("storage", syncUser);
+      window.removeEventListener("storage", fetchPendingCount);
       window.removeEventListener("auth-change", syncUser);
+      window.removeEventListener("auth-change", fetchPendingCount);
+      window.removeEventListener("invitation-count-change", fetchPendingCount);
+      clearInterval(interval);
     };
   }, [pathname]);
 
@@ -59,6 +86,7 @@ export default function Navbar() {
     clearAuth();
 
     setUser(null);
+    setPendingCount(0);
 
     window.dispatchEvent(new Event("auth-change"));
 
@@ -80,11 +108,11 @@ export default function Navbar() {
    * role user
    */
   const role = String(
-  user?.RoleName ||
-  user?.role ||
-  user?.roles?.[0] ||
-  ""
-).toLowerCase();
+    user?.RoleName ||
+    user?.role ||
+    user?.roles?.[0] ||
+    ""
+  ).toLowerCase();
 
   let profilePath = "/profile";
 
@@ -154,6 +182,11 @@ export default function Navbar() {
                 className={active ? styles.active : ""}
               >
                 {item.label}
+                {item.href === "/matching" && pendingCount > 0 && (
+                  <span className={styles.badge}>
+                    {pendingCount > 9 ? "9+" : pendingCount}
+                  </span>
+                )}
               </Link>
             );
           })}

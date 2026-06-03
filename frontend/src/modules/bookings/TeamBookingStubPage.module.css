@@ -2,19 +2,19 @@
 
 .page {
   min-height: 100vh;
-  background: #0f0f23;
+  background: #f8fafc;
   display: flex;
   align-items: flex-start;
   justify-content: center;
   padding: 2rem 1rem;
   font-family: "Inter", "Segoe UI", sans-serif;
-  color: #f1f5f9;
+  color: #0f172a;
 }
 
 /* Stub card */
 .stubCard {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 24px;
   padding: 2.5rem;
   max-width: 760px;
@@ -23,6 +23,7 @@
   flex-direction: column;
   gap: 1.75rem;
   margin-top: 2rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
 }
 
 .stubIcon {
@@ -35,7 +36,7 @@
   font-weight: 800;
   text-align: center;
   margin: 0;
-  background: linear-gradient(135deg, #818cf8, #c084fc);
+  background: linear-gradient(135deg, #15803d, #22c55e);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -43,7 +44,7 @@
 
 .stubDesc {
   text-align: center;
-  color: #94a3b8;
+  color: #64748b;
   font-size: 0.9rem;
   line-height: 1.6;
   margin: -0.5rem 0 0;
@@ -56,7 +57,7 @@
   gap: 0.5rem;
   overflow-x: auto;
   padding: 1rem;
-  background: rgba(0, 0, 0, 0.2);
+  background: #f1f5f9;
   border-radius: 14px;
   justify-content: center;
   flex-wrap: wrap;
@@ -75,19 +76,19 @@
 }
 
 .flowDone {
-  background: rgba(34, 197, 94, 0.1);
-  border-color: rgba(34, 197, 94, 0.2);
+  background: #dcfce7;
+  border-color: #bbf7d0;
 }
 
 .flowPending {
-  background: rgba(100, 116, 139, 0.08);
-  border-color: rgba(100, 116, 139, 0.15);
+  background: #ffffff;
+  border-color: #e2e8f0;
 }
 
 .flowCurrent {
-  background: rgba(99, 102, 241, 0.12);
-  border-color: rgba(99, 102, 241, 0.3);
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+  background: #dcfce7;
+  border-color: #22c55e;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
 }
 
 .flowIcon {
@@ -97,7 +98,7 @@
 .flowLabel {
   font-size: 0.78rem;
   font-weight: 600;
-  color: #e2e8f0;
+  color: #334155;
 }
 
 .flowNote {
@@ -107,7 +108,7 @@
 }
 
 .flowArrow {
-  color: #475569;
+  color: #94a3b8;
   font-size: 1.25rem;
   flex-shrink: 0;
 }
@@ -117,8 +118,8 @@
   display: flex;
   align-items: flex-start;
   gap: 1rem;
-  background: rgba(251, 191, 36, 0.08);
-  border: 1px solid rgba(251, 191, 36, 0.2);
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
   border-radius: 14px;
   padding: 1.25rem;
 }
@@ -129,7 +130,7 @@
 }
 
 .waitingBanner strong {
-  color: #fbbf24;
+  color: #d97706;
   display: block;
   margin-bottom: 0.4rem;
   font-size: 0.95rem;
@@ -138,16 +139,16 @@
 .waitingBanner p {
   margin: 0;
   font-size: 0.82rem;
-  color: #94a3b8;
+  color: #64748b;
   line-height: 1.5;
 }
 
 .waitingBanner code {
-  background: rgba(0, 0, 0, 0.3);
+  background: #e2e8f0;
   padding: 0.1rem 0.4rem;
   border-radius: 4px;
   font-size: 0.8rem;
-  color: #a5b4fc;
+  color: #374151;
 }
 
 /* BR list */
@@ -159,7 +160,7 @@
 
 .brList h3 {
   font-size: 0.875rem;
-  color: #94a3b8;
+  color: #475569;
   margin: 0 0 0.25rem;
   font-weight: 600;
 }
@@ -170,14 +171,15 @@
   gap: 0.75rem;
   font-size: 0.82rem;
   padding: 0.5rem 0.875rem;
-  background: rgba(255, 255, 255, 0.03);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  color: #94a3b8;
+  color: #475569;
 }
 
 .brId {
-  background: rgba(99, 102, 241, 0.15);
-  color: #818cf8;
+  background: #dcfce7;
+  color: #15803d;
   font-size: 0.72rem;
   font-weight: 700;
   padding: 0.2rem 0.5rem;
@@ -189,7 +191,7 @@
 .brStatus {
   margin-left: auto;
   font-size: 0.75rem;
-  color: #f59e0b;
+  color: #d97706;
   white-space: nowrap;
 }
 
@@ -202,9 +204,9 @@
 
 .btnBack {
   flex: 1;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #94a3b8;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
   padding: 0.75rem 1.25rem;
   border-radius: 12px;
   font-size: 0.9rem;
@@ -216,13 +218,13 @@
 }
 
 .btnBack:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #e2e8f0;
+  background: #f8fafc;
+  color: #0f172a;
 }
 
 .btnDemo {
   flex: 1;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #22c55e, #16a34a);
   border: none;
   color: white;
   padding: 0.75rem 1.25rem;
@@ -241,13 +243,14 @@
 
 /* Form card */
 .formCard {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 24px;
   padding: 2rem;
   max-width: 540px;
   width: 100%;
   margin-top: 2rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
 }
 
 .formHeader {
@@ -258,9 +261,9 @@
 }
 
 .backBtn {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #94a3b8;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
   padding: 0.4rem 0.875rem;
   border-radius: 8px;
   font-size: 0.8rem;
@@ -271,8 +274,8 @@
 }
 
 .backBtn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #e2e8f0;
+  background: #f8fafc;
+  color: #0f172a;
 }
 
 .formTitle {
@@ -286,12 +289,12 @@
   margin: 0;
   font-size: 1.25rem;
   font-weight: 700;
-  color: #f1f5f9;
+  color: #0f172a;
 }
 
 .groupBadge {
-  background: rgba(99, 102, 241, 0.15);
-  color: #818cf8;
+  background: #dcfce7;
+  color: #15803d;
   font-size: 0.78rem;
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
@@ -302,8 +305,8 @@
   display: flex;
   align-items: center;
   gap: 0.875rem;
-  background: rgba(99, 102, 241, 0.08);
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
   border-radius: 12px;
   padding: 1rem;
   margin-bottom: 1.5rem;
@@ -316,13 +319,13 @@
 .groupInfoTitle {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #e2e8f0;
+  color: #166534;
   margin-bottom: 0.2rem;
 }
 
 .groupInfoNote {
   font-size: 0.78rem;
-  color: #64748b;
+  color: #15803d;
 }
 
 .formBody {
@@ -340,7 +343,7 @@
 .formGroup label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #cbd5e1;
+  color: #334155;
 }
 
 .formGroup label span {
@@ -348,10 +351,10 @@
 }
 
 .input {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
   border-radius: 10px;
-  color: #f1f5f9;
+  color: #0f172a;
   font-size: 0.875rem;
   padding: 0.65rem 1rem;
   font-family: inherit;
@@ -362,17 +365,18 @@
 
 .input:focus {
   outline: none;
-  border-color: rgba(99, 102, 241, 0.5);
+  border-color: #22c55e;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.15);
 }
 
 .fieldNote {
   font-size: 0.75rem;
-  color: #475569;
+  color: #64748b;
   margin: 0;
 }
 
 .fieldNote a {
-  color: #818cf8;
+  color: #22c55e;
   text-decoration: none;
 }
 
@@ -383,16 +387,16 @@
 }
 
 .errorBox {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
   border-radius: 10px;
   padding: 0.75rem 1rem;
   font-size: 0.82rem;
-  color: #fca5a5;
+  color: #ef4444;
 }
 
 .rules {
-  background: rgba(0, 0, 0, 0.2);
+  background: #f1f5f9;
   border-radius: 10px;
   padding: 0.875rem 1rem;
   display: flex;
@@ -406,7 +410,7 @@
 }
 
 .btnSubmit {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #22c55e, #16a34a);
   border: none;
   color: white;
   padding: 0.875rem;
@@ -422,18 +426,18 @@
 .btnSubmit:hover:not(:disabled) {
   opacity: 0.9;
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.35);
 }
 
 .btnSubmit:disabled {
-  opacity: 0.6;
+  background: #94a3b8;
   cursor: not-allowed;
 }
 
 /* Result cards */
 .resultCard {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 24px;
   padding: 3rem 2rem;
   max-width: 480px;
@@ -444,6 +448,7 @@
   align-items: center;
   gap: 1rem;
   margin-top: 4rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
 }
 
 .successIcon {
@@ -458,37 +463,37 @@
   margin: 0;
   font-size: 1.5rem;
   font-weight: 700;
-  color: #f1f5f9;
+  color: #0f172a;
 }
 
 .resultCard p {
   margin: 0;
-  color: #94a3b8;
+  color: #64748b;
   font-size: 0.9rem;
 }
 
 .bookingCode {
-  color: #818cf8;
+  color: #16a34a;
   font-family: monospace;
   font-size: 1.1rem;
 }
 
 .notice {
-  background: rgba(251, 191, 36, 0.08);
-  border: 1px solid rgba(251, 191, 36, 0.2);
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
   border-radius: 10px;
   padding: 0.875rem 1rem;
   font-size: 0.82rem;
-  color: #fbbf24;
+  color: #b45309;
 }
 
 .notice a {
-  color: #fde68a;
+  color: #b45309;
   text-decoration: underline;
 }
 
 .btnDone {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #22c55e, #16a34a);
   border: none;
   color: white;
   padding: 0.75rem 2rem;
@@ -504,4 +509,30 @@
 .btnDone:hover {
   opacity: 0.9;
   transform: translateY(-1px);
+}
+
+.select {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  color: #0f172a;
+  font-size: 0.875rem;
+  padding: 0.65rem 1rem;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.75rem center;
+  background-size: 1.25rem;
+  background-repeat: no-repeat;
+  padding-right: 2.5rem;
+}
+
+.select:focus {
+  outline: none;
+  border-color: #22c55e;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.15);
 }
