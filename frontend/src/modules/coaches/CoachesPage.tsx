@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { getCoaches } from "@/services/coachApi";
-import { getImageUrl } from "@/utils/image";
+import { getImageUrl, getCoachImageUrl } from "@/utils/image";
 import type { Coach } from "@/types/coach";
 import { formatCurrency } from "@/utils/formatCurrency";
 import StateBox from "@/components/common/StateBox";
@@ -159,7 +159,7 @@ export default function CoachesPage() {
             <div className={styles.list}>
               {filtered.map((coach) => (
                 <article className={styles.card} key={coach.CoachID}>
-                  <img src={getImageUrl(coach.AvatarURL)} alt={coach.FullName} />
+                  <img src={getCoachImageUrl(coach.AvatarURL)} alt={coach.FullName} />
 
                   <div className={styles.info}>
                     <h3>{coach.FullName} <span>●</span></h3>
