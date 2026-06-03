@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createTeamBooking } from "@/services/bookingApi";
+import { getAvailableCourts } from "@/services/courtApi";
 import { getToken } from "@/utils/authStorage";
 import { formatCurrency } from "@/utils/formatCurrency";
 import styles from "./TeamBookingStubPage.module.css";
@@ -27,20 +28,93 @@ export default function TeamBookingStubPage() {
   const searchParams = useSearchParams();
   const groupId = searchParams.get("groupId");
 
-  const [step, setStep] = useState<"info" | "form" | "success" | "error">("info");
+  const paramDate = searchParams.get("date") || "";
+  const paramStartTime = searchParams.get("startTime") || "";
+  const paramEndTime = searchParams.get("endTime") || "";
+
+  // Parse date if it's a Unix timestamp (seconds or milliseconds)
+  const parseDateParam = (d: string) => {
+    if (!d) return "";
+    if (/^\d+$/.test(d)) {
+      const timestamp = Number(d);
+      const dateObj = new Date(timestamp < 1000000000000 ? timestamp * 1000 : timestamp);
+      const yyyy = dateObj.getFullYear();
+      const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const dd = String(dateObj.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+    return d;
+  };
+
+  const formatTimeParam = (t: string) => {
+    if (!t) return "";
+    if (t.includes("T")) {
+      const parts = t.split("T");
+      t = parts[1];
+    }
+    return t.substring(0, 5);
+  };
+
+  const [step, setStep] = useState<"info" | "form" | "success" | "error">(
+    groupId ? "form" : "info"
+  );
   const [courtId, setCourtId] = useState("");
-  const [bookingDate, setBookingDate] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+  const [bookingDate, setBookingDate] = useState(() => parseDateParam(paramDate));
+  const [startTime, setStartTime] = useState(() => formatTimeParam(paramStartTime));
+  const [endTime, setEndTime] = useState(() => formatTimeParam(paramEndTime));
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [result, setResult] = useState<any>(null);
 
+  useEffect(() => {
+    if (paramDate) {
+      setBookingDate(parseDateParam(paramDate));
+    }
+    if (paramStartTime) {
+      setStartTime(formatTimeParam(paramStartTime));
+    }
+    if (paramEndTime) {
+      setEndTime(formatTimeParam(paramEndTime));
+    }
+  }, [paramDate, paramStartTime, paramEndTime]);
+
+  // States for available courts
+  const [courts, setCourts] = useState<any[]>([]);
+  const [loadingCourts, setLoadingCourts] = useState(false);
+  const [courtsError, setCourtsError] = useState("");
+
   // Minimum date = today
   const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" });
 
+  useEffect(() => {
+    async function fetchCourts() {
+      if (!bookingDate || !startTime || !endTime) {
+        setCourts([]);
+        setCourtId("");
+        return;
+      }
+      setLoadingCourts(true);
+      setCourtsError("");
+      setCourtId("");
+      try {
+        const data = await getAvailableCourts(bookingDate, startTime, endTime);
+        setCourts(data || []);
+      } catch (err: any) {
+        console.error(err);
+        setCourtsError("Không thể tải danh sách sân. Vui lòng thử lại.");
+      } finally {
+        setLoadingCourts(false);
+      }
+    }
+    fetchCourts();
+  }, [bookingDate, startTime, endTime]);
+
   async function handleSubmit() {
-    if (!courtId || !bookingDate || !startTime || !endTime) {
+    if (!courtId) {
+      setErrorMsg("Vui lòng chọn sân.");
+      return;
+    }
+    if (!bookingDate || !startTime || !endTime) {
       setErrorMsg("Vui lòng điền đầy đủ thông tin.");
       return;
     }
@@ -121,31 +195,22 @@ export default function TeamBookingStubPage() {
           </div>
 
           <div className={styles.brList}>
-            <h3>Business Rules cần implement:</h3>
+            <h3>Quy định & Lưu ý khi ghép nhóm:</h3>
             <div className={styles.brItem}>
-              <span className={styles.brId}>BR-90</span>
-              <span>Lời mời nhóm hết hạn sau 48 giờ</span>
-              <span className={styles.brStatus}>⏳ Pending</span>
+              <span className={styles.brId}>⏱️</span>
+              <span>Lời mời ghép cặp/thách đấu sẽ tự động hết hạn sau 48 giờ nếu không được phản hồi.</span>
             </div>
             <div className={styles.brItem}>
-              <span className={styles.brId}>BR-91</span>
-              <span>Nhóm tối đa 4 người</span>
-              <span className={styles.brStatus}>⏳ Pending</span>
+              <span className={styles.brId}>👥</span>
+              <span>Mỗi nhóm ghép tối đa 4 thành viên để đảm bảo chất lượng giao lưu thi đấu tốt nhất.</span>
             </div>
             <div className={styles.brItem}>
-              <span className={styles.brId}>BR-92</span>
-              <span>Player tối đa 3 nhóm active cùng lúc</span>
-              <span className={styles.brStatus}>⏳ Pending</span>
+              <span className={styles.brId}>📋</span>
+              <span>Mỗi người chơi có thể tham gia tối đa 3 nhóm ghép đang hoạt động cùng một thời điểm.</span>
             </div>
             <div className={styles.brItem}>
-              <span className={styles.brId}>BR-93</span>
-              <span>AI matching dựa trên trình độ, vị trí, lịch rảnh</span>
-              <span className={styles.brStatus}>⏳ Pending</span>
-            </div>
-            <div className={styles.brItem}>
-              <span className={styles.brId}>BR-94</span>
-              <span>Cần hồ sơ đầy đủ mới dùng tính năng Matching</span>
-              <span className={styles.brStatus}>⏳ Pending</span>
+              <span className={styles.brId}>🤖</span>
+              <span>Hệ thống ghép cặp AI tự động tìm kiếm đối tác phù hợp nhất dựa trên vị trí, giờ chơi rảnh và trình độ kỹ năng của bạn.</span>
             </div>
           </div>
 
@@ -203,16 +268,35 @@ export default function TeamBookingStubPage() {
             )}
 
             <div className={styles.formGroup}>
-              <label>Court ID <span>*</span></label>
-              <input
-                type="number"
-                placeholder="Nhập ID sân pickleball..."
-                className={styles.input}
-                value={courtId}
-                onChange={(e) => setCourtId(e.target.value)}
-              />
+              <label>Chọn sân <span>*</span></label>
+              {loadingCourts ? (
+                <div style={{ color: "#22c55e", fontSize: "0.875rem", padding: "0.5rem 0" }}>
+                  ⏳ Đang tải danh sách sân khả dụng...
+                </div>
+              ) : courtsError ? (
+                <div style={{ color: "#ef4444", fontSize: "0.875rem", padding: "0.5rem 0" }}>
+                  ⚠️ {courtsError}
+                </div>
+              ) : courts.length === 0 ? (
+                <div style={{ color: "#ef4444", fontSize: "0.875rem", padding: "0.5rem 0", fontWeight: 500 }}>
+                  Hiện chưa có sân khả dụng cho khung giờ này.
+                </div>
+              ) : (
+                <select
+                  className={styles.select}
+                  value={courtId}
+                  onChange={(e) => setCourtId(e.target.value)}
+                >
+                  <option value="">-- Chọn sân pickleball --</option>
+                  {courts.map((court) => (
+                    <option key={court.CourtID} value={court.CourtID}>
+                      [{court.CourtCode || "N/A"}] {court.CourtName} - {court.Location || "Chưa rõ vị trí"} - {formatCurrency(court.Price ?? court.PricePerHour)}/giờ
+                    </option>
+                  ))}
+                </select>
+              )}
               <p className={styles.fieldNote}>
-                💡 Xem danh sách sân tại <a href="/courts">trang sân</a>
+                💡 Hệ thống tự động lọc các sân còn trống vào khung giờ đã chọn.
               </p>
             </div>
 
@@ -251,9 +335,9 @@ export default function TeamBookingStubPage() {
             {errorMsg && <div className={styles.errorBox}>{errorMsg}</div>}
 
             <div className={styles.rules}>
-              <div className={styles.ruleItem}>⏱️ BR-25: Giữ slot 10 phút, thanh toán trong thời gian đó</div>
-              <div className={styles.ruleItem}>🔒 BR-28: Transaction locking chống double booking</div>
-              <div className={styles.ruleItem}>📋 BR-40: Tối đa 3 booking đang chờ thanh toán cùng lúc</div>
+              <div className={styles.ruleItem}>⏱️ Hệ thống sẽ giữ sân trong 10 phút sau khi xác nhận.</div>
+              <div className={styles.ruleItem}>🔒 Lịch đặt được kiểm tra tự động để tránh trùng sân.</div>
+              <div className={styles.ruleItem}>📋 Vui lòng hoàn tất thanh toán trong thời gian quy định.</div>
             </div>
 
             <button

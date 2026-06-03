@@ -1,0 +1,342 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import * as api from "@/services/matchingApi";
+import styles from "./MatchingLayout.module.css";
+
+interface InvitationsTabProps {
+  token: string;
+  onActionSuccess: () => void;
+  showToast: (msg: string, type?: "success" | "error") => void;
+}
+
+export default function InvitationsTab({ token, onActionSuccess, showToast }: InvitationsTabProps) {
+  const router = useRouter();
+  const [subTab, setSubTab] = useState<"received" | "sent">("received");
+  const [received, setReceived] = useState<api.PlayInvitation[]>([]);
+  const [sent, setSent] = useState<api.PlayInvitation[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const loadInvitations = async () => {
+    try {
+      setLoading(true);
+      if (subTab === "received") {
+        const data = await api.getReceivedInvitations(token);
+        setReceived(data || []);
+      } else {
+        const data = await api.getSentInvitations(token);
+        setSent(data || []);
+      }
+    } catch (err: any) {
+      showToast(err.message || "Không thể tải danh sách lời mời", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadInvitations();
+  }, [token, subTab]);
+
+  const handleAccept = async (invitationId: number) => {
+    try {
+      await api.acceptInvitation(token, invitationId);
+      showToast("Chấp nhận lời mời thành công!");
+      window.dispatchEvent(new Event("invitation-count-change"));
+      onActionSuccess();
+      loadInvitations();
+    } catch (err: any) {
+      showToast(err.message || "Chấp nhận lời mời thất bại", "error");
+    }
+  };
+
+  const handleReject = async (invitationId: number) => {
+    try {
+      await api.rejectInvitation(token, invitationId);
+      showToast("Đã từ chối lời mời.");
+      window.dispatchEvent(new Event("invitation-count-change"));
+      onActionSuccess();
+      loadInvitations();
+    } catch (err: any) {
+      showToast(err.message || "Từ chối lời mời thất bại", "error");
+    }
+  };
+
+  function getStatusLabel(status: string) {
+    switch (status) {
+      case "Pending":
+        return <span style={{ color: "#d97706", fontWeight: "600" }}>Chờ xử lý</span>;
+      case "Accepted":
+        return <span style={{ color: "#16a34a", fontWeight: "600" }}>Đã đồng ý</span>;
+      case "Rejected":
+        return <span style={{ color: "#dc2626", fontWeight: "600" }}>Đã từ chối</span>;
+      case "Cancelled":
+        return <span style={{ color: "#94a3b8", fontWeight: "600" }}>Đã hủy</span>;
+      case "Expired":
+        return <span style={{ color: "#94a3b8", fontWeight: "600" }}>Hết hạn</span>;
+      default:
+        return <span>{status}</span>;
+    }
+  }
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: "1rem", borderBottom: "2px solid #f1f5f9", marginBottom: "1.5rem" }}>
+        <button
+          onClick={() => setSubTab("received")}
+          style={{
+            padding: "0.75rem 1rem",
+            background: "none",
+            border: "none",
+            borderBottom: subTab === "received" ? "2px solid #22c55e" : "none",
+            color: subTab === "received" ? "#16a34a" : "#64748b",
+            fontWeight: subTab === "received" ? "600" : "500",
+            cursor: "pointer",
+            fontSize: "15px",
+          }}
+        >
+          Lời mời đã nhận
+        </button>
+        <button
+          onClick={() => setSubTab("sent")}
+          style={{
+            padding: "0.75rem 1rem",
+            background: "none",
+            border: "none",
+            borderBottom: subTab === "sent" ? "2px solid #22c55e" : "none",
+            color: subTab === "sent" ? "#16a34a" : "#64748b",
+            fontWeight: subTab === "sent" ? "600" : "500",
+            cursor: "pointer",
+            fontSize: "15px",
+          }}
+        >
+          Lời mời đã gửi
+        </button>
+      </div>
+
+      {loading ? (
+        <div className={styles.loadingInner}>Đang tải danh sách lời mời...</div>
+      ) : subTab === "received" ? (
+        received.length === 0 ? (
+          <div className={styles.emptyState}>Hộp thư của bạn trống. Không có lời mời nhận được nào.</div>
+        ) : (
+          <div className={styles.gridList}>
+            {received.map((inv) => (
+              <div className={styles.card} key={inv.InvitationID}>
+                <div>
+                  {inv.InvitationType === "InviteOpponent" && inv.Status === "Accepted" && (
+                    <div style={{
+                      backgroundColor: "#dcfce7",
+                      color: "#15803d",
+                      padding: "0.5rem",
+                      borderRadius: "6px",
+                      fontSize: "13px",
+                      fontWeight: "bold",
+                      marginBottom: "0.75rem",
+                      textAlign: "center"
+                    }}>
+                      📅 Lịch thách đấu đã chấp nhận
+                    </div>
+                  )}
+                  <div className={styles.cardHeader}>
+                    <div className={styles.avatarWrap}>
+                      {inv.SenderAvatar ? (
+                        <img src={inv.SenderAvatar} alt={inv.SenderName} className={styles.avatar} />
+                      ) : (
+                        <div className={styles.avatarPlaceholder}>
+                          {inv.SenderName ? inv.SenderName.charAt(0).toUpperCase() : "S"}
+                        </div>
+                      )}
+                      <div>
+                        <h4 className={styles.cardName}>{inv.SenderName || inv.SenderEmail}</h4>
+                        <span className={styles.cardTag}>
+                          {inv.InvitationType === "InviteToPlay" ? "Ghép đôi đồng đội" : "Thách đấu nhóm"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.cardBody} style={{ backgroundColor: "#f8fafc", padding: "0.75rem", borderRadius: "8px", marginBottom: "0.5rem" }}>
+                    <p style={{ margin: 0, fontSize: "13px", fontStyle: "italic", color: "#475569" }}>
+                      "{inv.Message || "Không có lời nhắn."}"
+                    </p>
+                  </div>
+                  
+                  {inv.InvitationType === "InviteOpponent" && (
+                    <div style={{ fontSize: "13px", color: "#475569", display: "flex", flexDirection: "column", gap: "0.35rem", padding: "0.5rem", backgroundColor: "#f1f5f9", borderRadius: "6px", marginBottom: "0.5rem" }}>
+                      {inv.GroupName && (
+                        <div>Nhóm gửi thách đấu: <strong style={{ color: "#0f172a" }}>{inv.GroupName}</strong></div>
+                      )}
+                      <div>Nhóm nhận thách đấu: <strong style={{ color: "#0f172a" }}>{inv.ReceiverGroupName || inv.ReceiverName || "Nhóm đối thủ"}</strong></div>
+                      {inv.ChallengeDate && (
+                        <div>Ngày thi đấu đề xuất: <strong style={{ color: "#0f172a" }}>{inv.ChallengeDate}</strong></div>
+                      )}
+                      {inv.ChallengeStartTime && inv.ChallengeEndTime && (
+                        <div>Giờ thi đấu: <strong style={{ color: "#0f172a" }}>{inv.ChallengeStartTime} - {inv.ChallengeEndTime}</strong></div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {inv.Status === "Pending" ? (
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <button
+                        onClick={() => handleAccept(inv.InvitationID)}
+                        className={styles.primaryBtn}
+                        style={{ flex: 1 }}
+                      >
+                        Đồng ý
+                      </button>
+                      <button
+                        onClick={() => handleReject(inv.InvitationID)}
+                        className={styles.secondaryBtn}
+                        style={{ flex: 1, color: "#ef4444", borderColor: "#fecaca" }}
+                      >
+                        Từ chối
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ textAlign: "center", width: "100%", padding: "0.5rem 0", fontSize: "14px" }}>
+                        Trạng thái: {getStatusLabel(inv.Status)}
+                      </div>
+                      {inv.InvitationType === "InviteOpponent" && inv.Status === "Accepted" && (
+                        <div style={{ width: "100%" }}>
+                          {inv.ChallengeDate && inv.ChallengeStartTime && inv.ChallengeEndTime && inv.GroupID ? (
+                            <button
+                              onClick={() => {
+                                router.push(`/bookings/team?groupId=${inv.GroupID}&date=${encodeURIComponent(inv.ChallengeDate || "")}&startTime=${encodeURIComponent(inv.ChallengeStartTime || "")}&endTime=${encodeURIComponent(inv.ChallengeEndTime || "")}`);
+                              }}
+                              className={styles.primaryBtn}
+                              style={{ width: "100%", padding: "0.625rem 1.25rem", fontSize: "14px" }}
+                            >
+                              Đặt sân cho trận đấu
+                            </button>
+                          ) : (
+                            <div style={{
+                              fontSize: "12px",
+                              color: "#b45309",
+                              backgroundColor: "#fffbeb",
+                              padding: "0.5rem",
+                              borderRadius: "6px",
+                              textAlign: "center",
+                              border: "1px solid #fef3c7"
+                            }}>
+                              ⚠️ Lời mời này chưa có lịch thi đấu hợp lệ.
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      ) : (
+        sent.length === 0 ? (
+          <div className={styles.emptyState}>Bạn chưa gửi bất kỳ lời mời ghép cặp nào.</div>
+        ) : (
+          <div className={styles.gridList}>
+            {sent.map((inv) => (
+              <div className={styles.card} key={inv.InvitationID}>
+                <div>
+                  {inv.InvitationType === "InviteOpponent" && inv.Status === "Accepted" && (
+                    <div style={{
+                      backgroundColor: "#dcfce7",
+                      color: "#15803d",
+                      padding: "0.5rem",
+                      borderRadius: "6px",
+                      fontSize: "13px",
+                      fontWeight: "bold",
+                      marginBottom: "0.75rem",
+                      textAlign: "center"
+                    }}>
+                      📅 Lịch thách đấu đã chấp nhận
+                    </div>
+                  )}
+                  <div className={styles.cardHeader}>
+                    <div className={styles.avatarWrap}>
+                      {inv.ReceiverAvatar ? (
+                        <img src={inv.ReceiverAvatar} alt={inv.ReceiverName} className={styles.avatar} />
+                      ) : (
+                        <div className={styles.avatarPlaceholder}>
+                          {inv.ReceiverName ? inv.ReceiverName.charAt(0).toUpperCase() : "R"}
+                        </div>
+                      )}
+                      <div>
+                        <h4 className={styles.cardName}>{inv.ReceiverName || inv.ReceiverEmail}</h4>
+                        <span className={styles.cardTag}>
+                          {inv.InvitationType === "InviteToPlay" ? "Ghép đôi đồng đội" : "Thách đấu nhóm"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.cardBody} style={{ backgroundColor: "#f8fafc", padding: "0.75rem", borderRadius: "8px", marginBottom: "0.5rem" }}>
+                    <p style={{ margin: 0, fontSize: "13px", fontStyle: "italic", color: "#475569" }}>
+                      "{inv.Message || "Không có lời nhắn."}"
+                    </p>
+                  </div>
+
+                  {inv.InvitationType === "InviteOpponent" && (
+                    <div style={{ fontSize: "13px", color: "#475569", display: "flex", flexDirection: "column", gap: "0.35rem", padding: "0.5rem", backgroundColor: "#f1f5f9", borderRadius: "6px", marginBottom: "0.5rem" }}>
+                      {inv.GroupName && (
+                        <div>Nhóm gửi thách đấu: <strong style={{ color: "#0f172a" }}>{inv.GroupName}</strong></div>
+                      )}
+                      <div>Nhóm nhận thách đấu: <strong style={{ color: "#0f172a" }}>{inv.ReceiverGroupName || inv.ReceiverName || "Nhóm đối thủ"}</strong></div>
+                      {inv.ChallengeDate && (
+                        <div>Ngày thi đấu đề xuất: <strong style={{ color: "#0f172a" }}>{inv.ChallengeDate}</strong></div>
+                      )}
+                      {inv.ChallengeStartTime && inv.ChallengeEndTime && (
+                        <div>Giờ thi đấu: <strong style={{ color: "#0f172a" }}>{inv.ChallengeStartTime} - {inv.ChallengeEndTime}</strong></div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ marginTop: "1.25rem", display: "flex", flexDirection: "column", gap: "0.5rem", borderTop: "1px dashed #e2e8f0", paddingTop: "0.75rem" }}>
+                  <div style={{ textAlign: "center" }}>
+                    <span style={{ fontSize: "13px", color: "#64748b" }}>
+                      Trạng thái: {getStatusLabel(inv.Status)}
+                    </span>
+                  </div>
+                  {inv.InvitationType === "InviteOpponent" && inv.Status === "Accepted" && (
+                    <div style={{ width: "100%" }}>
+                      {inv.ChallengeDate && inv.ChallengeStartTime && inv.ChallengeEndTime && inv.GroupID ? (
+                        <button
+                          onClick={() => {
+                            router.push(`/bookings/team?groupId=${inv.GroupID}&date=${encodeURIComponent(inv.ChallengeDate || "")}&startTime=${encodeURIComponent(inv.ChallengeStartTime || "")}&endTime=${encodeURIComponent(inv.ChallengeEndTime || "")}`);
+                          }}
+                          className={styles.primaryBtn}
+                          style={{ width: "100%", padding: "0.625rem 1.25rem", fontSize: "14px" }}
+                        >
+                          Đặt sân cho trận đấu
+                        </button>
+                      ) : (
+                        <div style={{
+                          fontSize: "12px",
+                          color: "#b45309",
+                          backgroundColor: "#fffbeb",
+                          padding: "0.5rem",
+                          borderRadius: "6px",
+                          textAlign: "center",
+                          border: "1px solid #fef3c7"
+                        }}>
+                          ⚠️ Lời mời này chưa có lịch thi đấu hợp lệ.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      )}
+    </div>
+  );
+}

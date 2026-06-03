@@ -46,8 +46,6 @@ export default function Footer() {
           <p>⌖ Đà Nẵng, Việt Nam</p>
         </div>
       </div>
-
-      <p className={styles.copy}>© 2026 PickleClub. All rights reserved.</p>
     </footer>
   );
 }
