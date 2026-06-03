@@ -3,46 +3,48 @@ import styles from "./HomePage.module.css";
 
 const actions = [
   {
-    icon: "▱",
+    icon: "🎾",
     title: "Đặt sân Pickleball",
     desc: "Tìm sân trống theo thời gian thực và đặt ngay.",
     href: "/courts",
-    cta: "Tìm sân ngay",
   },
   {
-    icon: "♙",
+    icon: "👨‍🏫",
     title: "Đặt Coach riêng",
-    desc: "Chọn Coach phù hợp với trình độ và mục tiêu.",
+    desc: "Chọn Coach phù hợp với trình độ và mục tiêu của bạn.",
     href: "/coaches",
-    cta: "Xem Coach",
   },
   {
-    icon: "⚭",
-    title: "Combo Sân + Coach",
+    icon: "🤝",
+    title: "Combo sân + Coach",
     desc: "Tiết kiệm hơn khi đặt sân kèm Coach.",
     href: "/combo",
-    cta: "Đặt combo",
   },
   {
-    icon: "☷",
+    icon: "👥",
     title: "Tìm người chơi",
     desc: "Kết nối và tìm người chơi cùng trình độ.",
     href: "/matching",
-    cta: "Tìm ngay",
   },
 ];
 
 export default function QuickActions() {
   return (
-    <section className="container">
+    <section className={styles.actionSection}>
       <div className={styles.actionGrid}>
         {actions.map((action) => (
-          <Link href={action.href} className={styles.actionCard} key={action.title}>
-            <div className={styles.actionIcon}>{action.icon}</div>
-            <div>
+          <Link
+            key={action.title}
+            href={action.href}
+            className={styles.actionCard}
+          >
+            <div className={styles.actionIcon}>
+              {action.icon}
+            </div>
+
+            <div className={styles.actionContent}>
               <h3>{action.title}</h3>
               <p>{action.desc}</p>
-              <span>{action.cta} →</span>
             </div>
           </Link>
         ))}
