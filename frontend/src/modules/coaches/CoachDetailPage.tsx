@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getCoachById, getCoachSchedulesPublic } from "@/services/coachApi";
-import { getImageUrl } from "@/utils/image";
+import { getImageUrl, getCoachImageUrl } from "@/utils/image";
 import type { Coach, CoachSchedule } from "@/types/coach";
 import { formatCurrency } from "@/utils/formatCurrency";
 import StateBox from "@/components/common/StateBox";
@@ -118,7 +118,7 @@ export default function CoachDetailPage() {
         <aside className={styles.sidebar}>
           <div className={styles.avatarWrap}>
             <img
-              src={getImageUrl(coach.AvatarURL)}
+              src={getCoachImageUrl(coach.AvatarURL)}
               alt={coach.FullName}
               className={styles.avatar}
             />
