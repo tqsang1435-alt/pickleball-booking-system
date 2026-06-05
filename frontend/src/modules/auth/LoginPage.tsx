@@ -4,12 +4,22 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GoogleLogin } from "@react-oauth/google";
+import { FiLock, FiUser } from "react-icons/fi";
 
 import { googleLoginApi, loginApi } from "@/services/authApi";
-import { saveAuth, getDashboardPath } from "@/utils/authStorage";
+import { getDashboardPath, saveAuth } from "@/utils/authStorage";
 import { isValidEmail } from "@/utils/validators";
 
 import styles from "./AuthPage.module.css";
+
+type LoginResponse = {
+  token?: string;
+  user?: any;
+  data?: {
+    token?: string;
+    user?: any;
+  };
+};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,42 +30,46 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  function handleLoginSuccess(response: LoginResponse) {
+    const token = response.token || response.data?.token;
+    const user = response.user || response.data?.user;
+
+    if (!token || !user) {
+      throw new Error("Backend chưa trả token hoặc user.");
+    }
+
+    saveAuth(token, user);
+
+    const role = user?.roles?.[0] || user?.role || user?.RoleName || "";
+
+    window.dispatchEvent(new Event("auth-change"));
+    router.push(getDashboardPath(role));
+    router.refresh();
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    if (!isValidEmail(email)) {
+      setError("Email không hợp lệ");
+      return;
+    }
+
+    if (!password.trim()) {
+      setError("Vui lòng nhập mật khẩu");
+      return;
+    }
+
     try {
+      setLoading(true);
       setError("");
 
-      if (!isValidEmail(email)) {
-        setError("Email không hợp lệ");
-        return;
-      }
-
-      if (!password) {
-        setError("Vui lòng nhập mật khẩu");
-        return;
-      }
-
-      setLoading(true);
-
-      const response: any = await loginApi({
-        email,
+      const response = await loginApi({
+        email: email.trim(),
         password,
       });
 
-      const token = response.token || response.data?.token;
-      const user = response.user || response.data?.user;
-
-      if (!token || !user) {
-        throw new Error("Backend chưa trả token hoặc user.");
-      }
-
-      saveAuth(token, user);
-      window.dispatchEvent(new Event("auth-change"));
-
-      const role = user?.roles?.[0] || user?.role || user?.RoleName || "";
-      router.push(getDashboardPath(role));
-      router.refresh();
+      handleLoginSuccess(response as LoginResponse);
     } catch (error) {
       setError(error instanceof Error ? error.message : "Đăng nhập thất bại");
     } finally {
@@ -64,33 +78,18 @@ export default function LoginPage() {
   }
 
   async function handleGoogleLogin(credential?: string) {
+    if (!credential) {
+      setError("Không nhận được Google credential");
+      return;
+    }
+
     try {
+      setLoading(true);
       setError("");
 
-      if (!credential) {
-        setError("Không nhận được Google credential");
-        return;
-      }
+      const response = await googleLoginApi({ credential });
 
-      setLoading(true);
-
-      const response: any = await googleLoginApi({
-  credential,
-});
-
-      const token = response.token || response.data?.token;
-      const user = response.user || response.data?.user;
-
-      if (!token || !user) {
-        throw new Error("Backend chưa trả token hoặc user.");
-      }
-
-      saveAuth(token, user);
-      window.dispatchEvent(new Event("auth-change"));
-
-      const role = user?.roles?.[0] || user?.role || user?.RoleName || "";
-      router.push(getDashboardPath(role));
-      router.refresh();
+      handleLoginSuccess(response as LoginResponse);
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "Đăng nhập Google thất bại"
@@ -103,36 +102,44 @@ export default function LoginPage() {
   return (
     <main className={styles.page}>
       <form className={styles.card} onSubmit={handleSubmit}>
-        <div className={styles.avatar}>👤</div>
+        <div className={styles.avatar}>
+          <FiUser size={32} />
+        </div>
+
+        <h1 className={styles.title}>Đăng nhập</h1>
+
+        <p className={styles.subtitle}>
+          Chào mừng bạn quay lại Pickle Club
+        </p>
 
         {error && <div className={styles.error}>{error}</div>}
 
         <div className={styles.inputGroup}>
-          <span>👤</span>
+          <FiUser size={19} />
           <input
             type="email"
             placeholder="Email"
             value={email}
             disabled={loading}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(event) => setEmail(event.target.value)}
           />
         </div>
 
         <div className={styles.inputGroup}>
-          <span>🔒</span>
+          <FiLock size={19} />
           <input
             type="password"
             placeholder="Mật khẩu"
             value={password}
             disabled={loading}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(event) => setPassword(event.target.value)}
           />
         </div>
 
         <div className={styles.options}>
-          <label>
+          <label className={styles.remember}>
             <input type="checkbox" disabled={loading} />
-            Remember me
+            <span>Remember me</span>
           </label>
 
           <button
@@ -146,7 +153,7 @@ export default function LoginPage() {
         </div>
 
         <button type="submit" className={styles.loginBtn} disabled={loading}>
-          {loading ? "LOADING..." : "LOGIN"}
+          {loading ? "ĐANG XỬ LÝ..." : "LOGIN"}
         </button>
 
         <div className={styles.googleDivider}>
@@ -155,12 +162,10 @@ export default function LoginPage() {
 
         <div className={styles.googleLogin}>
           <GoogleLogin
-            onSuccess={(credentialResponse) => {
-              handleGoogleLogin(credentialResponse.credential);
-            }}
-            onError={() => {
-              setError("Đăng nhập Google thất bại");
-            }}
+            onSuccess={(credentialResponse) =>
+              handleGoogleLogin(credentialResponse.credential)
+            }
+            onError={() => setError("Đăng nhập Google thất bại")}
           />
         </div>
 

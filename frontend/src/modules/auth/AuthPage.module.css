@@ -1,12 +1,16 @@
 .page {
   min-height: 100vh;
-  padding: 40px 7%;
+  padding: 24px 7%;
   display: flex;
   align-items: center;
   justify-content: center;
   background:
-    linear-gradient(90deg, rgba(4, 61, 39, 0.55), rgba(235, 255, 244, 0.92)),
-     url("/images/courts/san3.png") left center / cover no-repeat;
+    linear-gradient(
+      90deg,
+      rgba(4, 61, 39, 0.58),
+      rgba(235, 255, 244, 0.9)
+    ),
+    url("/images/courts/c8.jpg") left center / cover no-repeat;
   position: relative;
   overflow: hidden;
 }
@@ -14,101 +18,136 @@
 .page::after {
   content: "";
   position: absolute;
-  right: -120px;
+  right: -140px;
   bottom: -160px;
-  width: 520px;
-  height: 520px;
+  width: 480px;
+  height: 480px;
   border-radius: 50%;
-  background: rgba(49, 190, 88, 0.12);
-  filter: blur(20px);
+  background: rgba(49, 190, 88, 0.13);
+  filter: blur(24px);
 }
 
 .card {
   position: relative;
   z-index: 2;
-  width: min(520px, 100%);
-  padding: 54px 42px 38px;
-  border-radius: 32px;
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.92);
-  box-shadow: 0 30px 80px rgba(18, 77, 40, 0.22);
-  backdrop-filter: blur(24px);
+  width: min(390px, 100%);
+  padding: 34px 32px 30px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.94);
+  box-shadow: 0 24px 60px rgba(18, 77, 40, 0.18);
+  backdrop-filter: blur(18px);
 }
 
 .avatar {
-  width: 84px;
-  height: 84px;
-  margin: 0 auto 22px;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 18px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font-size: 38px;
-  color: #fff;
-  background: linear-gradient(135deg, #28b62f, #087c27);
-  box-shadow: 0 18px 36px rgba(19, 142, 42, 0.34);
+  color: #ffffff;
+  background: linear-gradient(135deg, #18a83b, #087c27);
+  box-shadow: 0 18px 38px rgba(24, 168, 59, 0.34);
 }
 
+.avatar svg {
+  width: 32px;
+  height: 32px;
+}
+
+.title,
 .card h1 {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   text-align: center;
-  font-size: 34px;
-  font-weight: 800;
-  color: #111827;
+  font-size: 28px;
+  font-weight: 900;
+  color: #12351b;
+  letter-spacing: -0.03em;
 }
 
+.subtitle,
 .card > p {
-  margin: 0 0 28px;
+  margin: 0 0 22px;
   text-align: center;
-  color: #6b7280;
+  color: #66756b;
+  font-size: 14px;
   font-weight: 500;
 }
 
 .error {
   margin-bottom: 16px;
-  padding: 12px 14px;
-  border-radius: 14px;
+  padding: 11px 13px;
+  border-radius: 12px;
   background: #fff1f2;
   color: #be123c;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .inputGroup {
-  height: 72px;
-  margin-bottom: 16px;
-  padding: 0 18px;
+  height: 52px;
+  margin-bottom: 14px;
+  padding: 0 16px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  border-radius: 18px;
+  gap: 12px;
+  border-radius: 15px;
   background: #ffffff;
-  border: 1px solid #e8efe9;
-  box-shadow: 0 12px 30px rgba(15, 75, 38, 0.08);
+  border: 1px solid rgba(31, 77, 41, 0.12);
+  box-shadow: 0 10px 28px rgba(34, 91, 43, 0.08);
+  transition: 0.25s ease;
+}
+
+.inputGroup:focus-within {
+  border-color: #1f8d35;
+  box-shadow: 0 0 0 4px rgba(31, 141, 53, 0.12);
 }
 
 .inputGroup span {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  background: #eaffee;
-  color: #159334;
+  width: auto;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: #1f7a35;
+}
+
+.inputGroup svg {
+  width: 19px;
+  height: 19px;
+  color: #1f7a35;
+  flex-shrink: 0;
+}
+
+.inputIcon {
+  width: 19px;
+  height: 19px;
+  color: #1f7a35;
+  flex-shrink: 0;
 }
 
 .inputGroup input {
   flex: 1;
+  width: 100%;
+  min-width: 0;
   border: 0;
   outline: 0;
   background: transparent;
-  font-size: 15px;
-  font-weight: 650;
-  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+  color: #14221a;
 }
 
 .inputGroup input::placeholder {
-  color: #9ca3af;
+  color: #8d9b92;
   font-weight: 500;
+}
+
+.inputGroup input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .options {
@@ -116,51 +155,76 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #6b7280;
-  font-size: 14px;
+  gap: 12px;
+  color: #334155;
+  font-size: 13px;
   font-weight: 600;
 }
 
-.options label {
+.options label,
+.remember {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.options input[type="checkbox"],
+.remember input {
+  width: 15px;
+  height: 15px;
+  accent-color: #16802b;
+  cursor: pointer;
 }
 
 .forgot {
   border: 0;
   background: transparent;
-  color: #12802a;
+  color: #087c27;
+  font-size: 13px;
   font-weight: 800;
   cursor: pointer;
+  white-space: nowrap;
+}
+
+.forgot:hover {
+  text-decoration: underline;
 }
 
 .loginBtn {
   width: 100%;
-  height: 58px;
+  height: 52px;
   border: 0;
-  border-radius: 18px;
+  border-radius: 15px;
   color: #ffffff;
-  font-size: 17px;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 900;
   cursor: pointer;
-  background: linear-gradient(135deg, #2bc536, #087c27);
-  box-shadow: 0 18px 36px rgba(13, 126, 39, 0.28);
+  background: linear-gradient(135deg, #20bd3a, #087c27);
+  box-shadow: 0 16px 32px rgba(24, 168, 59, 0.28);
+  transition: 0.25s ease;
 }
 
-.loginBtn:disabled {
-  opacity: 0.65;
+.loginBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px rgba(24, 168, 59, 0.34);
+}
+
+.loginBtn:disabled,
+.forgot:disabled {
+  opacity: 0.7;
   cursor: not-allowed;
+  transform: none;
 }
 
 .googleDivider {
-  margin: 24px 0 14px;
+  margin: 22px 0 14px;
   display: flex;
   align-items: center;
   gap: 14px;
-  color: #9ca3af;
-  font-size: 14px;
-  font-weight: 600;
+  color: #9aa49c;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .googleDivider::before,
@@ -168,7 +232,7 @@
   content: "";
   flex: 1;
   height: 1px;
-  background: #e5e7eb;
+  background: rgba(148, 163, 184, 0.28);
 }
 
 .googleLogin {
@@ -178,40 +242,23 @@
 
 .register,
 .switch {
-  margin: 24px 0 0;
+  margin: 14px 0 0;
   text-align: center;
-  color: #6b7280;
-  font-size: 15px;
+  color: #647067;
+  font-size: 14px;
   font-weight: 600;
 }
 
 .register a,
 .switch a {
-  color: #11922f;
-  font-weight: 800;
+  color: #087c27;
+  font-weight: 900;
   text-decoration: none;
 }
 
-@media (max-width: 768px) {
-  .page {
-    padding: 28px 18px;
-    background:
-      linear-gradient(rgba(238, 255, 245, 0.92), rgba(238, 255, 245, 0.92)),
-      url("/images/courts/san3.png") center / cover no-repeat;
-  }
-
-  .card {
-    padding: 44px 24px 32px;
-    border-radius: 26px;
-  }
-
-  .card h1 {
-    font-size: 28px;
-  }
-
-  .inputGroup {
-    height: 64px;
-  }
+.register a:hover,
+.switch a:hover {
+  text-decoration: underline;
 }
 
 .card label {
@@ -224,15 +271,15 @@
 
 .card label input {
   width: 100%;
-  height: 54px;
+  height: 52px;
   margin-top: 8px;
-  padding: 0 16px;
-  border-radius: 16px;
+  padding: 0 15px;
+  border-radius: 15px;
   border: 1px solid #e4ece5;
   outline: none;
   background: #ffffff;
   color: #111827;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   box-shadow: 0 10px 24px rgba(15, 75, 38, 0.06);
 }
@@ -244,16 +291,16 @@
 
 .card > button[type="submit"] {
   width: 100%;
-  height: 56px;
+  height: 52px;
   margin-top: 8px;
   border: 0;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #2bc536, #087c27);
+  border-radius: 15px;
+  background: linear-gradient(135deg, #20bd3a, #087c27);
   color: #ffffff;
-  font-size: 16px;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 900;
   cursor: pointer;
-  box-shadow: 0 18px 36px rgba(13, 126, 39, 0.28);
+  box-shadow: 0 16px 32px rgba(13, 126, 39, 0.26);
 }
 
 .card > button[type="submit"]:disabled {
@@ -261,9 +308,50 @@
   cursor: not-allowed;
 }
 
-.options label input[type="checkbox"] {
-  flex: 0 0 16px;
-  width: 16px !important;
-  height: 16px !important;
-  padding: 0 !important;
+@media (max-width: 768px) {
+  .page {
+    padding: 24px 18px;
+    background:
+      linear-gradient(rgba(238, 255, 245, 0.92), rgba(238, 255, 245, 0.92)),
+      url("/images/courts/c10.jpg") center / cover no-repeat;
+  }
+
+  .card {
+    width: min(380px, 100%);
+    padding: 30px 22px 28px;
+    border-radius: 24px;
+  }
+
+  .title,
+  .card h1 {
+    font-size: 25px;
+  }
+
+  .avatar {
+    width: 66px;
+    height: 66px;
+  }
+
+  .avatar svg {
+    width: 29px;
+    height: 29px;
+  }
+
+  .inputGroup {
+    height: 50px;
+  }
+
+  .options {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+.avatar {
+  color: #ffffff;
+}
+
+.inputGroup svg {
+  color: #1f7a35;
+  flex-shrink: 0;
 }

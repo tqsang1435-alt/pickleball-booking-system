@@ -1,17 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import { GoogleLogin } from "@react-oauth/google";
+import { FiLock, FiMail, FiPhone, FiUser } from "react-icons/fi";
 
-import {
-  googleLoginApi,
-  registerApi,
-} from "@/services/authApi";
-
+import { googleLoginApi, registerApi } from "@/services/authApi";
 import { saveAuth } from "@/utils/authStorage";
-
 import {
   isStrongPassword,
   isValidEmail,
@@ -20,10 +16,26 @@ import {
 
 import styles from "./AuthPage.module.css";
 
+type RegisterForm = {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  password: string;
+};
+
+type AuthResponse = {
+  token?: string;
+  user?: any;
+  data?: {
+    token?: string;
+    user?: any;
+  };
+};
+
 export default function RegisterPage() {
   const router = useRouter();
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<RegisterForm>({
     fullName: "",
     email: "",
     phoneNumber: "",
@@ -33,73 +45,73 @@ export default function RegisterPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  function updateField(name: keyof typeof form, value: string) {
+  function updateField(name: keyof RegisterForm, value: string) {
     setForm((current) => ({
       ...current,
       [name]: value,
     }));
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    setError("");
-
+  function validateForm() {
     if (!form.fullName.trim()) {
-      setError("Vui lòng nhập họ tên.");
-      return;
+      return "Vui lòng nhập họ tên.";
     }
 
     if (!isValidEmail(form.email)) {
-      setError("Email không hợp lệ.");
-      return;
+      return "Email không hợp lệ.";
     }
 
     if (!isValidPhone(form.phoneNumber)) {
-      setError("Số điện thoại phải gồm đúng 10 chữ số.");
-      return;
+      return "Số điện thoại phải gồm đúng 10 chữ số.";
     }
 
     if (!isStrongPassword(form.password)) {
-      setError(
-        "Mật khẩu tối thiểu 8 ký tự, có chữ hoa, số và ký tự đặc biệt."
-      );
+      return "Mật khẩu tối thiểu 8 ký tự, có chữ hoa, số và ký tự đặc biệt.";
+    }
+
+    return "";
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const validateMessage = validateForm();
+
+    if (validateMessage) {
+      setError(validateMessage);
       return;
     }
 
     try {
       setSubmitting(true);
+      setError("");
 
-      await registerApi(form);
+      await registerApi({
+        fullName: form.fullName.trim(),
+        email: form.email.trim(),
+        phoneNumber: form.phoneNumber.trim(),
+        password: form.password,
+      });
 
-      router.push(
-        `/verify-otp?email=${encodeURIComponent(form.email)}`
-      );
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Đăng ký thất bại."
-      );
+      router.push(`/verify-otp?email=${encodeURIComponent(form.email.trim())}`);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Đăng ký thất bại.");
     } finally {
       setSubmitting(false);
     }
   }
 
   async function handleGoogleRegister(credential?: string) {
+    if (!credential) {
+      setError("Không nhận được Google credential.");
+      return;
+    }
+
     try {
+      setSubmitting(true);
       setError("");
 
-      if (!credential) {
-        setError("Không nhận được Google credential");
-        return;
-      }
-
-      setSubmitting(true);
-
-      const response: any = await googleLoginApi({
-        credential,
-      });
+      const response = (await googleLoginApi({ credential })) as AuthResponse;
 
       const token = response.token || response.data?.token;
       const user = response.user || response.data?.user;
@@ -116,9 +128,7 @@ export default function RegisterPage() {
       router.refresh();
     } catch (error) {
       setError(
-        error instanceof Error
-          ? error.message
-          : "Đăng ký Google thất bại"
+        error instanceof Error ? error.message : "Đăng ký Google thất bại."
       );
     } finally {
       setSubmitting(false);
@@ -128,74 +138,64 @@ export default function RegisterPage() {
   return (
     <main className={styles.page}>
       <form className={styles.card} onSubmit={handleSubmit}>
-        <h1>Đăng ký tài khoản</h1>
+        <div className={styles.avatar}>
+          <FiUser size={32} />
+        </div>
 
-        <p>
-          Tạo tài khoản Player để sử dụng chức năng đặt sân
-          và đặt Coach.
+        <h1 className={styles.title}>Đăng ký</h1>
+
+        <p className={styles.subtitle}>
+          Tạo tài khoản Pickle Club để đặt sân và đặt Coach
         </p>
 
-        {error ? (
-          <div className={styles.error}>{error}</div>
-        ) : null}
+        {error && <div className={styles.error}>{error}</div>}
 
-        <label>
-          Họ tên
-
+        <div className={styles.inputGroup}>
+          <FiUser size={18} />
           <input
+            type="text"
             value={form.fullName}
             disabled={submitting}
-            onChange={(event) =>
-              updateField("fullName", event.target.value)
-            }
-            placeholder="Nguyễn Văn A"
+            placeholder="Họ và tên"
+            onChange={(event) => updateField("fullName", event.target.value)}
           />
-        </label>
+        </div>
 
-        <label>
-          Email
-
+        <div className={styles.inputGroup}>
+          <FiMail size={18} />
           <input
+            type="email"
             value={form.email}
             disabled={submitting}
-            onChange={(event) =>
-              updateField("email", event.target.value)
-            }
-            placeholder="you@example.com"
+            placeholder="Email"
+            onChange={(event) => updateField("email", event.target.value)}
           />
-        </label>
+        </div>
 
-        <label>
-          Số điện thoại
-
+        <div className={styles.inputGroup}>
+          <FiPhone size={18} />
           <input
+            type="tel"
             value={form.phoneNumber}
             disabled={submitting}
-            onChange={(event) =>
-              updateField("phoneNumber", event.target.value)
-            }
-            placeholder="0901234567"
+            placeholder="Số điện thoại"
+            onChange={(event) => updateField("phoneNumber", event.target.value)}
           />
-        </label>
+        </div>
 
-        <label>
-          Mật khẩu
-
+        <div className={styles.inputGroup}>
+          <FiLock size={18} />
           <input
             type="password"
-            disabled={submitting}
             value={form.password}
-            onChange={(event) =>
-              updateField("password", event.target.value)
-            }
-            placeholder="Ví dụ: Pickle@123"
+            disabled={submitting}
+            placeholder="Mật khẩu"
+            onChange={(event) => updateField("password", event.target.value)}
           />
-        </label>
+        </div>
 
-        <button type="submit" disabled={submitting}>
-          {submitting
-            ? "Đang đăng ký..."
-            : "Đăng ký"}
+        <button type="submit" className={styles.loginBtn} disabled={submitting}>
+          {submitting ? "ĐANG ĐĂNG KÝ..." : "ĐĂNG KÝ"}
         </button>
 
         <div className={styles.googleDivider}>
@@ -204,20 +204,15 @@ export default function RegisterPage() {
 
         <div className={styles.googleLogin}>
           <GoogleLogin
-            onSuccess={(credentialResponse) => {
-              handleGoogleRegister(
-                credentialResponse.credential
-              );
-            }}
-            onError={() => {
-              setError("Đăng ký Google thất bại");
-            }}
+            onSuccess={(credentialResponse) =>
+              handleGoogleRegister(credentialResponse.credential)
+            }
+            onError={() => setError("Đăng ký Google thất bại.")}
           />
         </div>
 
-        <p className={styles.switch}>
-          Đã có tài khoản?{" "}
-          <Link href="/login">Đăng nhập</Link>
+        <p className={styles.register}>
+          Đã có tài khoản? <Link href="/login">Đăng nhập</Link>
         </p>
       </form>
     </main>
