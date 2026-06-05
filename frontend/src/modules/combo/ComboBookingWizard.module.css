@@ -822,3 +822,10 @@
     width: 100%;
   }
 }
+.slotList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 3px;
+  overflow: visible;
+}

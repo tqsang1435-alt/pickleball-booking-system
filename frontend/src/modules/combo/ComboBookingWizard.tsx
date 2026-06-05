@@ -308,25 +308,23 @@ useEffect(() => {
                 />
 
                 <div className={styles.slotList}>
-                  {loadingSlots ? (
-                    <span className={styles.muted}>Đang tải giờ...</span>
-                  ) : availableSlots.length > 0 ? (
-                    availableSlots.slice(0, 7).map((slot) => (
-                      <button
-                        key={slot.SlotID}
-                        className={`${styles.timeBtn} ${
-                          selectedSlot?.SlotID === slot.SlotID
-                            ? styles.timeActive
-                            : ""
-                        }`}
-                        onClick={() => setSelectedSlot(slot)}
-                      >
-                        {formatTime(slot.StartTime)}
-                      </button>
-                    ))
-                  ) : (
-                    <span className={styles.emptyText}>Chưa có giờ trống</span>
-                  )}
+                   {loadingSlots ? (
+  <span className={styles.muted}>Đang tải giờ...</span>
+) : availableSlots.length > 0 ? (
+  availableSlots.map((slot) => (
+    <button
+      key={slot.SlotID}
+      className={`${styles.timeBtn} ${
+        selectedSlot?.SlotID === slot.SlotID ? styles.timeActive : ""
+      }`}
+      onClick={() => setSelectedSlot(slot)}
+    >
+      {formatTime(slot.StartTime)}
+    </button>
+  ))
+) : (
+  <span className={styles.emptyText}>Chưa có giờ trống</span>
+)}
                 </div>
               </div>
 
