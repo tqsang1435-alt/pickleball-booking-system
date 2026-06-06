@@ -6,6 +6,15 @@ import styles from "./AdminPage.module.css";
 import { getDashboardStats, DashboardStats } from "@/services/adminApi";
 import { getDailyBookings, DailyBooking } from "@/services/bookingApi";
 import { getToken, getUser } from "@/utils/authStorage";
+import { 
+  CourtIcon, CalendarIcon, PlayerIcon, CoachIcon, StaffIcon, 
+  RevenueIcon, BellIcon, RefreshIcon, ComboIcon, PromotionIcon, 
+  WrenchIcon, CheckShieldIcon, BarChartIcon, MoreIcon 
+} from "./AdminIcons";
+
+function todayStr() {
+  return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" });
+}
 
 export default function AdminPage() {
   const router = useRouter();
@@ -34,14 +43,22 @@ export default function AdminPage() {
 
     async function loadData() {
       try {
-        const [statsData, dailyData] = await Promise.all([
-          getDashboardStats(token as string),
-          getDailyBookings(token as string), // Gets today's bookings
-        ]);
-        setStats(statsData);
-        setDailyBookings(dailyData);
-      } catch (err) {
-        console.error("Lỗi tải dữ liệu dashboard:", err);
+        setLoading(true);
+        // Load stats
+        try {
+          const statsData = await getDashboardStats(token as string);
+          setStats(statsData);
+        } catch (err) {
+          console.error("Lỗi tải dữ liệu dashboard stats:", err);
+        }
+        
+        // Load daily bookings
+        try {
+          const dailyData = await getDailyBookings(token as string, todayStr());
+          setDailyBookings(dailyData);
+        } catch (err) {
+          console.error("Lỗi tải dữ liệu daily bookings:", err);
+        }
       } finally {
         setLoading(false);
       }
@@ -50,143 +67,304 @@ export default function AdminPage() {
     loadData();
   }, [token, role]);
 
-  // Nhóm các booking theo từng sân để vẽ lịch (giống bên Quản lý Booking)
-  const courtSchedules: Record<string, DailyBooking[]> = {};
-  dailyBookings.forEach(b => {
-    if (b.BookingType === "Court" || b.BookingType === "Combo") {
-      const courtName = b.CourtName || "Sân chưa rõ";
-      if (!courtSchedules[courtName]) courtSchedules[courtName] = [];
-      courtSchedules[courtName].push(b);
+  const getStatusBadge = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "confirmed":
+      case "đã xác nhận":
+      case "completed":
+      case "hoàn thành":
+      case "paid":
+      case "checkedin":
+        return <span className={`${styles.badge} ${styles.success}`}>{status}</span>;
+      case "pendingpayment":
+      case "chờ thanh toán":
+        return <span className={`${styles.badge} ${styles.warning}`}>{status}</span>;
+      case "cancelled":
+      case "đã hủy":
+      case "no-show":
+      case "noshow":
+        return <span className={`${styles.badge} ${styles.danger}`}>{status}</span>;
+      default:
+        return <span className={`${styles.badge} ${styles.success}`}>{status}</span>;
     }
-  });
-  const courts = Object.keys(courtSchedules).sort();
+  };
+
+  const getTimeAgo = (dateStr?: string | null) => {
+    if (!dateStr) return "Vừa xong";
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    if (diffMs < 0) return "Vừa xong";
+    
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return "Vừa xong";
+    if (diffMins < 60) return `${diffMins} phút trước`;
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} giờ trước`;
+    
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays} ngày trước`;
+  };
 
   return (
     <main className={styles.page}>
       <section className={styles.header}>
-        <div>
+        <div className={styles.headerLeft}>
           <p>Xin chào, Admin 👋</p>
           <h1>Quản trị hệ thống</h1>
           <span>
-            Quản lý toàn bộ vận hành: sân, coach, doanh thu,
-            khuyến mãi, chính sách hủy, phân quyền và bảo trì.
+            Quản lý toàn bộ vận hành: sân, coach, staff, booking, doanh thu, khuyến mãi, phân quyền và bảo trì.
           </span>
         </div>
-
-        <button onClick={() => window.location.reload()}>Làm mới</button>
+        <div className={styles.headerRight}>
+          <button className={styles.iconBtn} aria-label="Notifications">
+            <BellIcon />
+          </button>
+          <div className={styles.avatar}>A</div>
+          <button className={styles.refreshBtn} onClick={() => window.location.reload()}>
+            <RefreshIcon /> Làm mới
+          </button>
+        </div>
       </section>
 
       <section className={styles.stats}>
         <div className={styles.card}>
-          <span>💰</span>
+          <div className={styles.cardHeader}>
+            <div className={`${styles.cardIcon} ${styles.green}`}>
+              <CourtIcon />
+            </div>
+            <p className={styles.cardTitle}>Sân</p>
+          </div>
+          <h2>{stats ? stats.totalCourts : 0}</h2>
+          <p className={styles.cardSubtitle}>Tổng số sân</p>
+        </div>
+
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={`${styles.cardIcon} ${styles.purple}`}>
+              <CalendarIcon />
+            </div>
+            <p className={styles.cardTitle}>Booking hôm nay</p>
+          </div>
+          <h2>{stats ? stats.todayBookingsCount : 0}</h2>
+          <p className={styles.cardSubtitle}>Lượt đặt</p>
+        </div>
+
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={`${styles.cardIcon} ${styles.orange}`}>
+              <CourtIcon />
+            </div>
+            <p className={styles.cardTitle}>Sân đang hoạt động</p>
+          </div>
+          <h2>{stats ? stats.activeCourts : 0}</h2>
+          <p className={styles.cardSubtitle}>Sân</p>
+        </div>
+
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={`${styles.cardIcon} ${styles.pink}`}>
+              <CoachIcon />
+            </div>
+            <p className={styles.cardTitle}>Coach đang hoạt động</p>
+          </div>
+          <h2>{stats ? stats.activeCoaches : 0}</h2>
+          <p className={styles.cardSubtitle}>Coach</p>
+        </div>
+
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={`${styles.cardIcon} ${styles.blue}`}>
+              <StaffIcon />
+            </div>
+            <p className={styles.cardTitle}>Staff đang hoạt động</p>
+          </div>
+          <h2>{stats ? stats.activeStaff : 0}</h2>
+          <p className={styles.cardSubtitle}>Staff</p>
+        </div>
+
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={`${styles.cardIcon} ${styles.yellow}`}>
+              <RevenueIcon />
+            </div>
+            <p className={styles.cardTitle}>Doanh thu hôm nay</p>
+          </div>
           <h2>
             {stats
               ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(stats.todayRevenue)
-              : "..."}
+              : "0 ₫"}
           </h2>
-          <p>Doanh thu hôm nay</p>
-        </div>
-
-        <div className={styles.card}>
-          <span>📅</span>
-          <h2>{stats ? stats.todayBookingsCount : "..."}</h2>
-          <p>Lượt đặt sân</p>
-        </div>
-
-        <div className={styles.card}>
-          <span>🎾</span>
-          <h2>{stats ? stats.activeCourts : "..."}</h2>
-          <p>Sân đang hoạt động</p>
-        </div>
-
-        <div className={styles.card}>
-          <span>👨‍🏫</span>
-          <h2>{stats ? stats.activeCoaches : "..."}</h2>
-          <p>Coach đang hoạt động</p>
+          <div className={styles.revenueChange}>+12.5% so với hôm qua</div>
         </div>
       </section>
 
       <section className={styles.grid}>
-        <div className={styles.panel}>
-          <div className={styles.panelHeader}>
-            <h2>Lịch đặt sân hôm nay</h2>
-            <button>Xem chi tiết</button>
-          </div>
-
-          <div className={styles.schedule}>
-            {courts.length === 0 ? (
-              <p style={{ color: "#64748b", fontSize: "14px", marginTop: "16px" }}>Hôm nay chưa có sân nào được đặt.</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+          <div className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <h2>Lịch đặt sân hôm nay</h2>
+              <button className={styles.viewDetailsBtn} onClick={() => router.push("/admin/bookings")}>Xem chi tiết</button>
+            </div>
+            
+            {dailyBookings.length === 0 ? (
+              <p style={{ color: "#6B7280", fontSize: "14px" }}>Hôm nay chưa có sân nào được đặt.</p>
             ) : (
-              courts.slice(0, 4).map((courtName) => (
-                <div className={styles.row} key={courtName}>
-                  <strong>{courtName}</strong>
-                  <div className={styles.timeline}>
-                    {/* Render blocks dựa trên lịch đặt */}
-                    {courtSchedules[courtName].map(b => (
-                      <span key={b.BookingID} className={styles.active} title={`${b.StartTime} - ${b.EndTime} | ${b.PlayerName}`} />
+              <div style={{ overflowX: "auto" }}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Thời gian</th>
+                      <th>Sân / HLV</th>
+                      <th>Khách hàng</th>
+                      <th>Dịch vụ</th>
+                      <th>Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dailyBookings.slice(0, 5).map((b) => (
+                      <tr key={b.BookingID}>
+                        <td>{`${b.StartTime} - ${b.EndTime}`}</td>
+                        <td>{b.CourtName || b.CoachName || "N/A"}</td>
+                        <td>{b.PlayerName}</td>
+                        <td>{b.BookingType}</td>
+                        <td>{getStatusBadge(b.Status)}</td>
+                      </tr>
                     ))}
-                  </div>
-                </div>
-              ))
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
-        </div>
 
-        <div className={styles.panel}>
-          <h2>Chức năng nhanh</h2>
-
-          <div className={styles.quick}>
-            <button>Thêm sân</button>
-            <button>Tạo combo</button>
-            <button>Thêm khuyến mãi</button>
-            <button>Bảo trì sân</button>
-            <button>Quản lý coach</button>
-            <button>Phân quyền</button>
+          <div className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <h2>Đơn đặt mới nhất</h2>
+            </div>
+            
+            <div className={styles.latestList}>
+              {!stats || stats.latestBookings.length === 0 ? (
+                <p style={{ color: "#6B7280", fontSize: "14px" }}>Chưa có đơn đặt mới.</p>
+              ) : (
+                stats.latestBookings.map((b) => (
+                  <div className={styles.latestItem} key={b.BookingCode}>
+                    <div className={styles.latestCode}>Mã {b.BookingCode}</div>
+                    <div className={styles.latestInfo}>
+                      <div className={styles.latestName}>{b.PlayerName} - {b.ServiceType}</div>
+                      <div className={styles.latestService}>
+                        {b.ServiceType === 'Coach' ? (b.CoachName ? `HLV: ${b.CoachName}` : "Khu vực HLV") : (b.CourtName || "N/A")} • {b.StartTime ? `${b.StartTime} - ${b.EndTime}` : "Chưa xếp lịch"}
+                      </div>
+                    </div>
+                    <div className={styles.latestRight}>
+                      {getStatusBadge(b.Status)}
+                      <div className={styles.latestTime}>{getTimeAgo(b.CreatedAt)}</div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
 
-        <div className={styles.panel}>
-          <h2>Đơn đặt mới nhất</h2>
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+          <div className={styles.panel}>
+            <h2>Chức năng nhanh</h2>
+            <div className={styles.quick}>
+              <button className={`${styles.quickBtn} ${styles.quickGreen}`} onClick={() => router.push("/admin/courts")}>
+                <CourtIcon /> <span>Thêm sân</span>
+              </button>
+              <button className={`${styles.quickBtn} ${styles.quickPurple}`} onClick={() => router.push("/admin/combos")}>
+                <ComboIcon /> <span>Tạo combo</span>
+              </button>
+              <button className={`${styles.quickBtn} ${styles.quickPink}`} onClick={() => router.push("/admin/promotions")}>
+                <PromotionIcon /> <span>Thêm khuyến mãi</span>
+              </button>
+              <button className={`${styles.quickBtn} ${styles.quickRed}`} onClick={() => router.push("/admin/courts")}>
+                <WrenchIcon /> <span>Bảo trì sân</span>
+              </button>
+              <button className={`${styles.quickBtn} ${styles.quickBlue}`} onClick={() => router.push("/admin/coaches")}>
+                <CoachIcon /> <span>Quản lý coach</span>
+              </button>
+              <button className={`${styles.quickBtn} ${styles.quickIndigo}`} onClick={() => router.push("/admin/staff")}>
+                <StaffIcon /> <span>Staff</span>
+              </button>
+              <button className={`${styles.quickBtn} ${styles.quickOrange}`} onClick={() => router.push("/admin/permissions")}>
+                <CheckShieldIcon /> <span>Phân quyền</span>
+              </button>
+              <button className={`${styles.quickBtn} ${styles.quickYellow}`} onClick={() => router.push("/admin/statistics")}>
+                <BarChartIcon /> <span>Báo cáo thống kê</span>
+              </button>
+            </div>
+          </div>
 
-          <table>
-            <thead>
-              <tr>
-                <th>Mã</th>
-                <th>Khách</th>
-                <th>Sân</th>
-                <th>Giờ</th>
-                <th>Trạng thái</th>
-              </tr>
-            </thead>
+          <div className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <h2>Trạng thái vận hành</h2>
+              <MoreIcon className={styles.statusIcon} style={{ color: "#6B7280", cursor: "pointer" }} />
+            </div>
 
-            <tbody>
-              {!stats ? (
-                <tr><td colSpan={5}>Đang tải...</td></tr>
-              ) : stats.latestBookings.length === 0 ? (
-                <tr><td colSpan={5}>Chưa có đơn đặt nào</td></tr>
-              ) : (
-                stats.latestBookings.map((b) => (
-                  <tr key={b.BookingCode}>
-                    <td>{b.BookingCode}</td>
-                    <td>{b.PlayerName}</td>
-                    <td>{b.CourtName}</td>
-                    <td>{b.StartTime || "N/A"}</td>
-                    <td>{b.Status}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+            <div className={styles.statusList}>
+              <div className={styles.statusItem}>
+                <div className={styles.statusItemLeft}>
+                  <div className={styles.statusIconWrapper} style={{ backgroundColor: '#DCFCE7' }}>
+                    <CourtIcon className={styles.iconGreen} />
+                  </div>
+                  <div className={styles.statusInfo}>
+                    <span className={styles.statusName}>Sân</span>
+                    <span className={styles.statusCount}>{stats ? `${stats.activeCourts}/${stats.totalCourts}` : 0} sân</span>
+                  </div>
+                </div>
+                <div className={styles.statusActive}>
+                  <span className={styles.dot}></span> Hoạt động
+                </div>
+              </div>
 
-        <div className={styles.panel}>
-          <h2>Trạng thái vận hành</h2>
+              <div className={styles.statusItem}>
+                <div className={styles.statusItemLeft}>
+                  <div className={styles.statusIconWrapper} style={{ backgroundColor: '#FCE7F3' }}>
+                    <CoachIcon className={styles.iconPink} />
+                  </div>
+                  <div className={styles.statusInfo}>
+                    <span className={styles.statusName}>Coach</span>
+                    <span className={styles.statusCount}>{stats ? stats.activeCoaches : 0} coach</span>
+                  </div>
+                </div>
+                <div className={styles.statusActive}>
+                  <span className={styles.dot}></span> Hoạt động
+                </div>
+              </div>
 
-          <div className={styles.statusList}>
-            <p>Sân hoạt động <strong>{stats ? `${stats.activeCourts}/${stats.totalCourts}` : "..."}</strong></p>
-            <p>Coach hoạt động <strong>{stats ? stats.activeCoaches : "..."}</strong></p>
-            <p>Combo đang bán <strong>{stats ? stats.activeCombos : "..."}</strong></p>
-            <p>Khuyến mãi đang chạy <strong>{stats ? stats.activePromotions : "..."}</strong></p>
+              <div className={styles.statusItem}>
+                <div className={styles.statusItemLeft}>
+                  <div className={styles.statusIconWrapper} style={{ backgroundColor: '#DBEAFE' }}>
+                    <StaffIcon className={styles.iconBlue} />
+                  </div>
+                  <div className={styles.statusInfo}>
+                    <span className={styles.statusName}>Staff</span>
+                    <span className={styles.statusCount}>{stats ? stats.activeStaff : 0} staff</span>
+                  </div>
+                </div>
+                <div className={styles.statusActive}>
+                  <span className={styles.dot}></span> Hoạt động
+                </div>
+              </div>
+
+              <div className={styles.statusItem}>
+                <div className={styles.statusItemLeft}>
+                  <div className={styles.statusIconWrapper} style={{ backgroundColor: '#F3E8FF' }}>
+                    <PromotionIcon className={styles.iconPurple} />
+                  </div>
+                  <div className={styles.statusInfo}>
+                    <span className={styles.statusName}>Khuyến mãi</span>
+                    <span className={styles.statusCount}>{stats ? stats.activeCombos : 0} khuyến mãi</span>
+                  </div>
+                </div>
+                <div className={styles.statusActive}>
+                  <span className={styles.dot}></span> Hoạt động
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

@@ -41,6 +41,7 @@ export type CoachSchedule = {
   EndTime: string;
   Status: CoachScheduleStatus;
   HoldUntil?: string | null;
+  isExpired?: boolean;
   CreatedAt?: string;
   UpdatedAt?: string | null;
 };

@@ -10,7 +10,7 @@ export async function getDashboardStatsController(req: NextRequest) {
     const auth = requireAuth(req);
     if (auth instanceof Response) return auth;
 
-    const roleCheck = requireRoles(auth, ["Admin"]);
+    const roleCheck = requireRoles(auth, ["Admin", "Manager"]);
     if (roleCheck) return roleCheck;
 
     const result = await reportService.getDashboardStats();

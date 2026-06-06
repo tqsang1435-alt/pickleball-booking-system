@@ -248,6 +248,7 @@
   font-weight: 900;
   color: #172017;
   min-width: 110px;
+  white-space: nowrap;
 }
 
 .slotPrice {

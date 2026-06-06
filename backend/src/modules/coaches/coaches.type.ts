@@ -99,3 +99,17 @@ export type CoachListFilter = {
   maxRate?: number;
   minRating?: number;
 };
+
+export type CreateCoachAdminInput = {
+  fullName: string;
+  email: string;
+  phone?: string;
+  password?: string;
+  experience: number;
+  skillLevel?: SkillLevel;
+  specialty?: string;
+  certificate?: string;
+  hourlyRate: number;
+  bio?: string;
+  avatarUrl?: string;
+};

@@ -212,7 +212,7 @@ export async function findUserGroups(userId: number) {
       FROM PlayingGroups g
       INNER JOIN GroupMembers m ON g.GroupID = m.GroupID
       LEFT JOIN Users u ON g.CreatedBy = u.UserID
-      WHERE m.UserID = @UserID AND m.Status = 'Active' AND g.Status IN ('Open', 'Active', 'Full')
+      WHERE m.UserID = @UserID AND m.Status = 'Active' AND g.Status IN ('Open', 'Active', 'Full', 'Closed')
     `);
   return result.recordset;
 }

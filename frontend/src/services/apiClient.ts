@@ -32,10 +32,21 @@ export async function apiClient<T>(
     cache: "no-store",
   });
 
-  const result = await response.json();
+  const contentType = response.headers.get("content-type") || "";
+  let result: any = null;
+
+  if (contentType.includes("application/json")) {
+    result = await response.json();
+  } else {
+    const text = await response.text();
+    if (!response.ok) {
+      throw new Error(`API error (status: ${response.status}): ${text.slice(0, 100)}`);
+    }
+    return text as unknown as T;
+  }
 
   if (!response.ok) {
-    throw new Error(result.message || "API request failed");
+    throw new Error(result?.message || "API request failed");
   }
 
   return result as T;

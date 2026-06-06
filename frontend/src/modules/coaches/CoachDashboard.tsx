@@ -359,12 +359,23 @@ export default function CoachDashboard({ token }: Props) {
     setScheduleFormError("");
 
     if (scheduleForm.startTime >= scheduleForm.endTime) {
-      setScheduleFormError("Giờ kết thúc phải lớn hơn giờ bắt đầu");
+      setScheduleFormError("Giờ kết thúc phải sau giờ bắt đầu.");
       return;
     }
 
     if (scheduleForm.workingDate < todayStr()) {
-      setScheduleFormError("Không thể tạo lịch cho ngày trong quá khứ");
+      setScheduleFormError("Không thể tạo lịch dạy trong quá khứ.");
+      return;
+    }
+
+    const nowVN = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+    const nowTimeStr = [
+      String(nowVN.getHours()).padStart(2, "0"),
+      String(nowVN.getMinutes()).padStart(2, "0")
+    ].join(":");
+
+    if (scheduleForm.workingDate === todayStr() && scheduleForm.startTime <= nowTimeStr) {
+      setScheduleFormError("Giờ bắt đầu phải lớn hơn thời gian hiện tại.");
       return;
     }
 
@@ -924,19 +935,28 @@ export default function CoachDashboard({ token }: Props) {
               <div className={styles.scheduleList}>
                 {schedules.map((s) => {
                   const isActioning = scheduleActionId === s.CoachScheduleID;
+                  const isPast = s.isExpired;
                   const canAction =
-                    s.Status !== "Booked" && s.Status !== "Holding";
+                    !isPast && s.Status !== "Booked" && s.Status !== "Holding";
+
+                  let displayStatus = STATUS_LABELS[s.Status] || s.Status;
+                  let itemClass = "";
+
+                  if (s.Status === "Booked") {
+                    itemClass = styles.scheduleBooked;
+                  } else if (isPast) {
+                    itemClass = styles.scheduleUnavailable; // Grey out expired slots
+                    displayStatus = "Đã qua";
+                  } else if (s.Status === "Available") {
+                    itemClass = styles.scheduleAvailable;
+                  } else {
+                    itemClass = styles.scheduleUnavailable;
+                  }
 
                   return (
                     <div
                       key={s.CoachScheduleID}
-                      className={`${styles.scheduleItem} ${
-                        s.Status === "Available"
-                          ? styles.scheduleAvailable
-                          : s.Status === "Booked"
-                          ? styles.scheduleBooked
-                          : styles.scheduleUnavailable
-                      }`}
+                      className={`${styles.scheduleItem} ${itemClass}`}
                     >
                       <div className={styles.scheduleDate}>
                         📅 {s.WorkingDate}
@@ -945,7 +965,7 @@ export default function CoachDashboard({ token }: Props) {
                         ⏰ {s.StartTime} – {s.EndTime}
                       </div>
                       <span className={styles.scheduleStatus}>
-                        {STATUS_LABELS[s.Status] || s.Status}
+                        {displayStatus}
                       </span>
 
                       {canAction && (

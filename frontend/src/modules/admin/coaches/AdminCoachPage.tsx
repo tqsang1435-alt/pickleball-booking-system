@@ -8,10 +8,9 @@ import {
 } from "@/services/coachApi";
 import { getImageUrl } from "@/utils/image";
 import type { Coach, CoachStatus } from "@/types/coach";
+import CoachCreateModal from "./CoachCreateModal";
 import StateBox from "@/components/common/StateBox";
 import styles from "./AdminCoachPage.module.css";
-
-type Tab = "pending" | "all";
 
 const STATUS_LABELS: Record<string, string> = {
   Pending: "Chờ duyệt",
@@ -39,21 +38,18 @@ interface Props {
 }
 
 export default function AdminCoachPage({ token }: Props) {
-  const [activeTab, setActiveTab] = useState<Tab>("pending");
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actioningId, setActioningId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const loadCoaches = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
-      const data =
-        activeTab === "pending"
-          ? await adminGetPendingCoaches(token)
-          : await adminGetAllCoaches(token);
+      const data = await adminGetAllCoaches(token);
       setCoaches(data);
     } catch (err) {
       setError(
@@ -62,7 +58,7 @@ export default function AdminCoachPage({ token }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, token]);
+  }, [token]);
 
   useEffect(() => {
     loadCoaches();
@@ -104,23 +100,11 @@ export default function AdminCoachPage({ token }: Props) {
             Xem xét, duyệt và quản lý trạng thái Coach trên hệ thống
           </p>
         </div>
+        <button className={styles.btnCreate} onClick={() => setIsModalOpen(true)}>
+          + Tạo Coach
+        </button>
       </div>
 
-      {/* Tabs */}
-      <div className={styles.tabs}>
-        <button
-          className={`${styles.tab} ${activeTab === "pending" ? styles.tabActive : ""}`}
-          onClick={() => setActiveTab("pending")}
-        >
-          ⏳ Chờ duyệt
-        </button>
-        <button
-          className={`${styles.tab} ${activeTab === "all" ? styles.tabActive : ""}`}
-          onClick={() => setActiveTab("all")}
-        >
-          📋 Tất cả Coach
-        </button>
-      </div>
 
       {/* Search */}
       <div className={styles.searchBar}>
@@ -145,11 +129,7 @@ export default function AdminCoachPage({ token }: Props) {
       ) : filtered.length === 0 ? (
         <StateBox
           variant="empty"
-          title={
-            activeTab === "pending"
-              ? "Không có Coach nào chờ duyệt"
-              : "Không tìm thấy Coach"
-          }
+          title="Không tìm thấy Coach"
         />
       ) : (
         <>
@@ -279,6 +259,17 @@ export default function AdminCoachPage({ token }: Props) {
             </table>
           </div>
         </>
+      )}
+
+      {isModalOpen && (
+        <CoachCreateModal
+          token={token}
+          onClose={() => setIsModalOpen(false)}
+          onSuccess={() => {
+            setIsModalOpen(false);
+            loadCoaches();
+          }}
+        />
       )}
     </div>
   );

@@ -3,6 +3,8 @@ import { createNotification } from "@/modules/notifications/notifications.servic
 import { CreateCourtBookingInput, CreateCoachBookingInput, CreateComboBookingInput, CancelBookingInput, CancelBookingResult, CheckInInput, CheckInResult } from "./bookings.type";
 import { findUserById, findCourtByIdForBooking, findCoachByIdForBooking, findAvailableCourtSlot, findAvailableCoachSchedule, findBookingWithPaymentById, repoCreateCourtBooking, repoCreateCoachBooking, repoCreateComboBooking, repoCancelBookingById, repoCheckInBookingById, repoMockPayBooking, repoReleaseExpiredHoldings, repoAutoCheckInExpired, repoMarkCompletedExpiredCheckins, findBookingsByUserId, findBookingsByCoachUserId, findBookingById, findDailyBookingsForStaff, repoCreateTeamBooking } from "./bookings.repository";
 import { calculateHours, validateBookingDate, validateHoldingLimit, validateCoachFeePerHour } from "./bookings.validation";
+import { isScheduleExpired } from "../coaches/coaches.validation";
+import { sendBookingCreatedEmail, sendPaymentSuccessEmail, sendCoachAssignedEmail, sendNoShowEmail, sendPaymentExpiredEmail } from "@/utils/mail";
 
 // ---- Create Bookings ----
 
@@ -42,7 +44,7 @@ export async function createCourtBooking(input: CreateCourtBookingInput) {
   if (!slot) throw new Error("Khung gio nay da bi dat hoac khong co slot phu hop");
 
   // BR-39: Khong cho dat vao slot da Cancelled (xu ly bang Status check o DB)
-  return repoCreateCourtBooking({
+  const result = await repoCreateCourtBooking({
     userId: input.userId,
     courtId: input.courtId,
     slotId: slot.SlotID,
@@ -51,6 +53,31 @@ export async function createCourtBooking(input: CreateCourtBookingInput) {
     endTime: input.endTime,
     courtFee,
   });
+
+  if (result && result.BookingID) {
+    try {
+      void createNotification({
+        userId: input.userId,
+        title: "Booking đã được tạo",
+        message: "Booking của bạn đã được tạo và đang chờ thanh toán.",
+        notificationType: "Booking",
+      });
+
+      void sendBookingCreatedEmail(user.Email, {
+        playerName: user.FullName,
+        bookingCode: result.BookingCode,
+        bookingType: "Sân (Court)",
+        bookingDate: input.bookingDate,
+        startTime: input.startTime,
+        endTime: input.endTime,
+        courtName: court.CourtName,
+      });
+    } catch (err) {
+      console.warn("Error sending booking created email/notification:", err);
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -61,6 +88,10 @@ export async function createCourtBooking(input: CreateCourtBookingInput) {
  */
 export async function createCoachBooking(input: CreateCoachBookingInput) {
   validateBookingDate(input.bookingDate, input.startTime);
+
+  if (isScheduleExpired(input.bookingDate, input.endTime)) {
+    throw new Error("Khung giờ này đã kết thúc, không thể đặt lịch.");
+  }
 
   const user = await findUserById(input.userId);
   if (!user) throw new Error("Nguoi dung khong ton tai");
@@ -89,7 +120,7 @@ export async function createCoachBooking(input: CreateCoachBookingInput) {
     throw new Error("HLV khong co lich trong khung gio nay hoac vi pham buffer 15 phut (BR-46)");
   }
 
-  return repoCreateCoachBooking({
+  const result = await repoCreateCoachBooking({
     userId: input.userId,
     coachId: input.coachId,
     coachScheduleId: coachSchedule.CoachScheduleID,
@@ -98,6 +129,33 @@ export async function createCoachBooking(input: CreateCoachBookingInput) {
     endTime: input.endTime,
     coachFee,
   });
+
+  if (result && result.BookingID) {
+    try {
+      void createNotification({
+        userId: input.userId,
+        title: "Booking đã được tạo",
+        message: "Booking của bạn đã được tạo và đang chờ thanh toán.",
+        notificationType: "Booking",
+      });
+
+      const coachName = coach && coach.UserID ? (await findUserById(coach.UserID))?.FullName || "HLV" : "HLV";
+
+      void sendBookingCreatedEmail(user.Email, {
+        playerName: user.FullName,
+        bookingCode: result.BookingCode,
+        bookingType: "HLV (Coach)",
+        bookingDate: input.bookingDate,
+        startTime: input.startTime,
+        endTime: input.endTime,
+        coachName: coachName,
+      });
+    } catch (err) {
+      console.warn("Error sending coach booking created email/notification:", err);
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -105,6 +163,10 @@ export async function createCoachBooking(input: CreateCoachBookingInput) {
  */
 export async function createComboBooking(input: CreateComboBookingInput) {
   validateBookingDate(input.bookingDate, input.startTime);
+
+  if (isScheduleExpired(input.bookingDate, input.endTime)) {
+    throw new Error("Khung giờ này đã kết thúc, không thể đặt lịch.");
+  }
 
   const user = await findUserById(input.userId);
   if (!user) throw new Error("Nguoi dung khong ton tai");
@@ -146,7 +208,7 @@ export async function createComboBooking(input: CreateComboBookingInput) {
     throw new Error("HLV khong co lich trong khung gio nay hoac vi pham buffer 15 phut (BR-46)");
   }
 
-  return repoCreateComboBooking({
+  const result = await repoCreateComboBooking({
     userId: input.userId,
     courtId: input.courtId,
     coachId: input.coachId,
@@ -158,6 +220,34 @@ export async function createComboBooking(input: CreateComboBookingInput) {
     courtFee,
     coachFee,
   });
+
+  if (result && result.BookingID) {
+    try {
+      void createNotification({
+        userId: input.userId,
+        title: "Booking đã được tạo",
+        message: "Booking của bạn đã được tạo và đang chờ thanh toán.",
+        notificationType: "Booking",
+      });
+
+      const coachName = coach && coach.UserID ? (await findUserById(coach.UserID))?.FullName || "HLV" : "HLV";
+
+      void sendBookingCreatedEmail(user.Email, {
+        playerName: user.FullName,
+        bookingCode: result.BookingCode,
+        bookingType: "Combo (Sân + HLV)",
+        bookingDate: input.bookingDate,
+        startTime: input.startTime,
+        endTime: input.endTime,
+        courtName: court.CourtName,
+        coachName: coachName,
+      });
+    } catch (err) {
+      console.warn("Error sending combo booking created email/notification:", err);
+    }
+  }
+
+  return result;
 }
 
 // ---- Cancel Booking (UC-17) ----
@@ -395,15 +485,68 @@ export async function mockPayBooking(
     throw new Error(`Booking o trang thai ${booking.Status}, khong the thanh toan`);
   }
 
+  const deadline = new Date(calculatePaymentDeadline(booking.CreatedAt, booking.BookingDate, booking.StartTime));
+  if (Date.now() > deadline.getTime()) {
+    // Release the booking since it's expired
+    await cancelBooking({
+      bookingId,
+      userId: booking.UserID,
+      userRoles: ["Admin"], // Allow system cancellation
+      cancelReason: "Hết hạn thanh toán",
+    });
+    throw new Error("Booking đã hết hạn thanh toán và đã tự động bị huỷ.");
+  }
+
   await repoMockPayBooking(bookingId, paymentMethod);
 
-  // Gui notification
-  void createNotification({
-    userId,
-    title: "Thanh toan thanh cong",
-    message: `Booking #${booking.BookingCode} da duoc thanh toan thanh cong qua ${paymentMethod}. Chuc ban choi vui ve!`,
-    notificationType: "Payment",
-  });
+  try {
+    // Gui notification
+    void createNotification({
+      userId,
+      title: "Thanh toan thanh cong",
+      message: `Booking #${booking.BookingCode} da duoc thanh toan thanh cong qua ${paymentMethod}. Chuc ban choi vui ve!`,
+      notificationType: "Payment",
+    });
+
+    const user = await findUserById(userId);
+    if (user) {
+      void sendPaymentSuccessEmail(user.Email, {
+        bookingCode: booking.BookingCode,
+        amount: booking.TotalAmount,
+        bookingDate: booking.BookingDate,
+        startTime: booking.StartTime,
+        endTime: booking.EndTime,
+      });
+    }
+
+    if (booking.CoachID) {
+      const { getPool, sql } = await import("@/database/connection");
+      const pool = await getPool();
+      const coachRes = await pool.request().input("CoachID", sql.Int, booking.CoachID).query("SELECT UserID, FullName, Email FROM Coaches c JOIN Users u ON c.UserID = u.UserID WHERE c.CoachID = @CoachID");
+      const coachData = coachRes.recordset[0];
+      if (coachData && coachData.UserID) {
+        void createNotification({
+          userId: coachData.UserID,
+          title: "Có lịch dạy mới",
+          message: `Booking #${booking.BookingCode} đã được thanh toán và đặt lịch thành công với bạn.`,
+          notificationType: "Booking"
+        });
+
+        if (coachData.Email) {
+          void sendCoachAssignedEmail(coachData.Email, {
+            bookingCode: booking.BookingCode,
+            playerName: user ? user.FullName : "Player",
+            bookingDate: booking.BookingDate,
+            startTime: booking.StartTime,
+            endTime: booking.EndTime,
+            bookingType: booking.BookingType === "Combo" ? "Combo (Sân + HLV)" : "Thuê HLV",
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Error sending payment success/coach assigned notifications:", err);
+  }
 
   return {
     bookingId,
@@ -421,15 +564,21 @@ export async function mockPayBooking(
  * (Modified): Tu dong check-in cac booking da het thoi gian choi thay vi No-show.
  */
 export async function releaseExpiredBookings() {
-  const [releasedCount, autoCheckedInCount] = await Promise.all([
+  const [releasedData, autoCheckedInCount] = await Promise.all([
     repoReleaseExpiredHoldings(),  // BR-26
     repoAutoCheckInExpired(),        // Modified BR-31 (Auto Check-In)
   ]);
 
+  for (const b of releasedData.expiredBookings) {
+    void sendPaymentExpiredEmail(b.Email, {
+      bookingCode: b.BookingCode,
+    });
+  }
+
   return {
-    releasedHoldings: releasedCount,
+    releasedHoldings: releasedData.releasedCount,
     autoCheckedIn: autoCheckedInCount,
-    message: `Da giai phong ${releasedCount} booking Holding het han, tu dong check-in ${autoCheckedInCount} booking da het gio`,
+    message: `Da giai phong ${releasedData.releasedCount} booking Holding het han, tu dong check-in ${autoCheckedInCount} booking da het gio`,
   };
 }
 
@@ -446,18 +595,53 @@ export async function completeCheckedInBookings() {
   };
 }
 
+// ---- Helper: Calculate Payment Deadline ----
+
+function calculatePaymentDeadline(createdAt: Date, bookingDate: Date | string, startTime: string): string {
+  // DB stores local time via GETDATE(), but mssql driver treats it as UTC.
+  // So '2026-06-06 10:59:00' becomes '2026-06-06T10:59:00Z' (which is 17:59 local).
+  // We must subtract 7 hours to get the real UTC time.
+  const realUtcTime = new Date(createdAt).getTime() - 7 * 60 * 60 * 1000;
+  const deadline1 = new Date(realUtcTime + 10 * 60 * 1000);
+
+  const dateStr = new Date(bookingDate).toLocaleDateString("en-US", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const [month, day, year] = dateStr.split("/");
+  const deadline2 = new Date(`${year}-${month}-${day}T${startTime}:00+07:00`);
+
+  return deadline1 < deadline2 ? deadline1.toISOString() : deadline2.toISOString();
+}
+
 // ---- View Bookings ----
 
 export async function getMyBookings(userId: number) {
   const user = await findUserById(userId);
   if (!user) throw new Error("Nguoi dung khong ton tai");
-  return findBookingsByUserId(userId);
+  const bookings = await findBookingsByUserId(userId);
+  
+  return bookings.map((b) => ({
+    ...b,
+    PaymentDeadline: b.Status === "PendingPayment" 
+      ? calculatePaymentDeadline(b.CreatedAt, b.BookingDate, b.StartTime) 
+      : null
+  }));
 }
 
 export async function getCoachReceivedBookings(userId: number) {
   const user = await findUserById(userId);
   if (!user) throw new Error("Nguoi dung khong ton tai");
-  return findBookingsByCoachUserId(userId);
+  const bookings = await findBookingsByCoachUserId(userId);
+
+  return bookings.map((b) => ({
+    ...b,
+    PaymentDeadline: b.Status === "PendingPayment"
+      ? calculatePaymentDeadline(b.CreatedAt, b.BookingDate, b.StartTime)
+      : null
+  }));
 }
 
 export async function getBookingDetail(bookingId: number, userId: number, userRoles: string[]) {
@@ -472,7 +656,11 @@ export async function getBookingDetail(bookingId: number, userId: number, userRo
     throw new Error("Ban khong co quyen xem booking nay");
   }
 
-  return booking;
+  const paymentDeadline = booking.Status === "PendingPayment"
+    ? calculatePaymentDeadline(booking.CreatedAt, booking.BookingDate, booking.StartTime)
+    : null;
+
+  return { ...booking, PaymentDeadline: paymentDeadline };
 }
 
 /**
@@ -480,7 +668,13 @@ export async function getBookingDetail(bookingId: number, userId: number, userRo
  * BR-NEW-04: Chi Staff/Admin moi duoc goi (xu ly o controller).
  */
 export async function getDailyBookings(date?: string) {
-  return findDailyBookingsForStaff(date);
+  const bookings = await findDailyBookingsForStaff(date);
+  return bookings.map((b) => ({
+    ...b,
+    PaymentDeadline: b.Status === "PendingPayment"
+      ? calculatePaymentDeadline(b.CreatedAt || new Date(), b.BookingDate, b.StartTime)
+      : null
+  }));
 }
 
 // ---- Team Booking (UC-36) ----
