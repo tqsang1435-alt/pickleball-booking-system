@@ -345,8 +345,16 @@ export async function generateCourtSlots(input: {
   }
 
   // 6. Lọc bỏ slot đã tồn tại
-  const existingStarts = await courtRepo.findExistingSlotStartTimes(input.courtId, input.slotDate);
-  let newSlots = allSlots.filter((s) => !existingStarts.includes(s.startTime));
+  // 6. Lọc bỏ slot đã tồn tại hoặc bị trùng thời gian (overlap)
+  const existingSlots = await courtRepo.findCourtSlots(input.courtId, input.slotDate);
+  let newSlots = allSlots.filter((newSlot) => {
+    // Overlap condition: start1 < end2 AND start2 < end1
+    const overlaps = existingSlots.some((existing) => {
+      if (existing.Status === "Cancelled") return false;
+      return newSlot.startTime < existing.EndTime && existing.StartTime < newSlot.endTime;
+    });
+    return !overlaps;
+  });
 
   // 6.1 Lọc bỏ slot đã qua giờ (nếu tạo cho hôm nay)
   const nowVN = new Date(

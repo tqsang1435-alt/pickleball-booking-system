@@ -4,7 +4,9 @@
 
 import * as coachRepo from "./coaches.repository";
 import { validateAndSaveFile, deleteFile } from "../../utils/upload";
+import bcrypt from "bcryptjs";
 import type {
+  CreateCoachAdminInput,
   UpdateCoachProfileInput,
   UpdateCoachExpertiseInput,
   UpdateCoachFeeInput,
@@ -15,6 +17,7 @@ import type {
 import {
   validateTimeRange,
   validateNotPastDate,
+  validateStartTimeInFuture,
   validateHourlyRate,
   validateExperienceYears,
   validateBiography,
@@ -23,6 +26,7 @@ import {
   validateCoachStatus,
   validateScheduleStatus,
   isValidDateFormat,
+  isScheduleExpired,
 } from "./coaches.validation";
 
 // ─── PUBLIC: List active coaches ──────────────────────────────
@@ -60,7 +64,10 @@ export async function getAvailableCoachSchedules(
 
   validateTimeRange(startTime, endTime);
 
-  return coachRepo.findAvailableCoachSchedules(bookingDate, startTime, endTime);
+  const schedules = await coachRepo.findAvailableCoachSchedules(bookingDate, startTime, endTime);
+  
+  // Filter out expired schedules
+  return schedules.filter(s => !isScheduleExpired(s.WorkingDate, s.EndTime));
 }
 
 // ─── AUTH: Get my coach profile ───────────────────────────────
@@ -200,7 +207,13 @@ export async function getMySchedules(userId: number) {
     throw new Error("Hồ sơ Coach không tồn tại");
   }
 
-  return coachRepo.findCoachSchedules(coach.CoachID);
+  const schedules = await coachRepo.findCoachSchedules(coach.CoachID);
+
+  // Add isExpired flag
+  return schedules.map(s => ({
+    ...s,
+    isExpired: isScheduleExpired(s.WorkingDate, s.EndTime),
+  }));
 }
 
 // ─── AUTH: Create schedule ────────────────────────────────────
@@ -229,6 +242,7 @@ export async function createMySchedule(
   }
 
   validateNotPastDate(data.workingDate);
+  validateStartTimeInFuture(data.workingDate, data.startTime);
   validateTimeRange(data.startTime, data.endTime);
 
   // Check overlap
@@ -287,10 +301,13 @@ export async function updateMySchedule(
     validateNotPastDate(data.workingDate);
   }
 
-  if (data.startTime || data.endTime) {
-    const start = data.startTime || existing.StartTime;
-    const end = data.endTime || existing.EndTime;
-    validateTimeRange(start, end);
+  const newDate = data.workingDate || existing.WorkingDate;
+  const newStart = data.startTime || existing.StartTime;
+  const newEnd = data.endTime || existing.EndTime;
+
+  if (data.startTime || data.endTime || data.workingDate) {
+    validateStartTimeInFuture(newDate, newStart);
+    validateTimeRange(newStart, newEnd);
   }
 
   if (data.status !== undefined) {
@@ -371,6 +388,27 @@ export async function getAllCoachesAdmin() {
   return coachRepo.findAllCoachesAdmin();
 }
 
+// ─── ADMIN: Create coach directly ─────────────────────────────
+
+export async function createCoachByAdmin(data: CreateCoachAdminInput) {
+  // Validate input
+  if (!data.fullName || !data.email) {
+    const { AppError } = await import("@/utils/AppError");
+    throw new AppError("Họ tên và email là bắt buộc", 400);
+  }
+  
+  const password = data.password || "123456"; // Default password if not provided
+  const cost = 12; // bcrypt cost >= 12 as requested
+  const passwordHash = await bcrypt.hash(password, cost);
+  
+  const userId = await coachRepo.createCoachAdminTransaction({
+    ...data,
+    passwordHash
+  });
+  
+  return userId;
+}
+
 // ─── ADMIN: Pending coaches ───────────────────────────────────
 
 export async function getPendingCoaches() {
@@ -431,6 +469,6 @@ export async function getCoachAvailableSlots(coachId: number, date: string) {
   const schedules = await coachRepo.findCoachSchedules(coachId);
 
   return schedules.filter(
-    (s) => s.WorkingDate === date && s.Status === "Available"
+    (s) => s.WorkingDate === date && s.Status === "Available" && !isScheduleExpired(s.WorkingDate, s.EndTime)
   );
 }

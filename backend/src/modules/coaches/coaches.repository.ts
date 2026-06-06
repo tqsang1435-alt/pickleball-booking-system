@@ -592,3 +592,90 @@ export async function updateUserAvatar(userId: number, avatarUrl: string | null)
       WHERE UserID = @UserID
     `);
 }
+
+// ─── ADMIN: Create Coach Transaction ──────────────────────────
+
+export async function createCoachAdminTransaction(
+  data: import("./coaches.type").CreateCoachAdminInput & { passwordHash: string }
+) {
+  const pool = await getPool();
+  const transaction = new sql.Transaction(pool);
+
+  try {
+    await transaction.begin();
+
+    // 1. Get RoleID for Coach
+    const roleReq = new sql.Request(transaction);
+    const roleResult = await roleReq.query(`SELECT RoleID FROM Roles WHERE RoleName = 'Coach'`);
+    const roleId = roleResult.recordset[0]?.RoleID;
+    if (!roleId) throw new Error("Role Coach không tồn tại trong hệ thống");
+
+    // 2. Check if email exists
+    const emailReq = new sql.Request(transaction);
+    emailReq.input("Email", sql.NVarChar(100), data.email);
+    const emailResult = await emailReq.query(`SELECT UserID FROM Users WHERE Email = @Email`);
+    if (emailResult.recordset.length > 0) {
+      const { AppError } = await import("@/utils/AppError");
+      throw new AppError("Email này đã tồn tại.", 409);
+    }
+
+    // 2.5 Check if phone exists
+    const normalizedPhone = data.phone ? data.phone.replace(/\\s+/g, '').trim() : null;
+    if (normalizedPhone) {
+      const phoneReq = new sql.Request(transaction);
+      phoneReq.input("Phone", sql.NVarChar(20), normalizedPhone);
+      const phoneResult = await phoneReq.query(`SELECT UserID FROM Users WHERE PhoneNumber = @Phone`);
+      if (phoneResult.recordset.length > 0) {
+        const { AppError } = await import("@/utils/AppError");
+        throw new AppError("Số điện thoại này đã tồn tại.", 409);
+      }
+    }
+
+    // 3. Insert User
+    const userReq = new sql.Request(transaction);
+    userReq.input("FullName", sql.NVarChar(100), data.fullName);
+    userReq.input("Email", sql.NVarChar(100), data.email);
+    userReq.input("PhoneNumber", sql.NVarChar(20), normalizedPhone);
+    userReq.input("PasswordHash", sql.NVarChar(255), data.passwordHash);
+    userReq.input("AvatarURL", sql.NVarChar(255), data.avatarUrl || null);
+    userReq.input("Status", sql.NVarChar(30), "Active");
+
+    const userResult = await userReq.query(`
+      INSERT INTO Users (FullName, Email, PhoneNumber, PasswordHash, AvatarURL, Status)
+      OUTPUT INSERTED.UserID
+      VALUES (@FullName, @Email, @PhoneNumber, @PasswordHash, @AvatarURL, @Status)
+    `);
+    const userId = userResult.recordset[0].UserID;
+
+    // 4. Insert UserRoles
+    const userRoleReq = new sql.Request(transaction);
+    userRoleReq.input("UserID", sql.Int, userId);
+    userRoleReq.input("RoleID", sql.Int, roleId);
+    await userRoleReq.query(`
+      INSERT INTO UserRoles (UserID, RoleID)
+      VALUES (@UserID, @RoleID)
+    `);
+
+    // 5. Insert Coach
+    const coachReq = new sql.Request(transaction);
+    coachReq.input("UserID", sql.Int, userId);
+    coachReq.input("ExperienceYears", sql.Int, data.experience);
+    coachReq.input("SkillLevel", sql.NVarChar(30), data.skillLevel || null);
+    coachReq.input("Specialization", sql.NVarChar(255), data.specialty || null);
+    coachReq.input("Certifications", sql.NVarChar(255), data.certificate || null);
+    coachReq.input("HourlyRate", sql.Decimal(18, 2), data.hourlyRate);
+    coachReq.input("Biography", sql.NVarChar(sql.MAX), data.bio || null);
+    coachReq.input("Status", sql.NVarChar(30), "Approved");
+
+    await coachReq.query(`
+      INSERT INTO Coaches (UserID, ExperienceYears, SkillLevel, Specialization, Certifications, HourlyRate, Biography, Status)
+      VALUES (@UserID, @ExperienceYears, @SkillLevel, @Specialization, @Certifications, @HourlyRate, @Biography, @Status)
+    `);
+
+    await transaction.commit();
+    return userId;
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+}

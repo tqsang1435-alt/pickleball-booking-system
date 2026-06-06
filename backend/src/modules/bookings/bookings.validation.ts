@@ -59,7 +59,7 @@ export function validateBookingDate(bookingDate: string, startTime: string): voi
     const startTotalMinutes = startHour * 60 + startMinute;
 
     if (startTotalMinutes <= currentTotalMinutes) {
-      throw new Error("Khung gio nay da troi qua so voi thoi gian hien tai, khong the dat nua.");
+      throw new Error("Khung giờ này đã bắt đầu, không thể đặt.");
     }
   }
 }

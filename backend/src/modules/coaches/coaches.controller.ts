@@ -439,3 +439,35 @@ export async function updateCoachStatusController(
     return handleError(error);
   }
 }
+
+// ─── ADMIN: Create coach directly ─────────────────────────────
+
+export async function adminCreateCoachController(req: NextRequest) {
+  try {
+    const user = requireAuth(req);
+    if (user instanceof Response) return user;
+
+    const forbidden = requireRoles(user, ["Admin"]);
+    if (forbidden) return forbidden;
+
+    const body = await req.json();
+
+    const result = await coachService.createCoachByAdmin({
+      fullName: body.fullName,
+      email: body.email,
+      phone: body.phone,
+      password: body.password,
+      experience: Number(body.experience) || 0,
+      skillLevel: body.skillLevel,
+      specialty: body.specialty,
+      certificate: body.certificate,
+      hourlyRate: Number(body.hourlyRate) || 0,
+      bio: body.bio,
+      avatarUrl: body.avatarUrl
+    });
+
+    return successResponse(result, "Tạo tài khoản Coach thành công", 201);
+  } catch (error) {
+    return handleError(error);
+  }
+}

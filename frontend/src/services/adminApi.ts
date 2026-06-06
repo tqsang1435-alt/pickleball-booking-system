@@ -7,15 +7,22 @@ export type DashboardStats = {
   activeCourts: number;
   totalCourts: number;
   activeCoaches: number;
+  activeStaff: number;
   activeCombos: number;
-  activePromotions: number;
-  latestBookings: Array<{
+  activePromotions?: number;
+  latestBookings: {
     BookingCode: string;
     PlayerName: string;
-    CourtName: string;
+    PlayerEmail: string | null;
+    PlayerPhone: string | null;
+    ServiceType: string;
+    CourtName: string | null;
+    CoachName: string | null;
     StartTime: string | null;
+    EndTime: string | null;
     Status: string;
-  }>;
+    CreatedAt: string;
+  }[];
 };
 
 export async function getDashboardStats(token: string): Promise<DashboardStats> {

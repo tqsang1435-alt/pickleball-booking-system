@@ -71,13 +71,56 @@ export function validateNotPastDate(workingDate: string): void {
   const nowVN = new Date(
     new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" })
   );
-  const todayStr = nowVN.toISOString().split("T")[0];
+  
+  const todayStr = [
+    nowVN.getFullYear(),
+    String(nowVN.getMonth() + 1).padStart(2, "0"),
+    String(nowVN.getDate()).padStart(2, "0")
+  ].join("-");
 
   if (workingDate < todayStr) {
     throw new Error(
-      "Không thể tạo hoặc chỉnh sửa lịch cho các ngày trong quá khứ"
+      "Không thể tạo lịch dạy trong quá khứ."
     );
   }
+}
+
+/**
+ * Validate that if the workingDate is today, the startTime is in the future.
+ */
+export function validateStartTimeInFuture(workingDate: string, startTime: string): void {
+  const nowVN = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" })
+  );
+  
+  const todayStr = [
+    nowVN.getFullYear(),
+    String(nowVN.getMonth() + 1).padStart(2, "0"),
+    String(nowVN.getDate()).padStart(2, "0")
+  ].join("-");
+
+  const nowTimeStr = [
+    String(nowVN.getHours()).padStart(2, "0"),
+    String(nowVN.getMinutes()).padStart(2, "0")
+  ].join(":");
+
+  if (workingDate === todayStr && startTime <= nowTimeStr) {
+    throw new Error("Giờ bắt đầu phải lớn hơn thời gian hiện tại.");
+  }
+}
+
+/**
+ * Kiểm tra xem lịch đã qua thời gian hiện tại chưa (theo giờ Việt Nam).
+ * @param workingDate Định dạng YYYY-MM-DD
+ * @param endTime Định dạng HH:mm
+ */
+export function isScheduleExpired(workingDate: string, endTime: string): boolean {
+  // Tạo chuỗi ISO đại diện cho thời gian kết thúc của lịch theo múi giờ Việt Nam
+  const vnIsoString = `${workingDate}T${endTime}:00+07:00`;
+  const scheduleEndTimestamp = new Date(vnIsoString).getTime();
+  
+  // So sánh với thời gian hiện tại tuyệt đối (epoch time)
+  return scheduleEndTimestamp <= Date.now();
 }
 
 /**

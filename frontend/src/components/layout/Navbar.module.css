@@ -275,3 +275,158 @@
   vertical-align: middle;
   line-height: 1;
 }
+
+/* Notification UI */
+.notificationWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-right: 12px;
+}
+
+.bellButton {
+  position: relative;
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  color: #2f5a24;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: 0.25s ease;
+}
+
+.bellButton:hover {
+  background: #eef9df;
+}
+
+.bellIcon {
+  width: 20px;
+  height: 20px;
+}
+
+.notificationBadge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background-color: #ef4444;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+  height: 16px;
+  min-width: 16px;
+  border-radius: 99px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  line-height: 1;
+  box-shadow: 0 0 0 2px #ffffff;
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: -10px;
+  width: 320px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 14px 28px rgba(39, 75, 31, 0.15);
+  border: 1px solid #dff5c7;
+  overflow: hidden;
+  z-index: 100;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dropdownHeader {
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dropdownHeader h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #171a2a;
+  font-weight: 900;
+}
+
+.dropdownHeader a {
+  font-size: 12px;
+  color: #3f6b32;
+  font-weight: 700;
+}
+
+.dropdownList {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.dropdownEmpty {
+  padding: 32px 16px;
+  text-align: center;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.notificationItem {
+  padding: 16px;
+  border-bottom: 1px solid #f8f9fa;
+  cursor: pointer;
+  transition: 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notificationItem:hover {
+  background: #fafafa;
+}
+
+.notificationItem.unread {
+  background: #f5ffec;
+}
+
+.notificationItem.unread:hover {
+  background: #eef9df;
+}
+
+.notifTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #171a2a;
+}
+
+.notifMessage {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.notifTime {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+.dropdownFooter {
+  padding: 12px;
+  text-align: center;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.dropdownFooter a {
+  font-size: 13px;
+  color: #2f5a24;
+  font-weight: 700;
+}

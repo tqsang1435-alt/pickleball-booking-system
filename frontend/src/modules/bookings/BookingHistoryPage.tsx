@@ -40,16 +40,14 @@ function getStatusClass(status: string): string {
   }
 }
 
-// Countdown timer cho booking PendingPayment (10 phút hold - BR-25)
+// Countdown timer cho booking PendingPayment
 function useCountdown(booking: Booking) {
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
 
   useEffect(() => {
-    if (booking.Status !== "PendingPayment") return;
+    if (booking.Status !== "PendingPayment" || !booking.PaymentDeadline) return;
 
-    // Estimate hold expiry từ CreatedAt + 10 phút (BR-25)
-    const createdAt = new Date(booking.CreatedAt);
-    const expiresAt = new Date(createdAt.getTime() + 10 * 60 * 1000);
+    const expiresAt = new Date(booking.PaymentDeadline);
 
     function tick() {
       const remaining = Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000));
@@ -59,7 +57,7 @@ function useCountdown(booking: Booking) {
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [booking.BookingID, booking.Status, booking.CreatedAt]);
+  }, [booking.BookingID, booking.Status, booking.PaymentDeadline]);
 
   return secondsLeft;
 }
@@ -80,6 +78,34 @@ function CountdownBadge({ booking }: { booking: Booking }) {
   return (
     <div className={`${styles.countdownBadge} ${isUrgent ? styles.countdownUrgent : ""}`}>
       ⏱️ Còn {mins}:{secs.toString().padStart(2, "0")} để thanh toán
+    </div>
+  );
+}
+
+function ActionCell({ booking, setCancelTarget }: { booking: Booking; setCancelTarget: (b: Booking) => void }) {
+  const seconds = useCountdown(booking);
+  
+  const isExpired = booking.Status === "PendingPayment" && seconds !== null && seconds <= 0;
+  const isPending = booking.Status === "PendingPayment" && !isExpired;
+  
+  const canCancel = ["PendingPayment", "Confirmed"].includes(booking.Status);
+
+  return (
+    <div className={styles.actionCell}>
+      {isPending && (
+        <a href="/profile" className={styles.btnPay} style={{textDecoration: "none"}}>
+          Thanh toán
+        </a>
+      )}
+      {canCancel && !isExpired && (
+        <button
+          className={styles.btnCancel}
+          onClick={() => setCancelTarget(booking)}
+        >
+          Hủy
+        </button>
+      )}
+      {!isPending && (!canCancel || isExpired) && <span className={styles.noAction}>-</span>}
     </div>
   );
 }
@@ -343,9 +369,6 @@ export default function BookingHistoryPage() {
               </thead>
               <tbody>
                 {paginated.map((booking) => {
-                  const canCancel = ["PendingPayment", "Confirmed"].includes(booking.Status);
-                  const isPending = booking.Status === "PendingPayment";
-
                   return (
                     <tr key={booking.BookingID}>
                       <td>
@@ -387,22 +410,7 @@ export default function BookingHistoryPage() {
                         <CountdownBadge booking={booking} />
                       </td>
                       <td>
-                        <div className={styles.actionCell}>
-                          {isPending && (
-                            <a href="/profile" className={styles.btnPay} style={{textDecoration: "none"}}>
-                              Thanh toán
-                            </a>
-                          )}
-                          {canCancel && (
-                            <button
-                              className={styles.btnCancel}
-                              onClick={() => setCancelTarget(booking)}
-                            >
-                              Hủy
-                            </button>
-                          )}
-                          {!isPending && !canCancel && <span className={styles.noAction}>-</span>}
-                        </div>
+                        <ActionCell booking={booking} setCancelTarget={setCancelTarget} />
                       </td>
                     </tr>
                   );

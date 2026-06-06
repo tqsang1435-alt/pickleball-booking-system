@@ -184,3 +184,30 @@ export async function adminUpdateCoachStatus(
   });
   return response.data;
 }
+
+export async function adminCreateCoach(
+  token: string,
+  payload: {
+    fullName: string;
+    email: string;
+    phone?: string;
+    password?: string;
+    experience: number;
+    skillLevel?: string;
+    specialty?: string;
+    certificate?: string;
+    hourlyRate: number;
+    bio?: string;
+    avatarUrl?: string;
+  }
+): Promise<number> {
+  const response = await apiClient<ApiResponse<number>>(
+    "/api/admin/coaches",
+    {
+      method: "POST",
+      token,
+      body: payload,
+    }
+  );
+  return response.data;
+}

@@ -71,6 +71,23 @@ export default function GroupsTab({ token, userProfile, showToast }: GroupsTabPr
         description: editForm.description,
         status: editForm.status,
       });
+
+      // Update state locally for instant UI update
+      setGroups((prevGroups) =>
+        prevGroups.map((g) =>
+          g.GroupID === editingGroup.GroupID
+            ? {
+                ...g,
+                Status: editForm.status,
+                GroupName: editForm.groupName,
+                SkillLevel: editForm.skillLevel,
+                AverageExperience: Number(editForm.averageExperience),
+                Description: editForm.description,
+              }
+            : g
+        )
+      );
+
       showToast("Cập nhật thông tin nhóm thành công!");
       setEditingGroup(null);
       loadGroups();
@@ -144,6 +161,10 @@ export default function GroupsTab({ token, userProfile, showToast }: GroupsTabPr
                         backgroundColor: group.Status === "Open" ? "#dcfce7" : "#fee2e2",
                         color: group.Status === "Open" ? "#166534" : "#991b1b",
                         fontWeight: "600",
+                        whiteSpace: "nowrap",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                       }}
                     >
                       {group.Status === "Open" ? "Hoạt động" : "Đã đóng"}

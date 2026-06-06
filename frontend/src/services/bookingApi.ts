@@ -30,6 +30,7 @@ export type Booking = {
   CancelledAt: string | null;
   CancelReason: string | null;
   CreatedAt: string;
+  PaymentDeadline: string | null;
 
   // Detail
   BookingDetailID?: number;
@@ -105,6 +106,7 @@ export type DailyBooking = {
   TotalAmount: number;
   Status: BookingStatus;
   CheckInTime: string | null;
+  PaymentDeadline: string | null;
   PlayerName: string;
   PlayerEmail: string;
   PlayerPhone: string | null;

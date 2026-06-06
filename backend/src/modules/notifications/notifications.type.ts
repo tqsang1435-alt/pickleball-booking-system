@@ -13,3 +13,12 @@ export type CreateNotificationInput = {
   message: string;
   notificationType: NotificationType;
 };
+
+export type NotificationItem = {
+  notificationId: number;
+  title: string;
+  message: string;
+  notificationType: NotificationType;
+  status: "Unread" | "Read" | "Deleted";
+  createdAt: string | Date;
+};

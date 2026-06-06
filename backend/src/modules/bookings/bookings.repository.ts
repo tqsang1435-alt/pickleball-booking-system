@@ -298,10 +298,17 @@ export async function repoCreateCourtBooking(data: {
           @CourtFee, 0, @CourtFee
         );
 
-        -- BR-25: Hold slot 10 phut
+        DECLARE @HoldUntil DATETIME;
+        DECLARE @StartDateTime DATETIME = CAST(CAST(@BookingDate AS VARCHAR(10)) + ' ' + CAST(@StartTime AS VARCHAR(5)) AS DATETIME);
+        IF DATEADD(MINUTE, 10, GETDATE()) < @StartDateTime
+            SET @HoldUntil = DATEADD(MINUTE, 10, GETDATE());
+        ELSE
+            SET @HoldUntil = @StartDateTime;
+
+        -- BR-25: Hold slot 10 phut hoac den gio bat dau
         UPDATE CourtSlots
         SET Status = 'Holding',
-            HoldUntil = DATEADD(MINUTE, 10, GETDATE()),
+            HoldUntil = @HoldUntil,
             UpdatedAt = GETDATE()
         WHERE SlotID = @SlotID;
 
@@ -387,10 +394,17 @@ export async function repoCreateCoachBooking(data: {
           0, @CoachFee, @CoachFee
         );
 
-        -- BR-25: Hold schedule 10 phut
+        DECLARE @HoldUntil DATETIME;
+        DECLARE @StartDateTime DATETIME = CAST(CAST(@BookingDate AS VARCHAR(10)) + ' ' + CAST(@StartTime AS VARCHAR(5)) AS DATETIME);
+        IF DATEADD(MINUTE, 10, GETDATE()) < @StartDateTime
+            SET @HoldUntil = DATEADD(MINUTE, 10, GETDATE());
+        ELSE
+            SET @HoldUntil = @StartDateTime;
+
+        -- BR-25: Hold schedule 10 phut hoac den gio bat dau
         UPDATE CoachSchedules
         SET Status = 'Holding',
-            HoldUntil = DATEADD(MINUTE, 10, GETDATE()),
+            HoldUntil = @HoldUntil,
             UpdatedAt = GETDATE()
         WHERE CoachScheduleID = @CoachScheduleID;
 
@@ -488,13 +502,20 @@ export async function repoCreateComboBooking(input: {
           @BookingDate, @StartTime, @EndTime, @CourtFee, @CoachFee, @SubTotal
         );
 
-        -- BR-25: Hold ca slot va schedule 10 phut
+        DECLARE @HoldUntil DATETIME;
+        DECLARE @StartDateTime DATETIME = CAST(CAST(@BookingDate AS VARCHAR(10)) + ' ' + CAST(@StartTime AS VARCHAR(5)) AS DATETIME);
+        IF DATEADD(MINUTE, 10, GETDATE()) < @StartDateTime
+            SET @HoldUntil = DATEADD(MINUTE, 10, GETDATE());
+        ELSE
+            SET @HoldUntil = @StartDateTime;
+
+        -- BR-25: Hold ca slot va schedule 10 phut hoac den gio bat dau
         UPDATE CourtSlots
-        SET Status = 'Holding', HoldUntil = DATEADD(MINUTE, 10, GETDATE()), UpdatedAt = GETDATE()
+        SET Status = 'Holding', HoldUntil = @HoldUntil, UpdatedAt = GETDATE()
         WHERE SlotID = @SlotID;
 
         UPDATE CoachSchedules
-        SET Status = 'Holding', HoldUntil = DATEADD(MINUTE, 10, GETDATE()), UpdatedAt = GETDATE()
+        SET Status = 'Holding', HoldUntil = @HoldUntil, UpdatedAt = GETDATE()
         WHERE CoachScheduleID = @CoachScheduleID;
 
         SELECT
@@ -646,7 +667,7 @@ export async function repoMockPayBooking(
  * BR-26: Cancel cac booking PendingPayment qua HoldUntil (10 phut).
  * Release slot va schedule ve Available.
  */
-export async function repoReleaseExpiredHoldings(): Promise<number> {
+export async function repoReleaseExpiredHoldings(): Promise<{ releasedCount: number, expiredBookings: { BookingID: number, BookingCode: string, Email: string }[] }> {
   const pool = await getPool();
   const transaction = new sql.Transaction(pool);
 
@@ -677,7 +698,7 @@ export async function repoReleaseExpiredHoldings(): Promise<number> {
       UPDATE Bookings
       SET Status = 'Cancelled',
           CancelledAt = GETDATE(),
-          CancelReason = N'Tu dong huy: het thoi gian giu cho (10 phut) - BR-26',
+          CancelReason = N'Hết hạn thanh toán',
           UpdatedAt = GETDATE()
       WHERE BookingID IN (SELECT BookingID FROM @ExpiredIDs);
 
@@ -699,11 +720,20 @@ export async function repoReleaseExpiredHoldings(): Promise<number> {
           AND CoachScheduleID IS NOT NULL
       );
 
-      SELECT COUNT(*) AS ReleasedCount FROM @ExpiredIDs;
+      SELECT 
+        b.BookingID, 
+        b.BookingCode, 
+        u.Email 
+      FROM @ExpiredIDs e 
+      JOIN Bookings b ON e.BookingID = b.BookingID
+      JOIN Users u ON b.UserID = u.UserID;
     `);
 
     await transaction.commit();
-    return result.recordset[0]?.ReleasedCount ?? 0;
+    return {
+      releasedCount: result.recordset.length,
+      expiredBookings: result.recordset
+    };
   } catch (error) {
     await transaction.rollback();
     throw error;
@@ -964,7 +994,7 @@ export async function findDailyBookingsForStaff(
 
   const result = await pool
     .request()
-    .input("TargetDate", sql.Date, date ?? new Date().toISOString().split("T")[0])
+    .input("TargetDate", sql.Date, date ?? new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" }))
     .query(`
       SELECT
         b.BookingID,
@@ -976,6 +1006,7 @@ export async function findDailyBookingsForStaff(
         b.TotalAmount,
         b.Status,
         b.CheckInTime,
+        b.CreatedAt,
 
         u.FullName AS PlayerName,
         u.Email AS PlayerEmail,

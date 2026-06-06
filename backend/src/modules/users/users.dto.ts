@@ -11,3 +11,9 @@ export type UpdateUserStatusDto = {
   status: "Active" | "Inactive" | "Locked";
 };
 
+export type CreateStaffAdminDto = {
+  fullName: string;
+  email: string;
+  phone?: string;
+  password?: string;
+};

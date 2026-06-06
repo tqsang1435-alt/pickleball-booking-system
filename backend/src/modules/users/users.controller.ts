@@ -23,6 +23,22 @@ export async function getAllUsersController(req: NextRequest) {
   }
 }
 
+export async function getAllStaffController(req: NextRequest) {
+  try {
+    const auth = requireAuth(req);
+    if (auth instanceof Response) return auth;
+
+    const forbidden = requireRoles(auth, ["Admin"]);
+    if (forbidden) return forbidden;
+
+    const result = await usersService.getStaffUsers();
+
+    return successResponse(result, "Lấy danh sách staff thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
 export async function getMeController(req: NextRequest) {
   try {
     const auth = requireAuth(req);
@@ -93,6 +109,29 @@ export async function unlockUserController(req: NextRequest, userId: number) {
     const result = await usersService.unlockUser(userId);
 
     return successResponse(result, "Mở khóa tài khoản thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+export async function adminCreateStaffController(req: NextRequest) {
+  try {
+    const auth = requireAuth(req);
+    if (auth instanceof Response) return auth;
+
+    const forbidden = requireRoles(auth, ["Admin"]);
+    if (forbidden) return forbidden;
+
+    const body = await req.json();
+
+    const result = await usersService.createStaffByAdmin({
+      fullName: body.fullName,
+      email: body.email,
+      phone: body.phone,
+      password: body.password,
+    });
+
+    return successResponse(result, "Tạo tài khoản Staff thành công", 201);
   } catch (error) {
     return handleError(error);
   }
