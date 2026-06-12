@@ -7,6 +7,8 @@ import type { Booking, BookingStatus, CancelResult } from "@/services/bookingApi
 import { getToken } from "@/utils/authStorage";
 import { formatCurrency } from "@/utils/formatCurrency";
 import CancelBookingModal from "./CancelBookingModal";
+import RefundRequestModal from "./RefundRequestModal"; // Force recompile
+import PaymentModal from "@/modules/payments/PaymentModal";
 import styles from "./BookingHistoryPage.module.css";
 
 // ===== Helpers =====
@@ -20,6 +22,14 @@ const STATUS_LABELS: Record<string, string> = {
   Cancelled: "Đã hủy",
   Refunded: "Đã hoàn tiền",
   NoShow: "Vắng mặt",
+};
+
+const REFUND_STATUS_LABELS: Record<string, string> = {
+  Requested: "Đang chờ hoàn tiền",
+  Processing: "Đang xử lý hoàn tiền",
+  PendingManual: "Chờ hoàn tiền thủ công",
+  Completed: "Đã hoàn tiền",
+  Rejected: "Từ chối hoàn tiền",
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -132,6 +142,12 @@ export default function BookingHistoryPage() {
   // Cancel modal
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
 
+  // Refund modal
+  const [refundTarget, setRefundTarget] = useState<Booking | null>(null);
+
+  // Payment modal
+  const [payTarget, setPayTarget] = useState<Booking | null>(null);
+
   // Pagination
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 8;
@@ -205,11 +221,14 @@ export default function BookingHistoryPage() {
 
   function handleCancelSuccess(result: CancelResult) {
     setCancelTarget(null);
-    setSuccess(
-      result.refundAmount > 0
-        ? `Hủy thành công! Hoàn tiền ${formatCurrency(result.refundAmount)} (${result.refundPercent}%) trong 7 ngày làm việc.`
-        : "Hủy booking thành công. Không có hoàn tiền (hủy trong 2 giờ)."
-    );
+    setSuccess("Hủy booking thành công.");
+    loadBookings();
+    setTimeout(() => setSuccess(""), 6000);
+  }
+
+  function handleRefundSuccess(message: string) {
+    setRefundTarget(null);
+    setSuccess(message);
     loadBookings();
     setTimeout(() => setSuccess(""), 6000);
   }
@@ -243,6 +262,29 @@ export default function BookingHistoryPage() {
             booking={cancelTarget}
             onClose={() => setCancelTarget(null)}
             onSuccess={handleCancelSuccess}
+          />
+        )}
+
+        {/* Refund Modal */}
+        {refundTarget && (
+          <RefundRequestModal
+            booking={refundTarget}
+            onClose={() => setRefundTarget(null)}
+            onSuccess={handleRefundSuccess}
+          />
+        )}
+
+        {/* Payment Modal (UC-16) */}
+        {payTarget && (
+          <PaymentModal
+            bookingId={payTarget.BookingID}
+            bookingCode={payTarget.BookingCode}
+            totalAmount={Number(payTarget.TotalAmount)}
+            onClose={() => {
+              setPayTarget(null);
+              // Reload bookings khi user đóng PaymentModal (có thể đã thanh toán xong)
+              loadBookings();
+            }}
           />
         )}
 
@@ -369,6 +411,18 @@ export default function BookingHistoryPage() {
               </thead>
               <tbody>
                 {paginated.map((booking) => {
+                  const isPending = booking.Status === "PendingPayment";
+
+                  // Calculate expiry using PaymentDeadline if available
+                  const expiresAt = booking.PaymentDeadline
+                    ? new Date(booking.PaymentDeadline)
+                    : new Date(new Date(booking.CreatedAt).getTime() + 10 * 60 * 1000);
+                  const isExpired = isPending && Date.now() >= expiresAt.getTime();
+
+                  // Calculate if booking playtime is in the past
+                  const bookingDateStr = booking.BookingDate.toString().split("T")[0];
+                  const startDateTime = new Date(`${bookingDateStr}T${booking.StartTime}:00`);
+                  const isPast = Date.now() >= startDateTime.getTime();
                   return (
                     <tr key={booking.BookingID}>
                       <td>
@@ -402,6 +456,13 @@ export default function BookingHistoryPage() {
                         <span className={`${styles.badge} ${styles["badge" + booking.Status] || ""}`}>
                           {STATUS_LABELS[booking.Status] || booking.Status}
                         </span>
+                        {booking.RefundStatus && (
+                          <div style={{ marginTop: "8px" }}>
+                            <span className={`${styles.badge} ${booking.RefundStatus === 'Completed' ? styles.badgeConfirmed : booking.RefundStatus === 'Rejected' ? styles.badgeCancelled : styles.badgePendingPayment}`}>
+                              {REFUND_STATUS_LABELS[booking.RefundStatus] || booking.RefundStatus}
+                            </span>
+                          </div>
+                        )}
                         {booking.CheckInTime && (
                           <div className={styles.checkInTime}>
                             Lúc {new Date(booking.CheckInTime).toLocaleTimeString("vi-VN", { timeZone: "UTC", hour: "2-digit", minute: "2-digit" })}
@@ -410,7 +471,36 @@ export default function BookingHistoryPage() {
                         <CountdownBadge booking={booking} />
                       </td>
                       <td>
-                        <ActionCell booking={booking} setCancelTarget={setCancelTarget} />
+                        <div className={styles.actionCell}>
+                          {isPending && !isExpired && (
+                            <button
+                              className={styles.btnPay}
+                              onClick={() => setPayTarget(booking)}
+                              title="Thanh toán booking này"
+                            >
+                              💳 Thanh toán
+                            </button>
+                          )}
+                          {isPending && !isExpired && (
+                            <button
+                              className={styles.btnCancel}
+                              onClick={() => setCancelTarget(booking)}
+                            >
+                              Hủy
+                            </button>
+                          )}
+                          {["Confirmed", "Paid"].includes(booking.Status) && !isPast && (
+                            <button
+                              className={styles.btnCancel}
+                              onClick={() => setRefundTarget(booking)}
+                              title="Yêu cầu hoàn tiền và hủy"
+                              style={{ backgroundColor: "#ef4444", color: "white" }}
+                            >
+                              Yêu cầu Hoàn tiền
+                            </button>
+                          )}
+                          {((!isPending || isExpired) && !((["Confirmed", "Paid"].includes(booking.Status) && !isPast))) && <span className={styles.noAction}>-</span>}
+                        </div>
                       </td>
                     </tr>
                   );

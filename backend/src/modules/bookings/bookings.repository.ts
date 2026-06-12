@@ -578,6 +578,11 @@ export async function repoCancelBookingById(
         WHERE CoachScheduleID IN (
           SELECT CoachScheduleID FROM BookingDetails WHERE BookingID = @BookingID AND CoachScheduleID IS NOT NULL
         );
+
+        -- Release voucher dang reserved
+        UPDATE PromotionUsages
+        SET Status = 'Released', UpdatedAt = GETDATE()
+        WHERE BookingID = @BookingID AND Status = 'Reserved';
       `);
 
     await transaction.commit();
@@ -720,6 +725,13 @@ export async function repoReleaseExpiredHoldings(): Promise<{ releasedCount: num
           AND CoachScheduleID IS NOT NULL
       );
 
+      -- Release voucher usages dang reserved
+      UPDATE PromotionUsages
+      SET Status = 'Released', UpdatedAt = GETDATE()
+      WHERE BookingID IN (SELECT BookingID FROM @ExpiredIDs)
+        AND Status = 'Reserved';
+
+
       SELECT 
         b.BookingID, 
         b.BookingCode, 
@@ -840,7 +852,7 @@ export async function findBookingsByUserId(userId: number) {
         b.DiscountAmount,
         b.TotalAmount,
         b.Status,
-        b.CheckInTime,
+        DATEADD(HOUR, -7, b.CheckInTime) AS CheckInTime,
         b.CancelledAt,
         b.CancelReason,
         b.CreatedAt,
@@ -865,13 +877,28 @@ export async function findBookingsByUserId(userId: number) {
         p.PaymentMethod,
         p.TransactionCode,
         p.Status AS PaymentStatus,
-        p.PaidAt
+        p.PaidAt,
+        
+        r.Status AS RefundStatus
       FROM Bookings b
       LEFT JOIN BookingDetails bd ON bd.BookingID = b.BookingID
       LEFT JOIN Courts c ON bd.CourtID = c.CourtID
       LEFT JOIN Coaches co ON bd.CoachID = co.CoachID
       LEFT JOIN Users cu ON co.UserID = cu.UserID
-      LEFT JOIN Payments p ON p.BookingID = b.BookingID
+      OUTER APPLY (
+        SELECT TOP 1 PaymentID, PaymentMethod, TransactionCode, Status, PaidAt
+        FROM Payments
+        WHERE BookingID = b.BookingID
+        ORDER BY 
+          CASE WHEN Status = 'Paid' THEN 1 ELSE 2 END ASC, 
+          CreatedAt DESC
+      ) p
+      OUTER APPLY (
+        SELECT TOP 1 Status
+        FROM Refunds
+        WHERE BookingID = b.BookingID
+        ORDER BY RequestedAt DESC
+      ) r
       WHERE b.UserID = @UserID
       ORDER BY b.CreatedAt DESC
     `);
@@ -919,7 +946,12 @@ export async function findBookingsByCoachUserId(userId: number) {
       JOIN BookingDetails bd ON bd.BookingID = b.BookingID
       JOIN Coaches co ON bd.CoachID = co.CoachID
       LEFT JOIN Courts c ON bd.CourtID = c.CourtID
-      LEFT JOIN Payments p ON p.BookingID = b.BookingID
+      OUTER APPLY (
+        SELECT TOP 1 PaymentMethod, Status, PaidAt
+        FROM Payments
+        WHERE BookingID = b.BookingID
+        ORDER BY CASE WHEN Status = 'Paid' THEN 1 ELSE 2 END ASC, CreatedAt DESC
+      ) p
       WHERE co.UserID = @UserID
       ORDER BY b.BookingDate DESC, bd.StartTime DESC
     `);
@@ -945,7 +977,7 @@ export async function findBookingById(bookingId: number) {
         b.DiscountAmount,
         b.TotalAmount,
         b.Status,
-        b.CheckInTime,
+        DATEADD(HOUR, -7, b.CheckInTime) AS CheckInTime,
         b.CancelledAt,
         b.CancelReason,
         b.CreatedAt,
@@ -976,7 +1008,12 @@ export async function findBookingById(bookingId: number) {
       LEFT JOIN Courts c ON bd.CourtID = c.CourtID
       LEFT JOIN Coaches co ON bd.CoachID = co.CoachID
       LEFT JOIN Users cu ON co.UserID = cu.UserID
-      LEFT JOIN Payments p ON p.BookingID = b.BookingID
+      OUTER APPLY (
+        SELECT TOP 1 PaymentID, PaymentMethod, TransactionCode, Status, PaidAt
+        FROM Payments
+        WHERE BookingID = b.BookingID
+        ORDER BY CASE WHEN Status = 'Paid' THEN 1 ELSE 2 END ASC, CreatedAt DESC
+      ) p
       WHERE b.BookingID = @BookingID
     `);
 
@@ -986,6 +1023,7 @@ export async function findBookingById(bookingId: number) {
 /**
  * UC-49: Staff xem booking trong ngay.
  * Co the loc theo ngay cu the (mac dinh la hom nay).
+ * Sap xep: moi nhat len dau (CreatedAt DESC).
  */
 export async function findDailyBookingsForStaff(
   date?: string
@@ -1005,7 +1043,9 @@ export async function findDailyBookingsForStaff(
         CONVERT(VARCHAR(5), bd.EndTime, 108) AS EndTime,
         b.TotalAmount,
         b.Status,
-        b.CheckInTime,
+        -- Fix timezone: SQL Server GETDATE() is VN local time but driver reads it as UTC
+        -- Subtract 7 hours to get real UTC so JS Date shows correct VN time
+        DATEADD(HOUR, -7, b.CheckInTime) AS CheckInTime,
         b.CreatedAt,
 
         u.FullName AS PlayerName,
@@ -1016,16 +1056,24 @@ export async function findDailyBookingsForStaff(
         cu.FullName AS CoachName,
 
         p.PaymentMethod,
-        p.Status AS PaymentStatus
+        p.Status AS PaymentStatus,
+
+        r.RefundCode
       FROM Bookings b
       JOIN Users u ON u.UserID = b.UserID
       LEFT JOIN BookingDetails bd ON bd.BookingID = b.BookingID
       LEFT JOIN Courts c ON bd.CourtID = c.CourtID
       LEFT JOIN Coaches co ON bd.CoachID = co.CoachID
       LEFT JOIN Users cu ON co.UserID = cu.UserID
-      LEFT JOIN Payments p ON p.BookingID = b.BookingID
+      OUTER APPLY (
+        SELECT TOP 1 PaymentMethod, Status
+        FROM Payments
+        WHERE BookingID = b.BookingID
+        ORDER BY CASE WHEN Status = 'Paid' THEN 1 ELSE 2 END ASC, CreatedAt DESC
+      ) p
+      LEFT JOIN Refunds r ON r.BookingID = b.BookingID
       WHERE b.BookingDate = @TargetDate
-      ORDER BY bd.StartTime ASC, b.CreatedAt ASC
+      ORDER BY b.CreatedAt DESC
     `);
 
   return result.recordset;

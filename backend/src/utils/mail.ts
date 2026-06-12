@@ -1,19 +1,43 @@
 import nodemailer from "nodemailer";
 
-function getTransporter() {
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD,
-    },
+// ── Transporter singleton ─────────────────────────────
+// Tạo một lần, tái dùng – tránh tạo connection mới mỗi lần gửi mail.
+let _transporter: nodemailer.Transporter | null = null;
+
+function getTransporter(): nodemailer.Transporter {
+  if (_transporter) return _transporter;
+
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+
+  if (!user || !pass) {
+    throw new Error(
+      `[Mail] Thiếu GMAIL_USER hoặc GMAIL_APP_PASSWORD trong .env`
+    );
+  }
+
+  _transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false, // TLS
+    auth: { user, pass },
+    // Giữ kết nối – tránh tạo TCP connection mới mỗi lần gửi
+    pool: true,
+    maxConnections: 3,
+    // Timeout rõ ràng
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   });
+
+  return _transporter;
 }
 
-export async function sendOtpEmail(email: string, otp: string) {
+// ── OTP Email ─────────────────────────────────────────
+export async function sendOtpEmail(email: string, otp: string): Promise<void> {
   const transporter = getTransporter();
   await transporter.sendMail({
-    from: process.env.GMAIL_USER,
+    from: `"PCS Booking" <${process.env.GMAIL_USER}>`,
     to: email,
     subject: "Mã OTP xác thực tài khoản",
     html: `
@@ -25,18 +49,21 @@ export async function sendOtpEmail(email: string, otp: string) {
   });
 }
 
-export async function sendBookingCreatedEmail(email: string, details: any) {
+// ── Booking Created Email (chờ thanh toán) ────────────
+export async function sendBookingCreatedEmail(
+  email: string,
+  details: any
+): Promise<void> {
   try {
     if (!email) return;
     const transporter = getTransporter();
     await transporter.sendMail({
-      from: process.env.GMAIL_USER,
+      from: `"PCS Booking" <${process.env.GMAIL_USER}>`,
       to: email,
       subject: "Đặt lịch thành công - Pickleball Booking",
       html: `
         <h2>Xác nhận đặt lịch thành công</h2>
         <p>Chào ${details.playerName},</p>
-        <p>Chi tiết đặt lịch của bạn:</p>
         <ul>
           <li><strong>Mã booking:</strong> ${details.bookingCode}</li>
           <li><strong>Loại:</strong> ${details.bookingType}</li>
@@ -46,50 +73,232 @@ export async function sendBookingCreatedEmail(email: string, details: any) {
           ${details.coachName ? `<li><strong>HLV:</strong> ${details.coachName}</li>` : ""}
           <li><strong>Trạng thái:</strong> Chờ thanh toán</li>
         </ul>
-        <p><strong>Lưu ý:</strong> Vui lòng thanh toán trong 10 phút hoặc trước giờ bắt đầu sân.</p>
+        <p><strong>Lưu ý:</strong> Vui lòng thanh toán trong 10 phút.</p>
       `,
     });
-  } catch (err) {
-    console.warn("Failed to send booking created email:", err);
+  } catch (err: any) {
+    console.error("[Mail] sendBookingCreatedEmail FAILED:", err?.message ?? err);
   }
 }
 
-export async function sendPaymentSuccessEmail(email: string, details: any) {
+// ── Payment Success Email ─────────────────────────────
+/**
+ * Gửi email xác nhận đặt sân thành công sau khi payment được verify.
+ * Hàm này PHẢI được gọi bằng await – không dùng void.
+ * Nếu SMTP lỗi thì catch và log, KHÔNG throw để không ảnh hưởng webhook.
+ */
+export async function sendPaymentSuccessEmail(
+  email: string,
+  details: {
+    playerName: string;
+    bookingCode: string;
+    bookingType: string;
+    bookingDate: string;
+    startTime: string;
+    endTime: string;
+    courtName?: string;
+    coachName?: string;
+    amount: number;
+    discountAmount?: number;
+    paymentMethod: string;
+    paymentCode?: string;
+    transactionCode?: string;
+  }
+): Promise<void> {
+  if (!email) {
+    console.warn("[Mail] sendPaymentSuccessEmail: email rỗng, bỏ qua.");
+    return;
+  }
+
+  console.log(
+    `[Mail] Chuẩn bị gửi email xác nhận cho booking ${details.bookingCode} → ${email}`
+  );
+
+  const fmtMoney = (n: number) =>
+    n ? n.toLocaleString("vi-VN") + " ₫" : "0 ₫";
+
+  const discountRow =
+    details.discountAmount && details.discountAmount > 0
+      ? `<tr style="background:#f0fdf4;">
+          <td style="${tdStyle}">Giảm giá (Voucher)</td>
+          <td style="${tdStyle};color:#16a34a;">- ${fmtMoney(details.discountAmount)}</td>
+        </tr>`
+      : "";
+
+  const courtRow = details.courtName
+    ? `<tr>
+        <td style="${tdStyle}">Tên sân</td>
+        <td style="${tdStyle}">${details.courtName}</td>
+       </tr>`
+    : "";
+
+  const coachRow = details.coachName
+    ? `<tr>
+        <td style="${tdStyle}">HLV</td>
+        <td style="${tdStyle}">${details.coachName}</td>
+       </tr>`
+    : "";
+
+  const payCodeRow = details.paymentCode
+    ? `<tr style="background:#f0fdf4;">
+        <td style="${tdStyle}">Mã thanh toán</td>
+        <td style="${tdStyle}">${details.paymentCode}</td>
+       </tr>`
+    : "";
+
+  const txRow = details.transactionCode
+    ? `<tr>
+        <td style="${tdStyle}">Mã giao dịch</td>
+        <td style="${tdStyle}">${details.transactionCode}</td>
+       </tr>`
+    : "";
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="vi">
+    <head><meta charset="UTF-8" /></head>
+    <body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 0;">
+        <tr><td align="center">
+          <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);">
+            
+            <!-- Header -->
+            <tr>
+              <td style="background:#16a34a;padding:24px 32px;text-align:center;">
+                <h1 style="margin:0;color:#ffffff;font-size:22px;">✅ Thanh toán thành công!</h1>
+                <p style="margin:6px 0 0;color:#dcfce7;font-size:14px;">
+                  Xác nhận đặt sân - PCS Pickleball Booking
+                </p>
+              </td>
+            </tr>
+
+            <!-- Greeting -->
+            <tr>
+              <td style="padding:24px 32px 8px;">
+                <p style="margin:0;font-size:15px;color:#111;">
+                  Chào <strong>${details.playerName}</strong>,
+                </p>
+                <p style="margin:8px 0 0;color:#555;font-size:14px;">
+                  Booking <strong>${details.bookingCode}</strong> của bạn đã được thanh toán và xác nhận thành công.
+                  Vui lòng kiểm tra thông tin chi tiết bên dưới.
+                </p>
+              </td>
+            </tr>
+
+            <!-- Booking Detail Table -->
+            <tr>
+              <td style="padding:16px 32px 24px;">
+                <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:14px;">
+                  <tr style="background:#f0fdf4;">
+                    <td style="${tdStyle};font-weight:bold;color:#111;" colspan="2">📋 Chi tiết booking</td>
+                  </tr>
+                  <tr>
+                    <td style="${tdStyle};color:#555;width:45%;">Mã booking</td>
+                    <td style="${tdStyle};font-weight:bold;">${details.bookingCode}</td>
+                  </tr>
+                  <tr style="background:#f9fafb;">
+                    <td style="${tdStyle};color:#555;">Loại dịch vụ</td>
+                    <td style="${tdStyle};">${details.bookingType}</td>
+                  </tr>
+                  ${courtRow}
+                  ${coachRow}
+                  <tr style="background:#f9fafb;">
+                    <td style="${tdStyle};color:#555;">Ngày chơi</td>
+                    <td style="${tdStyle};">${details.bookingDate}</td>
+                  </tr>
+                  <tr>
+                    <td style="${tdStyle};color:#555;">Khung giờ</td>
+                    <td style="${tdStyle};">${details.startTime} – ${details.endTime}</td>
+                  </tr>
+
+                  <!-- Separator -->
+                  <tr>
+                    <td colspan="2" style="${tdStyle};background:#f0fdf4;font-weight:bold;color:#111;">💳 Thanh toán</td>
+                  </tr>
+                  <tr>
+                    <td style="${tdStyle};color:#555;">Phương thức</td>
+                    <td style="${tdStyle};">${details.paymentMethod}</td>
+                  </tr>
+                  ${payCodeRow}
+                  ${txRow}
+                  ${discountRow}
+                  <tr style="background:#fef2f2;">
+                    <td style="${tdStyle};color:#555;font-weight:bold;">Số tiền đã thanh toán</td>
+                    <td style="${tdStyle};font-weight:bold;color:#dc2626;font-size:16px;">${fmtMoney(details.amount)}</td>
+                  </tr>
+                  <tr style="background:#f0fdf4;">
+                    <td style="${tdStyle};color:#555;">Trạng thái</td>
+                    <td style="${tdStyle};color:#16a34a;font-weight:bold;">✅ Đã thanh toán & Xác nhận</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Footer note -->
+            <tr>
+              <td style="padding:0 32px 24px;">
+                <p style="margin:0;font-size:14px;color:#555;">
+                  🏓 Vui lòng đến đúng giờ để check-in tại sân. Chúc bạn chơi vui vẻ!
+                </p>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #e5e7eb;">
+                <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
+                  Email này được gửi tự động từ hệ thống PCS Pickleball Booking.<br/>
+                  Vui lòng không reply email này.
+                </p>
+              </td>
+            </tr>
+
+          </table>
+        </td></tr>
+      </table>
+    </body>
+    </html>
+  `;
+
   try {
-    if (!email) return;
     const transporter = getTransporter();
     await transporter.sendMail({
-      from: process.env.GMAIL_USER,
+      from: `"PCS Booking" <${process.env.GMAIL_USER}>`,
       to: email,
-      subject: "Thanh toán booking thành công",
-      html: `
-        <h2>Thanh toán thành công</h2>
-        <p>Booking <strong>${details.bookingCode}</strong> đã được thanh toán thành công.</p>
-        <ul>
-          <li><strong>Số tiền:</strong> ${Number(details.amount).toLocaleString('vi-VN')} VND</li>
-          <li><strong>Ngày chơi:</strong> ${details.bookingDate}</li>
-          <li><strong>Khung giờ:</strong> ${details.startTime} - ${details.endTime}</li>
-        </ul>
-        <p>Trạng thái: Đã xác nhận.</p>
-        <p>Vui lòng đến đúng giờ để check-in tại sân.</p>
-      `,
+      subject: `Xác nhận đặt sân thành công - ${details.bookingCode}`,
+      html,
     });
-  } catch (err) {
-    console.warn("Failed to send payment success email:", err);
+    console.log(
+      `[Mail] ✅ Email xác nhận đã gửi thành công → ${email} (booking: ${details.bookingCode})`
+    );
+  } catch (err: any) {
+    console.error(
+      `[Mail] ❌ sendPaymentSuccessEmail FAILED → ${email}:`,
+      err?.message ?? err
+    );
+    if (err?.code) console.error("[Mail] SMTP error code:", err.code);
+    if (err?.response) console.error("[Mail] SMTP response:", err.response);
+    // KHÔNG throw – để webhook vẫn trả success, payment không bị rollback
   }
 }
 
-export async function sendCoachAssignedEmail(email: string, details: any) {
+const tdStyle =
+  "padding:10px 14px;border:1px solid #e5e7eb;vertical-align:top;";
+
+// ── Coach Assigned Email ──────────────────────────────
+export async function sendCoachAssignedEmail(
+  email: string,
+  details: any
+): Promise<void> {
   try {
     if (!email) return;
     const transporter = getTransporter();
     await transporter.sendMail({
-      from: process.env.GMAIL_USER,
+      from: `"PCS Booking" <${process.env.GMAIL_USER}>`,
       to: email,
       subject: "Bạn có booking mới",
       html: `
         <h2>Bạn có một lịch hướng dẫn mới</h2>
-        <p>Chi tiết:</p>
         <ul>
           <li><strong>Mã booking:</strong> ${details.bookingCode}</li>
           <li><strong>Học viên:</strong> ${details.playerName}</li>
@@ -100,45 +309,113 @@ export async function sendCoachAssignedEmail(email: string, details: any) {
         <p>Vui lòng theo dõi và đến sân đúng giờ.</p>
       `,
     });
-  } catch (err) {
-    console.warn("Failed to send coach assigned email:", err);
+  } catch (err: any) {
+    console.error("[Mail] sendCoachAssignedEmail FAILED:", err?.message ?? err);
   }
 }
 
-export async function sendNoShowEmail(email: string, details: any) {
+// ── No Show Email ─────────────────────────────────────
+export async function sendNoShowEmail(
+  email: string,
+  details: any
+): Promise<void> {
   try {
     if (!email) return;
     const transporter = getTransporter();
     await transporter.sendMail({
-      from: process.env.GMAIL_USER,
+      from: `"PCS Booking" <${process.env.GMAIL_USER}>`,
       to: email,
-      subject: details.isAuto ? "Booking của bạn đã bị tự động đánh dấu No-show" : "Booking của bạn đã bị đánh dấu No-show",
+      subject: details.isAuto
+        ? "Booking của bạn đã bị tự động đánh dấu No-show"
+        : "Booking của bạn đã bị đánh dấu No-show",
       html: `
         <h2>Thông báo No-show</h2>
         <p>Booking <strong>${details.bookingCode}</strong> vào lúc ${details.startTime} ngày ${details.bookingDate} đã bị đánh dấu No-show.</p>
-        ${details.isAuto ? "<p>Booking của bạn đã bị đánh dấu No-show do không check-in sau 15 phút kể từ giờ bắt đầu.</p>" : (details.reason ? `<p>Lý do: ${details.reason}</p>` : "")}
+        ${
+          details.isAuto
+            ? "<p>Booking của bạn đã bị đánh dấu No-show do không check-in sau 15 phút kể từ giờ bắt đầu.</p>"
+            : details.reason
+            ? `<p>Lý do: ${details.reason}</p>`
+            : ""
+        }
       `,
     });
-  } catch (err) {
-    console.warn("Failed to send no-show email:", err);
+  } catch (err: any) {
+    console.error("[Mail] sendNoShowEmail FAILED:", err?.message ?? err);
   }
 }
 
-export async function sendPaymentExpiredEmail(email: string, details: any) {
+// ── Payment Expired Email ─────────────────────────────
+export async function sendPaymentExpiredEmail(
+  email: string,
+  details: any
+): Promise<void> {
   try {
     if (!email) return;
     const transporter = getTransporter();
     await transporter.sendMail({
-      from: process.env.GMAIL_USER,
+      from: `"PCS Booking" <${process.env.GMAIL_USER}>`,
       to: email,
       subject: "Booking đã hết hạn thanh toán",
       html: `
         <h2>Thông báo hết hạn thanh toán</h2>
         <p>Booking <strong>${details.bookingCode}</strong> đã quá thời gian thanh toán và đã tự động bị huỷ.</p>
-        <p>Slot đã được mở lại cho người khác đặt. Bạn có thể đặt lại một lịch mới trên hệ thống.</p>
+        <p>Slot đã được mở lại. Bạn có thể đặt lại một lịch mới trên hệ thống.</p>
       `,
     });
-  } catch (err) {
-    console.warn("Failed to send payment expired email:", err);
+  } catch (err: any) {
+    console.error(
+      "[Mail] sendPaymentExpiredEmail FAILED:",
+      err?.message ?? err
+    );
+  }
+}
+
+// ── Refund Completed Email ────────────────────────────
+export async function sendRefundCompletedEmail(
+  email: string,
+  details: any
+): Promise<void> {
+  try {
+    if (!email) return;
+    const transporter = getTransporter();
+
+    const hasBillImage = details.billImage && details.billImage.buffer;
+    const attachments: any[] = [];
+    if (hasBillImage) {
+      attachments.push({
+        filename: details.billImage.filename || "bill.jpg",
+        content: details.billImage.buffer,
+        contentType: details.billImage.mimeType || "image/jpeg",
+        cid: "billimage@pickleball",
+        contentDisposition: "inline" as const,
+      });
+    }
+
+    await transporter.sendMail({
+      from: `"PCS Booking" <${process.env.GMAIL_USER}>`,
+      to: email,
+      subject: "Hoàn tiền thành công - Pickleball Booking",
+      html: `
+        <h2>Xác nhận hoàn tiền thành công</h2>
+        <p>Yêu cầu hoàn tiền cho Booking <strong>${details.bookingCode}</strong> đã được xử lý thành công.</p>
+        <ul>
+          <li><strong>Số tiền hoàn lại:</strong> ${Number(details.amount).toLocaleString("vi-VN")} ₫</li>
+        </ul>
+        <p>Quản trị viên đã thực hiện chuyển khoản. Bạn vui lòng kiểm tra tài khoản nhận tiền.</p>
+        ${
+          hasBillImage
+            ? `<p><strong>Bill chuyển khoản:</strong></p><img src="cid:billimage@pickleball" alt="Bill hoàn tiền" style="max-width:500px;height:auto;border-radius:8px;" />`
+            : ""
+        }
+        <p>Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi.</p>
+      `,
+      attachments,
+    });
+  } catch (err: any) {
+    console.error(
+      "[Mail] sendRefundCompletedEmail FAILED:",
+      err?.message ?? err
+    );
   }
 }

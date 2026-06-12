@@ -48,6 +48,7 @@ export default function AdminLayout({
     { href: "/admin", label: "Tổng quan", icon: <DashboardIcon />, hideForStaff: true },
     { href: "/admin/courts", label: "Sân", icon: <CourtIcon />, hideForStaff: true },
     { href: "/admin/bookings", label: "Quản lý Booking", icon: <CalendarIcon /> },
+    { href: "/admin/refunds", label: "Quản lý Hoàn tiền", icon: <RevenueIcon /> },
     { href: "/staff/operations", label: "Vận hành", icon: <OperationsIcon /> },
     { href: "/admin/combos", label: "Combo", icon: <ComboIcon /> },
     { href: "/admin/players", label: "Người chơi", icon: <PlayerIcon /> },

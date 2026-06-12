@@ -301,7 +301,9 @@ export default function AdminPage() {
           <div className={styles.panel}>
             <div className={styles.panelHeader}>
               <h2>Trạng thái vận hành</h2>
-              <MoreIcon className={styles.statusIcon} style={{ color: "#6B7280", cursor: "pointer" }} />
+              <span style={{ color: "#6B7280", cursor: "pointer", display: "flex" }}>
+                <MoreIcon className={styles.statusIcon} />
+              </span>
             </div>
 
             <div className={styles.statusList}>

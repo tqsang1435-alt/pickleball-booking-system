@@ -133,6 +133,13 @@ export default function AdminBookingsPage() {
     groupedBookings[courtName].push(b);
   });
 
+  // Sap xep cac san theo booking moi nhat trong san do
+  const courtOrder = Object.keys(groupedBookings).sort((a, b) => {
+    const aLatest = groupedBookings[a][0]?.CreatedAt ?? "";
+    const bLatest = groupedBookings[b][0]?.CreatedAt ?? "";
+    return bLatest > aLatest ? 1 : -1;
+  });
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -205,6 +212,12 @@ export default function AdminBookingsPage() {
 
           {Object.entries(groupedBookings)
             .filter(([courtName]) => selectedCourt === "Tất cả" || selectedCourt === courtName)
+            .sort(([a], [b]) => {
+              // Sap xep cac section san theo booking moi nhat trong san do
+              const aLatest = groupedBookings[a][0]?.CreatedAt ?? "";
+              const bLatest = groupedBookings[b][0]?.CreatedAt ?? "";
+              return bLatest > aLatest ? 1 : -1;
+            })
             .map(([courtName, courtBookings]) => (
             <div key={courtName} className={styles.courtSection}>
               <h2 className={styles.courtTitle}>{courtName}</h2>
@@ -271,9 +284,13 @@ export default function AdminBookingsPage() {
                             <span className={`${styles.badge} ${getStatusClass(b.Status)}`}>
                               {getStatusLabel(b.Status)}
                             </span>
-                            {b.CheckInTime && (
+                          {b.CheckInTime && (
                               <div className={styles.checkInTime}>
-                                Lúc {new Date(b.CheckInTime).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                                Lúc {new Date(b.CheckInTime).toLocaleTimeString("vi-VN", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  timeZone: "Asia/Ho_Chi_Minh"
+                                })}
                               </div>
                             )}
                           </td>
@@ -301,8 +318,29 @@ export default function AdminBookingsPage() {
                                   {isActioning ? "..." : "❌ Hủy"}
                                 </button>
                               )}
-                              {!canCheckIn && !canCancel && (
+                              {!canCheckIn && !canCancel && !["Cancelled", "Refunded"].includes(b.Status) && (
                                 <span className={styles.noAction}>-</span>
+                              )}
+                              {["Cancelled", "Refunded"].includes(b.Status) && (
+                                b.RefundCode ? (
+                                  <button
+                                    onClick={() => router.push(`/admin/refunds?search=${b.RefundCode}`)}
+                                    className={styles.btnCheckIn}
+                                    style={{ background: "#f8fafc", color: "#6366f1", border: "1px solid #c7d2fe", fontWeight: 600 }}
+                                    title="Xem chi tiết hoàn tiền"
+                                  >
+                                    🔍 {b.RefundCode}
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => router.push(`/admin/refunds?search=${b.BookingCode}`)}
+                                    className={styles.btnCheckIn}
+                                    style={{ background: "#3b82f6", color: "white" }}
+                                    title="Chuyển đến trang Hoàn tiền"
+                                  >
+                                    💸 Hoàn tiền
+                                  </button>
+                                )
                               )}
                             </div>
                           </td>

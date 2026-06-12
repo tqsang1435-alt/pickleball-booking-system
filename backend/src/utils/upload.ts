@@ -118,3 +118,42 @@ export async function validateAndSaveCourtFile(
 
   return `/uploads/courts/${safeFilename}`;
 }
+
+export async function validateAndSaveRefundFile(
+  file: File,
+  refundId: number
+): Promise<string> {
+  if (!file || !file.name) {
+    throw new CustomUploadError("Không tìm thấy file upload", 400);
+  }
+
+  // 5MB limit
+  const maxSize = 5 * 1024 * 1024;
+  if (file.size > maxSize) {
+    throw new CustomUploadError("Hình ảnh bill không được vượt quá 5MB", 400);
+  }
+
+  const ext = path.extname(file.name).toLowerCase();
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    throw new CustomUploadError("Chỉ được chọn ảnh JPG, PNG hoặc WEBP", 400);
+  }
+
+  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    throw new CustomUploadError("Chỉ được chọn ảnh JPG, PNG hoặc WEBP", 400);
+  }
+
+  const timestamp = Date.now();
+  const safeFilename = `refund-${refundId}-${timestamp}${ext}`;
+
+  const uploadDir = path.join(process.cwd(), "public", "uploads", "refunds");
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const targetPath = path.join(uploadDir, safeFilename);
+  fs.writeFileSync(targetPath, buffer);
+
+  return `/uploads/refunds/${safeFilename}`;
+}
