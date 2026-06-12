@@ -69,9 +69,9 @@ export function validateBookingDate(bookingDate: string, startTime: string): voi
  */
 export async function validateHoldingLimit(userId: number): Promise<void> {
   const holdingCount = await countHoldingBookingsByUserId(userId);
-  if (holdingCount >= 3) {
+  if (holdingCount >= 1) {
     throw new Error(
-      "Ban dang co 3 booking cho thanh toan. Vui long thanh toan hoac huy truoc khi dat them (BR-40)"
+      "Bạn đang có booking chưa thanh toán. Vui lòng thanh toán hoặc hủy booking hiện tại trước khi đặt thêm."
     );
   }
 }

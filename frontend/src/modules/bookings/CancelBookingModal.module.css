@@ -286,6 +286,11 @@
   cursor: not-allowed;
 }
 
+.reasonInput option {
+  background-color: #1a1a2e;
+  color: #f1f5f9;
+}
+
 .charCount {
   text-align: right;
   font-size: 0.75rem;

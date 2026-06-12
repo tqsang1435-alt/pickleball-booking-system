@@ -149,48 +149,50 @@ export default function CancelBookingModal({ booking, onClose, onSuccess }: Prop
           </div>
         </div>
 
-        {/* Refund Policy Preview */}
-        <div className={styles.refundPolicy} style={{ borderColor: refundTier.color }}>
-          <div className={styles.refundHeader}>
-            <span className={styles.refundIcon}>⏱️</span>
-            <div>
-              <div className={styles.timeUntilStart}>
-                Còn <strong>{formatHours(refundTier.hoursUntilStart)}</strong> trước giờ chơi
-              </div>
-              <div className={styles.refundLabel} style={{ color: refundTier.color }}>
-                {refundTier.label}
+        {/* Refund Policy Preview (only for Paid/Confirmed bookings) */}
+        {isPaidOrConfirmed && (
+          <div className={styles.refundPolicy} style={{ borderColor: refundTier.color }}>
+            <div className={styles.refundHeader}>
+              <span className={styles.refundIcon}>⏱️</span>
+              <div>
+                <div className={styles.timeUntilStart}>
+                  Còn <strong>{formatHours(refundTier.hoursUntilStart)}</strong> trước giờ chơi
+                </div>
+                <div className={styles.refundLabel} style={{ color: refundTier.color }}>
+                  {refundTier.label}
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className={styles.refundBreakdown}>
-            <div className={styles.refundRow}>
-              <span>Số tiền hoàn lại</span>
-              <strong style={{ color: refundTier.color }}>{formatCurrency(refundAmount)}</strong>
-            </div>
-            {deductAmount > 0 && (
+            <div className={styles.refundBreakdown}>
               <div className={styles.refundRow}>
-                <span>Phí bị trừ (30%)</span>
-                <strong className={styles.deductAmount}>– {formatCurrency(deductAmount)}</strong>
+                <span>Số tiền hoàn lại</span>
+                <strong style={{ color: refundTier.color }}>{formatCurrency(refundAmount)}</strong>
               </div>
-            )}
-          </div>
+              {deductAmount > 0 && (
+                <div className={styles.refundRow}>
+                  <span>Phí bị trừ (30%)</span>
+                  <strong className={styles.deductAmount}>– {formatCurrency(deductAmount)}</strong>
+                </div>
+              )}
+            </div>
 
-          <p className={styles.refundNote}>{refundTier.description}</p>
+            <p className={styles.refundNote}>{refundTier.description}</p>
 
-          {/* Progress bar */}
-          <div className={styles.progressBar}>
-            <div
-              className={styles.progressFill}
-              style={{ width: `${refundTier.percent}%`, backgroundColor: refundTier.color }}
-            />
+            {/* Progress bar */}
+            <div className={styles.progressBar}>
+              <div
+                className={styles.progressFill}
+                style={{ width: `${refundTier.percent}%`, backgroundColor: refundTier.color }}
+              />
+            </div>
+            <div className={styles.progressLabels}>
+              <span>0%</span>
+              <span style={{ color: refundTier.color }}>Hoàn {refundTier.percent}%</span>
+              <span>100%</span>
+            </div>
           </div>
-          <div className={styles.progressLabels}>
-            <span>0%</span>
-            <span style={{ color: refundTier.color }}>Hoàn {refundTier.percent}%</span>
-            <span>100%</span>
-          </div>
-        </div>
+        )}
 
         {/* Refund info for paid bookings */}
         {isPaidOrConfirmed && refundAmount > 0 && (
@@ -227,7 +229,9 @@ export default function CancelBookingModal({ booking, onClose, onSuccess }: Prop
             disabled={loading}
           />
           <span>
-            Tôi hiểu chính sách hoàn tiền và xác nhận muốn hủy booking này.
+            {isPaidOrConfirmed
+              ? "Tôi hiểu chính sách hoàn tiền và xác nhận muốn hủy booking này."
+              : "Tôi xác nhận muốn hủy booking này."}
           </span>
         </label>
 
@@ -249,8 +253,10 @@ export default function CancelBookingModal({ booking, onClose, onSuccess }: Prop
           >
             {loading ? (
               <><span className={styles.spinner} /> Đang hủy...</>
-            ) : (
+            ) : isPaidOrConfirmed ? (
               `Xác nhận hủy${refundAmount > 0 ? ` — Hoàn ${formatCurrency(refundAmount)}` : ""}`
+            ) : (
+              "Xác nhận hủy"
             )}
           </button>
         </div>

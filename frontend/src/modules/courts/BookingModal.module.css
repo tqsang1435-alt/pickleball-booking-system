@@ -29,6 +29,19 @@
   position: relative;
 }
 
+@media (max-height: 850px) {
+  .modal { zoom: 0.9; }
+}
+@media (max-height: 750px) {
+  .modal { zoom: 0.8; }
+}
+@media (max-height: 650px) {
+  .modal { zoom: 0.7; }
+}
+@media (max-height: 550px) {
+  .modal { zoom: 0.6; }
+}
+
 @keyframes slideUp {
   from { transform: translateY(30px); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }

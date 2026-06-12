@@ -31,6 +31,7 @@ export type Booking = {
   CancelReason: string | null;
   CreatedAt: string;
   PaymentDeadline: string | null;
+  RefundStatus?: string;
 
   // Detail
   BookingDetailID?: number;
@@ -114,6 +115,8 @@ export type DailyBooking = {
   CoachName: string | null;
   PaymentMethod: string | null;
   PaymentStatus: string | null;
+  RefundCode?: string;
+  CreatedAt: string;
 };
 
 // ===== API Functions =====

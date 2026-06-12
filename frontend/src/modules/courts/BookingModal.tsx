@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { bookCourt, mockPayBooking } from "@/services/bookingApi";
+import { bookCourt } from "@/services/bookingApi";
 import type { Booking } from "@/services/bookingApi";
 import type { CourtSlot } from "@/services/courtApi";
 import { getToken } from "@/utils/authStorage";
 import { formatCurrency } from "@/utils/formatCurrency";
+import PaymentModal from "@/modules/payments/PaymentModal";
 import styles from "./BookingModal.module.css";
 
 type Props = {
@@ -36,7 +37,6 @@ export default function BookingModal({
   onSuccess,
 }: Props) {
   const [step, setStep] = useState<Step>("confirm");
-  const [paymentMethod, setPaymentMethod] = useState<"VNPay" | "Momo">("VNPay");
   const [booking, setBooking] = useState<Booking | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
@@ -71,24 +71,12 @@ export default function BookingModal({
     }
   }
 
-  async function handleMockPay() {
-    if (!booking) return;
-    const token = getToken();
-    if (!token) return;
-
-    setLoading(true);
-    try {
-      await mockPayBooking(token, booking.BookingID, paymentMethod);
-      // Cập nhật booking status
-      setBooking((prev) => prev ? { ...prev, Status: "Confirmed", PaymentMethod: paymentMethod } : prev);
-      setStep("success");
-      onSuccess({ ...booking, Status: "Confirmed" });
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "Thanh toán thất bại.");
-      setStep("error");
-    } finally {
-      setLoading(false);
-    }
+  // Khi PaymentModal đóng (user hủy hoặc sau khi redirect trở về),
+  // đóng BookingModal luôn vì booking đã được tạo.
+  function handlePaymentModalClose() {
+    // Đóng toàn bộ modal – booking đã ở PendingPayment,
+    // user có thể thanh toán lại từ /bookings
+    onClose();
   }
 
   return (
@@ -151,65 +139,14 @@ export default function BookingModal({
           </>
         )}
 
-        {/* ── STEP: Thanh toán ── */}
+        {/* ── STEP: Thanh toán – PaymentModal thật ── */}
         {step === "paying" && booking && (
-          <>
-            <div className={styles.header}>
-              <div className={styles.headerIcon}>💳</div>
-              <h2>Thanh toán</h2>
-              <p><strong>{hours} giờ</strong> - Mã booking: <strong>{booking.BookingCode}</strong></p>
-            </div>
-
-            <div className={styles.infoCard}>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Tổng tiền</span>
-                <span className={`${styles.infoValue} ${styles.price}`}>
-                  {formatCurrency(Number(booking.TotalAmount))}
-                </span>
-              </div>
-            </div>
-
-            <div className={styles.payMethodSection}>
-              <p className={styles.payMethodLabel}>Chọn phương thức thanh toán:</p>
-              <div className={styles.payMethods}>
-                {(["VNPay", "Momo"] as const).map((method) => (
-                  <label
-                    key={method}
-                    className={`${styles.payMethodCard} ${paymentMethod === method ? styles.payMethodActive : ""}`}
-                  >
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value={method}
-                      checked={paymentMethod === method}
-                      onChange={() => setPaymentMethod(method)}
-                    />
-                    <span className={styles.payMethodIcon}>
-                      {method === "VNPay" ? "🏦" : "📱"}
-                    </span>
-                    <span>{method}</span>
-                  </label>
-                ))}
-              </div>
-
-              <div className={styles.mockBadge}>
-                🔧 Demo mode — Thanh toán mock không cần gateway thật
-              </div>
-            </div>
-
-            <div className={styles.actions}>
-              <button className={styles.btnCancel} onClick={onClose} disabled={loading}>
-                Hủy & giữ booking
-              </button>
-              <button
-                className={styles.btnConfirm}
-                onClick={handleMockPay}
-                disabled={loading}
-              >
-                {loading ? "Đang thanh toán..." : `Thanh toán ${paymentMethod} →`}
-              </button>
-            </div>
-          </>
+          <PaymentModal
+            bookingId={booking.BookingID}
+            bookingCode={booking.BookingCode}
+            totalAmount={Number(booking.TotalAmount)}
+            onClose={handlePaymentModalClose}
+          />
         )}
 
         {/* ── STEP: Thành công ── */}
@@ -247,9 +184,10 @@ export default function BookingModal({
               <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>Thanh toán</span>
                 <span className={`${styles.infoValue} ${styles.paidBadge}`}>
-                  ✅ {paymentMethod} · {formatCurrency(Number(booking.TotalAmount))}
+                  ✅ {formatCurrency(Number(booking.TotalAmount))}
                 </span>
               </div>
+
             </div>
 
             <div className={styles.notice}>

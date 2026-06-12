@@ -346,7 +346,7 @@ CREATE TABLE Refunds (
     Reason NVARCHAR(255),
 
     Status NVARCHAR(30) NOT NULL DEFAULT 'Requested'
-        CHECK (Status IN ('Requested', 'Approved', 'Rejected', 'Processing', 'Completed', 'Failed')),
+        CHECK (Status IN ('Requested', 'Approved', 'Rejected', 'Processing', 'PendingManual', 'Completed', 'Failed')),
 
     RequestedAt DATETIME NOT NULL DEFAULT GETDATE(),
     ProcessedAt DATETIME NULL,

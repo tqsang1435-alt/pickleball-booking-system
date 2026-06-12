@@ -65,7 +65,7 @@ export default function Navbar() {
         const res = await getPendingInvitationCount(token);
         setPendingCount(res?.count || 0);
       } catch (err) {
-        console.error("Failed to fetch pending count", err);
+        // console.warn("Failed to fetch pending count", err);
         setPendingCount(0);
       }
     }
@@ -80,7 +80,7 @@ export default function Navbar() {
         const count = await getUnreadNotificationCount(token);
         setUnreadNotifCount(typeof count === 'number' ? count : 0);
       } catch (err) {
-        console.error("Failed to fetch notif count", err);
+        // console.warn("Failed to fetch notif count", err);
         setUnreadNotifCount(0);
       }
     }
