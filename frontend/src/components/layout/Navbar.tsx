@@ -1,5 +1,5 @@
 "use client";
-
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -186,15 +186,20 @@ export default function Navbar() {
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        {/* LOGO */}
-        <Link href="/" className={styles.logo}>
-          <span className={styles.logoMark}>◐</span>
+      <Link href="/" className={styles.logo}>
+  <Image
+    src="/images/logo.png"
+    alt="Pickle Club"
+    width={42}
+    height={42}
+    className={styles.logoImage}
+    priority
+  />
 
-          <span>
-            Pickle <b>Club</b>
-          </span>
-        </Link>
-
+  <span className={styles.logoText}>
+    Pickle <b>Club</b>
+  </span>
+</Link>
         <nav className={styles.nav}>
           {navItems.map((item) => {
             let active = false;
