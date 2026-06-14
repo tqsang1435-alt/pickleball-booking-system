@@ -35,6 +35,18 @@ export async function editMyProfile(userId: number, data: UpdateProfileDto) {
   return getUserDetail(userId);
 }
 
+export async function editUserByAdmin(userId: number, data: UpdateProfileDto) {
+  const user = await findUserById(userId);
+
+  if (!user) {
+    throw new Error("Không tìm thấy người dùng");
+  }
+
+  await updateProfile(userId, data);
+
+  return getUserDetail(userId);
+}
+
 export async function lockUser(userId: number) {
   await updateUserStatus(userId, "Locked");
 
@@ -69,10 +81,14 @@ export async function createStaffByAdmin(data: import("./users.dto").CreateStaff
     throw new AppError("Họ tên và email là bắt buộc", 400);
   }
 
+  if (!data.password || data.password.trim().length < 8) {
+    const { AppError } = await import("@/utils/AppError");
+    throw new AppError("Mật khẩu phải có ít nhất 8 ký tự", 400);
+  }
+
   const bcrypt = await import("bcryptjs");
-  const password = data.password || "123456"; // Default password
-  const cost = 12; // bcrypt cost >= 12
-  const passwordHash = await bcrypt.hash(password, cost);
+  const cost = 12;
+  const passwordHash = await bcrypt.hash(data.password, cost);
 
   const userId = await import("./users.repository").then((m) =>
     m.createStaffAdminTransaction({ ...data, passwordHash })

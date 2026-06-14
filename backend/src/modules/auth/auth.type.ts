@@ -26,6 +26,7 @@ export type AuthUser = {
 };
 
 export type JwtPayload = {
+  [key: string]: any;
   userId: number;
   email: string;
   roles: string[];

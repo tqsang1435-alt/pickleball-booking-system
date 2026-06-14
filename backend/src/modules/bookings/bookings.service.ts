@@ -1,7 +1,8 @@
 import { requestRefund } from "@/modules/refunds/refunds.service";
 import { createNotification } from "@/modules/notifications/notifications.service";
-import { CreateCourtBookingInput, CreateCoachBookingInput, CreateComboBookingInput, CancelBookingInput, CancelBookingResult, CheckInInput, CheckInResult } from "./bookings.type";
-import { findUserById, findCourtByIdForBooking, findCoachByIdForBooking, findAvailableCourtSlot, findAvailableCoachSchedule, findBookingWithPaymentById, repoCreateCourtBooking, repoCreateCoachBooking, repoCreateComboBooking, repoCancelBookingById, repoCheckInBookingById, repoMockPayBooking, repoReleaseExpiredHoldings, repoAutoCheckInExpired, repoMarkCompletedExpiredCheckins, findBookingsByUserId, findBookingsByCoachUserId, findBookingById, findDailyBookingsForStaff, repoCreateTeamBooking } from "./bookings.repository";
+import { createSystemLog } from "@/modules/systemlogs/systemlogs.service";
+import { CreateCourtBookingInput, CreateWalkInCourtBookingInput, CreateCoachBookingInput, CreateComboBookingInput, CancelBookingInput, CancelBookingResult, CheckInInput, CheckInResult } from "./bookings.type";
+import { findUserById, getOrCreateWalkInGuestUser, findCourtByIdForBooking, findCoachByIdForBooking, findAvailableCourtSlot, findAvailableCoachSchedule, findBookingWithPaymentById, repoCreateCourtBooking, repoCreateCoachBooking, repoCreateComboBooking, repoCancelBookingById, repoCheckInBookingById, repoMockPayBooking, repoReleaseExpiredHoldings, repoAutoCheckInExpired, repoMarkCompletedExpiredCheckins, findBookingsByUserId, findBookingsByCoachUserId, findBookingById, findDailyBookingsForStaff, repoCreateTeamBooking } from "./bookings.repository";
 import { calculateHours, validateBookingDate, validateHoldingLimit, validateCoachFeePerHour } from "./bookings.validation";
 import { isScheduleExpired } from "../coaches/coaches.validation";
 import { sendBookingCreatedEmail, sendPaymentSuccessEmail, sendCoachAssignedEmail, sendNoShowEmail, sendPaymentExpiredEmail } from "@/utils/mail";
@@ -19,13 +20,50 @@ export async function createCourtBooking(input: CreateCourtBookingInput) {
   // BR-23 + Real-time check
   validateBookingDate(input.bookingDate, input.startTime);
 
+  const isStaffWalkIn =
+    !!input.paymentMethod &&
+    ["Cash", "BankTransfer"].includes(input.paymentMethod) &&
+    !!input.userRoles?.some((role) => ["Admin", "Staff", "Manager"].includes(role));
+
+  if (input.paymentMethod && !isStaffWalkIn) {
+    throw new Error("Chi Staff/Admin moi duoc tao booking thanh toan tai quay");
+  }
+
+  let bookingUserId = input.userId;
+  let walkInNote: string | undefined;
+
+  if (isStaffWalkIn) {
+    if (input.customerId) {
+      bookingUserId = input.customerId;
+    } else {
+      if (!input.guestName?.trim() || !input.guestPhone?.trim()) {
+        throw new Error("Vui long nhap ten va so dien thoai khach vang lai");
+      }
+
+      const guestUser = await getOrCreateWalkInGuestUser();
+      if (!guestUser) throw new Error("Khong the tao tai khoan khach vang lai");
+      bookingUserId = Number(guestUser.UserID);
+    }
+
+    walkInNote = [
+      "[Walk-in]",
+      `StaffID:${input.userId}`,
+      input.customerId ? `CustomerID:${input.customerId}` : undefined,
+      input.guestName?.trim() ? `GuestName:${input.guestName.trim()}` : undefined,
+      input.guestPhone?.trim() ? `GuestPhone:${input.guestPhone.trim()}` : undefined,
+      `Payment:${input.paymentMethod}`,
+    ].filter(Boolean).join(" | ");
+  }
+
   // BR-22 (userId da duoc lay tu JWT o controller)
-  const user = await findUserById(input.userId);
+  const user = await findUserById(bookingUserId);
   if (!user) throw new Error("Nguoi dung khong ton tai");
   if (user.Status !== "Active") throw new Error("Tai khoan nguoi dung khong hoat dong");
 
   // BR-40
-  await validateHoldingLimit(input.userId);
+  if (!isStaffWalkIn) {
+    await validateHoldingLimit(bookingUserId);
+  }
 
   const court = await findCourtByIdForBooking(input.courtId);
   if (!court) throw new Error("San khong ton tai");
@@ -44,13 +82,18 @@ export async function createCourtBooking(input: CreateCourtBookingInput) {
 
   // BR-39: Khong cho dat vao slot da Cancelled (xu ly bang Status check o DB)
   const result = await repoCreateCourtBooking({
-    userId: input.userId,
+    userId: bookingUserId,
     courtId: input.courtId,
     slotId: slot.SlotID,
     bookingDate: input.bookingDate,
     startTime: input.startTime,
     endTime: input.endTime,
     courtFee,
+    paymentMethod: isStaffWalkIn ? input.paymentMethod : undefined,
+    walkInNote,
+    bookedByStaffId: isStaffWalkIn ? input.userId : undefined,
+    guestName: isStaffWalkIn ? input.guestName?.trim() : undefined,
+    guestPhone: isStaffWalkIn ? input.guestPhone?.trim() : undefined,
   });
 
   if (result && result.BookingID) {
@@ -73,6 +116,40 @@ export async function createCourtBooking(input: CreateCourtBookingInput) {
   }
 
   return result;
+}
+
+export async function createWalkInCourtBooking(input: CreateWalkInCourtBookingInput) {
+  const booking = await createCourtBooking({
+    userId: input.staffId,
+    userRoles: input.staffRoles,
+    courtId: input.courtId,
+    bookingDate: input.bookingDate,
+    startTime: input.startTime,
+    endTime: input.endTime,
+    customerId: input.customerId,
+    guestName: input.guestName,
+    guestPhone: input.guestPhone,
+    paymentMethod: input.paymentMethod,
+  });
+
+  await createSystemLog({
+    userId: input.staffId,
+    action: "STAFF_WALKIN_BOOKING_CREATE",
+    entityType: "Booking",
+    entityId: booking.BookingID,
+    description: `Staff tao booking tai quay ${booking.BookingCode}`,
+    newValue: {
+      bookingId: booking.BookingID,
+      bookingCode: booking.BookingCode,
+      customerId: input.customerId,
+      guestName: input.guestName,
+      guestPhone: input.guestPhone,
+      paymentMethod: input.paymentMethod,
+      totalAmount: booking.TotalAmount,
+    },
+  });
+
+  return booking;
 }
 
 /**

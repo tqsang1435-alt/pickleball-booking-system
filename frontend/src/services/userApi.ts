@@ -27,3 +27,22 @@ export async function adminCreateStaff(
   );
   return response.data;
 }
+
+export async function adminUpdateUser(
+  token: string,
+  userId: number,
+  payload: {
+    fullName: string;
+    phoneNumber?: string;
+  }
+): Promise<any> {
+  const response = await apiClient<ApiResponse<any>>(
+    `/api/admin/users/${userId}`,
+    {
+      method: "PATCH",
+      token,
+      body: payload,
+    }
+  );
+  return response.data;
+}

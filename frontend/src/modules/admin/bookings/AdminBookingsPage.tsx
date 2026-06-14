@@ -100,19 +100,21 @@ export default function AdminBookingsPage() {
     const map: Record<string, string> = {
       PendingPayment: "Chờ thanh toán",
       Paid: "Đã thanh toán",
-      Confirmed: "Đã xác nhận",
-      CheckedIn: "Đã Check-in",
+      Confirmed: "Chờ check-in",
+      CheckedIn: "Đang sử dụng sân",
       Completed: "Hoàn thành",
       Cancelled: "Đã hủy",
       Refunded: "Đã hoàn tiền",
-      NoShow: "No-show (Vắng)",
+      NoShow: "Vắng mặt",
     };
     return map[status] ?? status;
   }
 
   function getStatusClass(status: string) {
-    if (["Confirmed", "Paid"].includes(status)) return styles.badgeSuccess;
+    if (status === "Paid") return styles.badgeSuccess;
+    if (status === "Confirmed") return styles.badgeWarning;
     if (status === "CheckedIn") return styles.badgeCheckedIn;
+    if (status === "Completed") return styles.badgeCompleted;
     if (status === "PendingPayment") return styles.badgeWarning;
     if (["Cancelled", "Refunded", "NoShow"].includes(status)) return styles.badgeError;
     return styles.badgeDefault;
@@ -120,8 +122,9 @@ export default function AdminBookingsPage() {
 
   // Phan loai de hien thi summary
   const total = bookings.length;
-  const confirmedCount = bookings.filter(b => b.Status === "Confirmed" || b.Status === "Paid").length;
+  const waitingCheckInCount = bookings.filter(b => b.Status === "Confirmed").length;
   const checkedInCount = bookings.filter(b => b.Status === "CheckedIn").length;
+  const completedCount = bookings.filter(b => b.Status === "Completed").length;
   const cancelledCount = bookings.filter(b => ["Cancelled", "Refunded", "NoShow"].includes(b.Status)).length;
 
   const groupedBookings: Record<string, DailyBooking[]> = {};
@@ -167,15 +170,19 @@ export default function AdminBookingsPage() {
           <div className={styles.summaryValue}>{total}</div>
         </div>
         <div className={styles.summaryCard}>
-          <h3>Chưa Check-in</h3>
-          <div className={`${styles.summaryValue} ${styles.textWarning}`}>{confirmedCount}</div>
+          <h3>Chờ Check-in</h3>
+          <div className={`${styles.summaryValue} ${styles.textWarning}`}>{waitingCheckInCount}</div>
         </div>
         <div className={styles.summaryCard}>
-          <h3>Đã Check-in</h3>
-          <div className={`${styles.summaryValue} ${styles.textSuccess}`}>{checkedInCount}</div>
+          <h3>Đang sử dụng sân</h3>
+          <div className={`${styles.summaryValue} ${styles.textBlue}`}>{checkedInCount}</div>
         </div>
         <div className={styles.summaryCard}>
-          <h3>Đã Hủy / Vắng</h3>
+          <h3>Hoàn thành</h3>
+          <div className={`${styles.summaryValue} ${styles.textSuccess}`}>{completedCount}</div>
+        </div>
+        <div className={styles.summaryCard}>
+          <h3>Đã hủy / Vắng</h3>
           <div className={`${styles.summaryValue} ${styles.textError}`}>{cancelledCount}</div>
         </div>
       </div>

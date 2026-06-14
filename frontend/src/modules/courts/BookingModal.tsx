@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { bookCourt } from "@/services/bookingApi";
@@ -48,7 +48,7 @@ export default function BookingModal({
   async function handleConfirmBooking() {
     const token = getToken();
     if (!token) {
-      setErrorMsg("Bạn chưa đăng nhập. Vui lòng đăng nhập để đặt sân.");
+      setErrorMsg("Báº¡n chÆ°a Ä‘Äƒng nháº­p. Vui lĂ²ng Ä‘Äƒng nháº­p Ä‘á»ƒ Ä‘áº·t sĂ¢n.");
       setStep("error");
       return;
     }
@@ -64,18 +64,18 @@ export default function BookingModal({
       setBooking(created);
       setStep("paying");
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "Đặt sân thất bại. Vui lòng thử lại.");
+      setErrorMsg(err instanceof Error ? err.message : "Äáº·t sĂ¢n tháº¥t báº¡i. Vui lĂ²ng thá»­ láº¡i.");
       setStep("error");
     } finally {
       setLoading(false);
     }
   }
 
-  // Khi PaymentModal đóng (user hủy hoặc sau khi redirect trở về),
-  // đóng BookingModal luôn vì booking đã được tạo.
+  // Khi PaymentModal Ä‘Ă³ng (user há»§y hoáº·c sau khi redirect trá»Ÿ vá»),
+  // Ä‘Ă³ng BookingModal luĂ´n vĂ¬ booking Ä‘Ă£ Ä‘Æ°á»£c táº¡o.
   function handlePaymentModalClose() {
-    // Đóng toàn bộ modal – booking đã ở PendingPayment,
-    // user có thể thanh toán lại từ /bookings
+    // ÄĂ³ng toĂ n bá»™ modal â€“ booking Ä‘Ă£ á»Ÿ PendingPayment,
+    // user cĂ³ thá»ƒ thanh toĂ¡n láº¡i tá»« /bookings
     onClose();
   }
 
@@ -83,22 +83,22 @@ export default function BookingModal({
     <div className={styles.overlay} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className={styles.modal}>
 
-        {/* ── STEP: Xác nhận ── */}
+        {/* â”€â”€ STEP: XĂ¡c nháº­n â”€â”€ */}
         {step === "confirm" && (
           <>
             <div className={styles.header}>
-              <div className={styles.headerIcon}>🎾</div>
-              <h2>Xác nhận đặt sân</h2>
-              <p>Kiểm tra thông tin trước khi tiến hành thanh toán</p>
+              <div className={styles.headerIcon}>đŸ¾</div>
+              <h2>XĂ¡c nháº­n Ä‘áº·t sĂ¢n</h2>
+              <p>Kiá»ƒm tra thĂ´ng tin trÆ°á»›c khi tiáº¿n hĂ nh thanh toĂ¡n</p>
             </div>
 
             <div className={styles.infoCard}>
               <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>🏟️ Sân</span>
+                <span className={styles.infoLabel}>đŸŸï¸ SĂ¢n</span>
                 <span className={styles.infoValue}>{courtName}</span>
               </div>
               <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>📅 Ngày</span>
+                <span className={styles.infoLabel}>đŸ“… NgĂ y</span>
                 <span className={styles.infoValue}>
                   {new Date(bookingDate).toLocaleDateString("vi-VN", {
                     weekday: "long", day: "2-digit", month: "2-digit", year: "numeric",
@@ -106,13 +106,13 @@ export default function BookingModal({
                 </span>
               </div>
               <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>⏰ Giờ</span>
+                <span className={styles.infoLabel}>â° Giá»</span>
                 <span className={styles.infoValue}>
-                  {formatTime(slot.StartTime)} – {formatTime(slot.EndTime)}
+                  {formatTime(slot.StartTime)} â€“ {formatTime(slot.EndTime)}
                 </span>
               </div>
               <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>💰 Tổng tiền</span>
+                <span className={styles.infoLabel}>đŸ’° Tá»•ng tiá»n</span>
                 <span className={`${styles.infoValue} ${styles.price}`}>
                   {formatCurrency(totalFee)}
                 </span>
@@ -120,26 +120,26 @@ export default function BookingModal({
             </div>
 
             <div className={styles.notice}>
-              <span>⏱</span>
+              <span>â±</span>
               <p>Sau khi đặt, bạn có <strong>10 phút</strong> để hoàn tất thanh toán trước khi slot bị hủy.</p>
             </div>
 
             <div className={styles.actions}>
               <button className={styles.btnCancel} onClick={onClose}>
-                Hủy bỏ
+                Há»§y bá»
               </button>
               <button
                 className={styles.btnConfirm}
                 onClick={handleConfirmBooking}
                 disabled={loading}
               >
-                {loading ? "Đang xử lý..." : "Xác nhận đặt sân →"}
+                {loading ? "Đang xử lý..." : "XĂ¡c nháº­n Ä‘áº·t sĂ¢n â†’"}
               </button>
             </div>
           </>
         )}
 
-        {/* ── STEP: Thanh toán – PaymentModal thật ── */}
+        {/* â”€â”€ STEP: Thanh toĂ¡n â€“ PaymentModal tháº­t â”€â”€ */}
         {step === "paying" && booking && (
           <PaymentModal
             bookingId={booking.BookingID}
@@ -149,75 +149,75 @@ export default function BookingModal({
           />
         )}
 
-        {/* ── STEP: Thành công ── */}
+        {/* â”€â”€ STEP: ThĂ nh cĂ´ng â”€â”€ */}
         {step === "success" && booking && (
           <>
             <div className={styles.successHeader}>
-              <div className={styles.successIcon}>✅</div>
-              <h2>Đặt sân thành công!</h2>
-              <p>Booking của bạn đã được xác nhận</p>
+              <div className={styles.successIcon}>âœ…</div>
+              <h2>Äáº·t sĂ¢n thĂ nh cĂ´ng!</h2>
+              <p>Booking cá»§a báº¡n Ä‘Ă£ Ä‘Æ°á»£c xĂ¡c nháº­n</p>
             </div>
 
             <div className={styles.infoCard}>
               <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Mã booking</span>
+                <span className={styles.infoLabel}>MĂ£ booking</span>
                 <span className={`${styles.infoValue} ${styles.bookingCode}`}>
                   {booking.BookingCode}
                 </span>
               </div>
               <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Sân</span>
+                <span className={styles.infoLabel}>SĂ¢n</span>
                 <span className={styles.infoValue}>{courtName}</span>
               </div>
               <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Ngày</span>
+                <span className={styles.infoLabel}>NgĂ y</span>
                 <span className={styles.infoValue}>
                   {new Date(bookingDate).toLocaleDateString("vi-VN")}
                 </span>
               </div>
               <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Giờ</span>
+                <span className={styles.infoLabel}>Giá»</span>
                 <span className={styles.infoValue}>
-                  {slot.StartTime} – {slot.EndTime}
+                  {slot.StartTime} â€“ {slot.EndTime}
                 </span>
               </div>
               <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Thanh toán</span>
+                <span className={styles.infoLabel}>Thanh toĂ¡n</span>
                 <span className={`${styles.infoValue} ${styles.paidBadge}`}>
-                  ✅ {formatCurrency(Number(booking.TotalAmount))}
+                  {formatCurrency(Number(booking.TotalAmount))}
                 </span>
               </div>
 
             </div>
 
             <div className={styles.notice}>
-              <span>📍</span>
-              <p>Vui lòng đến sân trước giờ chơi <strong>30 phút</strong> để check-in.</p>
+              <span>đŸ“</span>
+              <p>Vui lĂ²ng Ä‘áº¿n sĂ¢n trÆ°á»›c giá» chÆ¡i <strong>30 phĂºt</strong> Ä‘á»ƒ check-in.</p>
             </div>
 
             <button className={styles.btnFullSuccess} onClick={onClose}>
-              Hoàn thành →
+              HoĂ n thĂ nh â†’
             </button>
           </>
         )}
 
-        {/* ── STEP: Lỗi ── */}
+        {/* â”€â”€ STEP: Lá»—i â”€â”€ */}
         {step === "error" && (
           <>
             <div className={styles.errorHeader}>
-              <div className={styles.errorIcon}>❌</div>
-              <h2>Có lỗi xảy ra</h2>
+              <div className={styles.errorIcon}>âŒ</div>
+              <h2>CĂ³ lá»—i xáº£y ra</h2>
               <p>{errorMsg}</p>
             </div>
             <div className={styles.actions}>
               <button className={styles.btnCancel} onClick={onClose}>
-                Đóng
+                ÄĂ³ng
               </button>
               <button
                 className={styles.btnConfirm}
                 onClick={() => { setStep("confirm"); setErrorMsg(""); }}
               >
-                Thử lại
+                Thá»­ láº¡i
               </button>
             </div>
           </>

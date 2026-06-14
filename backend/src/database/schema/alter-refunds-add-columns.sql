@@ -141,7 +141,7 @@ IF NOT EXISTS (
 BEGIN
   ALTER TABLE [dbo].[Payments]
   ADD CONSTRAINT [CK_Payments_PaymentMethod]
-  CHECK ([PaymentMethod] = 'PayOS' OR [PaymentMethod] = 'Momo');
+  CHECK ([PaymentMethod] IN ('PayOS', 'VNPay', 'Momo', 'Cash', 'BankTransfer'));
   PRINT '✓ Added: CK_Payments_PaymentMethod (PayOS + Momo only)';
 END
 ELSE PRINT '– Skip: CK_Payments_PaymentMethod already updated';

@@ -134,10 +134,21 @@ export default function AdminPage() {
             <div className={`${styles.cardIcon} ${styles.green}`}>
               <CourtIcon />
             </div>
-            <p className={styles.cardTitle}>Sân</p>
+            <p className={styles.cardTitle}>Tổng sân</p>
           </div>
           <h2>{stats ? stats.totalCourts : 0}</h2>
-          <p className={styles.cardSubtitle}>Tổng số sân</p>
+          <p className={styles.cardSubtitle}>Sân trong hệ thống</p>
+        </div>
+
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={`${styles.cardIcon} ${styles.orange}`}>
+              <CourtIcon />
+            </div>
+            <p className={styles.cardTitle}>Sân đang hoạt động</p>
+          </div>
+          <h2>{stats ? stats.activeCourts : 0}</h2>
+          <p className={styles.cardSubtitle}>Sẵn sàng đặt</p>
         </div>
 
         <div className={styles.card}>
@@ -153,24 +164,13 @@ export default function AdminPage() {
 
         <div className={styles.card}>
           <div className={styles.cardHeader}>
-            <div className={`${styles.cardIcon} ${styles.orange}`}>
-              <CourtIcon />
-            </div>
-            <p className={styles.cardTitle}>Sân đang hoạt động</p>
-          </div>
-          <h2>{stats ? stats.activeCourts : 0}</h2>
-          <p className={styles.cardSubtitle}>Sân</p>
-        </div>
-
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
             <div className={`${styles.cardIcon} ${styles.pink}`}>
               <CoachIcon />
             </div>
-            <p className={styles.cardTitle}>Coach đang hoạt động</p>
+            <p className={styles.cardTitle}>Coach hoạt động</p>
           </div>
           <h2>{stats ? stats.activeCoaches : 0}</h2>
-          <p className={styles.cardSubtitle}>Coach</p>
+          <p className={styles.cardSubtitle}>Huấn luyện viên</p>
         </div>
 
         <div className={styles.card}>
@@ -178,10 +178,21 @@ export default function AdminPage() {
             <div className={`${styles.cardIcon} ${styles.blue}`}>
               <StaffIcon />
             </div>
-            <p className={styles.cardTitle}>Staff đang hoạt động</p>
+            <p className={styles.cardTitle}>Staff hoạt động</p>
           </div>
           <h2>{stats ? stats.activeStaff : 0}</h2>
-          <p className={styles.cardSubtitle}>Staff</p>
+          <p className={styles.cardSubtitle}>Nhân viên</p>
+        </div>
+
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={`${styles.cardIcon} ${styles.cyan}`}>
+              <ComboIcon />
+            </div>
+            <p className={styles.cardTitle}>Combo khuyến mãi</p>
+          </div>
+          <h2>{stats ? stats.activeCombos : 0}</h2>
+          <p className={styles.cardSubtitle}>Đang kích hoạt</p>
         </div>
 
         <div className={styles.card}>
@@ -196,7 +207,11 @@ export default function AdminPage() {
               ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(stats.todayRevenue)
               : "0 ₫"}
           </h2>
-          <div className={styles.revenueChange}>+12.5% so với hôm qua</div>
+          <p className={styles.cardSubtitle}>
+            {stats && stats.todayBookingsCount > 0
+              ? `Từ ${stats.todayBookingsCount} booking`
+              : "Chưa có booking"}
+          </p>
         </div>
       </section>
 
@@ -292,7 +307,7 @@ export default function AdminPage() {
               <button className={`${styles.quickBtn} ${styles.quickOrange}`} onClick={() => router.push("/admin/permissions")}>
                 <CheckShieldIcon /> <span>Phân quyền</span>
               </button>
-              <button className={`${styles.quickBtn} ${styles.quickYellow}`} onClick={() => router.push("/admin/statistics")}>
+              <button className={`${styles.quickBtn} ${styles.quickYellow}`} onClick={() => router.push("/admin/reports")}>
                 <BarChartIcon /> <span>Báo cáo thống kê</span>
               </button>
             </div>
@@ -301,9 +316,7 @@ export default function AdminPage() {
           <div className={styles.panel}>
             <div className={styles.panelHeader}>
               <h2>Trạng thái vận hành</h2>
-              <span style={{ color: "#6B7280", cursor: "pointer", display: "flex" }}>
-                <MoreIcon className={styles.statusIcon} />
-              </span>
+              <MoreIcon className={styles.statusIcon} style={{ color: "#6B7280", cursor: "pointer" }} />
             </div>
 
             <div className={styles.statusList}>

@@ -3,7 +3,7 @@ import { successResponse } from "@/utils/response";
 import { handleError } from "@/middlewares/error";
 import { requireAuth } from "@/middlewares/auth.middleware";
 import { requireRoles } from "@/middlewares/role.middleware";
-import { createCourtBooking, createCoachBooking, createComboBooking, cancelBooking, cancelBookingByCoach, checkInBooking, mockPayBooking, releaseExpiredBookings, completeCheckedInBookings, getMyBookings, getCoachReceivedBookings, getBookingDetail, getDailyBookings, createTeamBooking } from "./bookings.service";
+import { createCourtBooking, createWalkInCourtBooking, createCoachBooking, createComboBooking, cancelBooking, cancelBookingByCoach, checkInBooking, mockPayBooking, releaseExpiredBookings, completeCheckedInBookings, getMyBookings, getCoachReceivedBookings, getBookingDetail, getDailyBookings, createTeamBooking } from "./bookings.service";
 
 
 // ---- Create Bookings ----
@@ -28,6 +28,37 @@ export async function createCourtBookingController(req: NextRequest) {
     });
 
     return successResponse(result, "Dat san thanh cong", 201);
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+export async function createStaffWalkInBookingController(req: NextRequest) {
+  try {
+    const auth = requireAuth(req);
+    if (auth instanceof Response) return auth;
+
+    const roleCheck = requireRoles(auth, ["Admin", "Manager", "Staff"]);
+    if (roleCheck) return roleCheck;
+
+    const body = await req.json();
+    const paymentMethod =
+      body.paymentMethod === "BankTransfer" ? "BankTransfer" : "Cash";
+
+    const result = await createWalkInCourtBooking({
+      staffId: auth.userId,
+      staffRoles: auth.roles,
+      courtId: Number(body.courtId),
+      bookingDate: body.bookingDate,
+      startTime: body.startTime,
+      endTime: body.endTime,
+      customerId: body.customerId ? Number(body.customerId) : undefined,
+      guestName: body.guestName,
+      guestPhone: body.guestPhone,
+      paymentMethod,
+    });
+
+    return successResponse(result, "Tao booking tai quay thanh cong", 201);
   } catch (error) {
     return handleError(error);
   }
