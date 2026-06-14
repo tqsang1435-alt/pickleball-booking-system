@@ -472,3 +472,64 @@ export async function getCoachAvailableSlots(coachId: number, date: string) {
     (s) => s.WorkingDate === date && s.Status === "Available" && !isScheduleExpired(s.WorkingDate, s.EndTime)
   );
 }
+
+// ─── INCOME ───────────────────────────────────────────────────
+
+export async function getMyIncome(userId: number) {
+  const coach = await coachRepo.findCoachByUserId(userId);
+  if (!coach) {
+    const { AppError } = await import("@/utils/AppError");
+    throw new AppError("Không tìm thấy thông tin Coach", 404);
+  }
+
+  const rawSessions = await coachRepo.findCoachIncome(coach.CoachID);
+
+  let totalWorkingHours = 0;
+  let totalIncome = 0;
+  const sessions = rawSessions.map((row) => {
+    const hours = row.WorkingHours;
+    const fee = row.CoachFee > 0 ? row.CoachFee : hours * row.HourlyRate;
+    
+    totalWorkingHours += hours;
+    totalIncome += fee;
+
+    return {
+      bookingId: row.BookingID,
+      bookingType: row.BookingType,
+      playerName: row.PlayerName,
+      workingDate: row.WorkingDate,
+      startTime: row.StartTime,
+      endTime: row.EndTime,
+      workingHours: hours,
+      coachFee: fee,
+      status: row.Status,
+      paymentStatus: 'Paid' // since status is Completed, we assume it's paid
+    };
+  });
+
+  const monthlyMap: Record<string, { month: string; sessions: number; workingHours: number; income: number }> = {};
+  
+  for (const session of sessions) {
+    // workingDate format: YYYY-MM-DD -> get YYYY-MM
+    const month = session.workingDate.substring(0, 7);
+    if (!monthlyMap[month]) {
+      monthlyMap[month] = { month, sessions: 0, workingHours: 0, income: 0 };
+    }
+    monthlyMap[month].sessions += 1;
+    monthlyMap[month].workingHours += session.workingHours;
+    monthlyMap[month].income += session.coachFee;
+  }
+
+  const monthlyIncome = Object.values(monthlyMap).sort((a, b) => b.month.localeCompare(a.month));
+
+  return {
+    summary: {
+      totalSessions: sessions.length,
+      completedSessions: sessions.length, // Query only fetched completed
+      totalWorkingHours: totalWorkingHours,
+      totalIncome: totalIncome
+    },
+    monthlyIncome,
+    sessions
+  };
+}

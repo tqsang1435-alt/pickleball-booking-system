@@ -679,3 +679,36 @@ export async function createCoachAdminTransaction(
     throw error;
   }
 }
+
+// ─── INCOME: Calculate coach income from Bookings ──────────────
+
+export async function findCoachIncome(coachId: number) {
+  const pool = await getPool();
+
+  const result = await pool
+    .request()
+    .input("CoachID", sql.Int, coachId)
+    .query(`
+      SELECT
+        b.BookingID,
+        b.BookingType,
+        u.FullName AS PlayerName,
+        CONVERT(VARCHAR(10), bd.BookingDate, 120) AS WorkingDate,
+        CONVERT(VARCHAR(5), bd.StartTime, 108) AS StartTime,
+        CONVERT(VARCHAR(5), bd.EndTime, 108) AS EndTime,
+        bd.CoachFee,
+        b.Status,
+        DATEDIFF(MINUTE, bd.StartTime, bd.EndTime) / 60.0 AS WorkingHours,
+        c.HourlyRate
+      FROM BookingDetails bd
+      INNER JOIN Bookings b ON bd.BookingID = b.BookingID
+      INNER JOIN Users u ON b.UserID = u.UserID
+      INNER JOIN Coaches c ON bd.CoachID = c.CoachID
+      WHERE bd.CoachID = @CoachID
+        AND b.BookingType IN ('Coach', 'Combo')
+        AND b.Status = 'Completed'
+      ORDER BY bd.BookingDate DESC, bd.StartTime DESC
+    `);
+
+  return result.recordset;
+}

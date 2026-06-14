@@ -471,3 +471,19 @@ export async function adminCreateCoachController(req: NextRequest) {
     return handleError(error);
   }
 }
+// ─── INCOME ───────────────────────────────────────────────────
+
+export async function getMyIncome(req: NextRequest) {
+  try {
+    const user = requireAuth(req);
+    if (user instanceof Response) return user;
+
+    const forbidden = requireRoles(user, ["Coach"]);
+    if (forbidden) return forbidden;
+
+    const data = await coachService.getMyIncome(user.userId);
+    return successResponse(data, "Lấy thông tin thu nhập thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}

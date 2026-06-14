@@ -458,6 +458,22 @@ export async function cancelBookingByCoach(
     throw new Error("Chi co the huy booking o trang thai Confirmed (BR-54)");
   }
 
+  let bookingDateStr = "";
+  if (typeof booking.BookingDate === "string") {
+    bookingDateStr = booking.BookingDate.split("T")[0];
+  } else if (booking.BookingDate instanceof Date) {
+    bookingDateStr = [
+      booking.BookingDate.getFullYear(),
+      String(booking.BookingDate.getMonth() + 1).padStart(2, '0'),
+      String(booking.BookingDate.getDate()).padStart(2, '0')
+    ].join('-');
+  }
+
+  const sessionStartTime = new Date(`${bookingDateStr}T${booking.StartTime}:00+07:00`);
+  if (sessionStartTime.getTime() <= Date.now()) {
+    throw new Error("Không thể hủy buổi dạy đã bắt đầu hoặc đã kết thúc");
+  }
+
   const cancelReason =
     "HLV chu dong huy - hoan 100% trong 24 gio (BR-54)";
 
