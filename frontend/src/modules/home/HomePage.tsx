@@ -10,7 +10,7 @@ import styles from "./HomePage.module.css";
 
 import { getCourts } from "@/services/courtApi";
 import { getCoaches } from "@/services/coachApi";
-import { getPromotions } from "@/services/promotionApi";
+import { getPublicPromotions } from "@/services/promotionApi";
 import { getPublicReviews } from "@/services/reviewApi";
 
 import type { Court } from "@/types/court";
@@ -85,7 +85,7 @@ export default function HomePage() {
     async function loadPromotions() {
       try {
         setPromotionsLoading(true);
-        const data = await getPromotions();
+        const data = await getPublicPromotions();
 
         if (!mounted) return;
 
@@ -142,16 +142,16 @@ export default function HomePage() {
 
   const activePromotions = useMemo(() => {
     return promotions
-      .filter((promotion) => String(promotion.Status) === "Active")
+      .filter((promotion) => String(promotion.status) === "Active")
       .slice(0, 3);
   }, [promotions]);
 
   function formatDiscount(promotion: Promotion) {
-    if (promotion.DiscountType === "Percent") {
-      return `Giảm ${promotion.DiscountValue}%`;
+    if (promotion.discountType === "Percent") {
+      return `Giảm ${promotion.discountValue}%`;
     }
 
-    return `Giảm ${Number(promotion.DiscountValue || 0).toLocaleString(
+    return `Giảm ${Number(promotion.discountValue || 0).toLocaleString(
       "vi-VN",
     )}đ`;
   }
@@ -207,16 +207,16 @@ export default function HomePage() {
 
             <div className={styles.voucherGrid}>
               {activePromotions.map((promotion) => (
-                <div className={styles.voucherCard} key={promotion.PromotionID}>
+                <div className={styles.voucherCard} key={promotion.promotionId}>
                   <div className={styles.voucherLeft}>
                     <div className={styles.voucherDiscount}>
                       {formatDiscount(promotion)}
                     </div>
                     <div className={styles.voucherMinOrder}>
-                      {promotion.MinOrderAmount ? (
+                      {promotion.minBookingAmount ? (
                         <span>
                           Đơn tối thiểu{" "}
-                          {Number(promotion.MinOrderAmount).toLocaleString(
+                          {Number(promotion.minBookingAmount).toLocaleString(
                             "vi-VN",
                           )}
                           đ
@@ -235,22 +235,22 @@ export default function HomePage() {
 
                   <div className={styles.voucherRight}>
                     <h3 className={styles.voucherName}>
-                      {promotion.PromotionName}
+                      {promotion.promotionName}
                     </h3>
                     <div className={styles.voucherActionRow}>
                       <span className={styles.voucherCode}>
-                        {promotion.PromotionCode}
+                        {promotion.promotionCode}
                       </span>
                       <button
                         type="button"
                         className={
-                          copiedCode === promotion.PromotionCode
+                          copiedCode === promotion.promotionCode
                             ? styles.copyBtnSuccess
                             : styles.copyBtn
                         }
-                        onClick={() => handleCopyCode(promotion.PromotionCode)}
+                        onClick={() => handleCopyCode(promotion.promotionCode)}
                       >
-                        {copiedCode === promotion.PromotionCode
+                        {copiedCode === promotion.promotionCode
                           ? "Đã chép!"
                           : "Sao chép"}
                       </button>

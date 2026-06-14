@@ -46,6 +46,12 @@ export async function apiClient<T>(
   }
 
   if (!response.ok) {
+    // Tự động logout nếu token hết hạn hoặc không hợp lệ
+    if (response.status === 401 && typeof window !== "undefined") {
+      localStorage.removeItem("pickleclub_token");
+      localStorage.removeItem("pickleclub_user");
+      window.location.href = "/auth/login";
+    }
     throw new Error(result?.message || "API request failed");
   }
 

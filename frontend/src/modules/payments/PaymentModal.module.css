@@ -1,0 +1,349 @@
+/* ── Overlay ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 15, 8, 0.65);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Modal box ── */
+.modal {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 460px;
+  padding: 36px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+}
+
+@media (max-height: 850px) {
+  .modal { zoom: 0.9; }
+}
+@media (max-height: 750px) {
+  .modal { zoom: 0.8; }
+}
+@media (max-height: 650px) {
+  .modal { zoom: 0.7; }
+}
+@media (max-height: 550px) {
+  .modal { zoom: 0.6; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(32px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Header ── */
+.header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.headerIcon {
+  font-size: 44px;
+  margin-bottom: 10px;
+}
+
+.header h2 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #171a2a;
+  margin-bottom: 4px;
+}
+
+.header p {
+  color: #667064;
+  font-size: 14px;
+}
+
+/* ── Info card ── */
+.infoCard {
+  background: #f8fdf3;
+  border: 1.5px solid #dff5c7;
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.infoLabel {
+  color: #667064;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.infoValue {
+  font-weight: 600;
+  color: #171a2a;
+  font-size: 14px;
+  text-align: right;
+}
+
+.price {
+  color: #6fbd00;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.bookingCode {
+  font-family: monospace;
+  background: #f0f9e0;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+/* ── Payment method picker ── */
+.payMethodSection {
+  margin-bottom: 20px;
+}
+
+.payMethodLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #667064;
+  margin-bottom: 10px;
+}
+
+.payMethods {
+  display: flex;
+  gap: 12px;
+}
+
+.payMethodCard {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 14px;
+  border: 2px solid #e5e7eb;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  position: relative;
+}
+
+.payMethodCard input {
+  display: none;
+}
+
+.payMethodCard:hover {
+  border-color: #8bd80f;
+  background: #f8fdf3;
+}
+
+.payMethodActive {
+  border-color: #6fbd00 !important;
+  background: #f3ffe4 !important;
+  color: #3a6800 !important;
+}
+
+.payMethodActive::after {
+  content: "✓";
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #6fbd00;
+}
+
+.payMethodIcon {
+  font-size: 30px;
+}
+
+.payMethodName {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.payMethodDesc {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 400;
+  text-align: center;
+}
+
+/* Badge "Thật" trên card PayOS */
+.payMethodBadge {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #6fbd00, #4e9900);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+  letter-spacing: 0.03em;
+}
+
+/* PayOS hint box */
+.payosHint {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #f0fdf4;
+  border: 1.5px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: #166534;
+}
+
+.payosHint span {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.payosHint p {
+  line-height: 1.5;
+}
+
+/* ── Notice / Timer ── */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fffbeb;
+  border: 1.5px solid #fde68a;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: #78350f;
+}
+
+.notice span {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.notice p {
+  line-height: 1.5;
+}
+
+/* ── Actions ── */
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btnCancel {
+  flex: 1;
+  padding: 13px;
+  border-radius: 12px;
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.18s;
+}
+
+.btnCancel:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.btnPay {
+  flex: 2;
+  padding: 13px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #8bd80f, #6fbd00);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  transition: all 0.18s;
+  box-shadow: 0 4px 12px rgba(111, 189, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btnPay:hover:not(:disabled) {
+  background: linear-gradient(135deg, #9de820, #7dce0f);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(111, 189, 0, 0.4);
+}
+
+.btnPay:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Loading spinner inside button */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Error state ── */
+.errorBox {
+  background: #fef2f2;
+  border: 1.5px solid #fecaca;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.errorBox p {
+  color: #991b1b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .modal {
+    padding: 24px 20px;
+    border-radius: 16px;
+  }
+
+  .payMethods {
+    flex-direction: column;
+  }
+}

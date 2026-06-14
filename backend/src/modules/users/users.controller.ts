@@ -82,6 +82,23 @@ export async function getUserByIdController(req: NextRequest, userId: number) {
   }
 }
 
+export async function updateUserByIdController(req: NextRequest, userId: number) {
+  try {
+    const auth = requireAuth(req);
+    if (auth instanceof Response) return auth;
+
+    const forbidden = requireRoles(auth, ["Admin", "Manager"]);
+    if (forbidden) return forbidden;
+
+    const body = await validateBody(req, updateProfileSchema);
+    const result = await usersService.editUserByAdmin(userId, body);
+
+    return successResponse(result, "Cập nhật thông tin nhân viên thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
 export async function lockUserController(req: NextRequest, userId: number) {
   try {
     const auth = requireAuth(req);

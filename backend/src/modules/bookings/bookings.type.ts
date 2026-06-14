@@ -5,10 +5,28 @@ export type BookingType = "Court" | "Coach" | "Combo";
 
 export type CreateCourtBookingInput = {
   userId: number;
+  userRoles?: string[];
   courtId: number;
   bookingDate: string;
   startTime: string;
   endTime: string;
+  customerId?: number;
+  guestName?: string;
+  guestPhone?: string;
+  paymentMethod?: "Cash" | "BankTransfer";
+};
+
+export type CreateWalkInCourtBookingInput = {
+  staffId: number;
+  staffRoles: string[];
+  courtId: number;
+  bookingDate: string;
+  startTime: string;
+  endTime: string;
+  customerId?: number;
+  guestName?: string;
+  guestPhone?: string;
+  paymentMethod: "Cash" | "BankTransfer";
 };
 
 export type CreateCoachBookingInput = {

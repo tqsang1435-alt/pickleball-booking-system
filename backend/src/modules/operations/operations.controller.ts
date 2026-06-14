@@ -10,7 +10,7 @@ export async function getTodayOperationsController(req: NextRequest) {
     const auth = requireAuth(req);
     if (auth instanceof Response) return auth;
 
-    const roleCheck = requireRoles(auth, ["Admin", "Staff"]);
+    const roleCheck = requireRoles(auth, ["Admin", "Staff", "Manager"]);
     if (roleCheck) return roleCheck;
 
     const url = new URL(req.url);
@@ -28,7 +28,7 @@ export async function checkInOperationController(req: NextRequest, bookingId: nu
     const auth = requireAuth(req);
     if (auth instanceof Response) return auth;
 
-    const roleCheck = requireRoles(auth, ["Admin", "Staff"]);
+    const roleCheck = requireRoles(auth, ["Admin", "Staff", "Manager"]);
     if (roleCheck) return roleCheck;
 
     const body = await req.json().catch(() => ({}));
@@ -45,7 +45,7 @@ export async function completeOperationController(req: NextRequest, bookingId: n
     const auth = requireAuth(req);
     if (auth instanceof Response) return auth;
 
-    const roleCheck = requireRoles(auth, ["Admin", "Staff"]);
+    const roleCheck = requireRoles(auth, ["Admin", "Staff", "Manager"]);
     if (roleCheck) return roleCheck;
 
     const result = await completeOperation(bookingId, auth.userId);
@@ -60,7 +60,7 @@ export async function noShowOperationController(req: NextRequest, bookingId: num
     const auth = requireAuth(req);
     if (auth instanceof Response) return auth;
 
-    const roleCheck = requireRoles(auth, ["Admin", "Staff"]);
+    const roleCheck = requireRoles(auth, ["Admin", "Staff", "Manager"]);
     if (roleCheck) return roleCheck;
 
     const body = await req.json().catch(() => ({}));
@@ -78,7 +78,7 @@ export async function getBookingLogsController(req: NextRequest, bookingId: numb
     const auth = requireAuth(req);
     if (auth instanceof Response) return auth;
 
-    const roleCheck = requireRoles(auth, ["Admin", "Staff"]);
+    const roleCheck = requireRoles(auth, ["Admin", "Staff", "Manager"]);
     if (roleCheck) return roleCheck;
 
     const { repoGetBookingLogs } = await import("./operations.repository");

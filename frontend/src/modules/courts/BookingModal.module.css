@@ -23,10 +23,25 @@
   border-radius: 20px;
   width: 100%;
   max-width: 460px;
+  max-height: min(92vh, 820px);
+  overflow-y: auto;
   padding: 36px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.18);
   animation: slideUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
+}
+
+@media (max-height: 850px) {
+  .modal { zoom: 0.9; }
+}
+@media (max-height: 750px) {
+  .modal { zoom: 0.8; }
+}
+@media (max-height: 650px) {
+  .modal { zoom: 0.7; }
+}
+@media (max-height: 550px) {
+  .modal { zoom: 0.6; }
 }
 
 @keyframes slideUp {
@@ -193,6 +208,87 @@
   font-size: 12px;
   color: #64748b;
   text-align: center;
+}
+
+.staffBox {
+  border: 1.5px solid #dbeafe;
+  background: #f8fbff;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.staffTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 10px;
+  background: #e5e7eb;
+}
+
+.segmented button {
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 8px;
+  background: transparent;
+  color: #4b5563;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.segmented .segmentActive {
+  background: #fff;
+  color: #166534;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+}
+
+.formGrid,
+.customerSearch {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.formGrid input,
+.customerSearch input,
+.customerSearch select {
+  width: 100%;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  padding: 11px 12px;
+  font-size: 14px;
+  color: #111827;
+  background: #fff;
+}
+
+.searchLine {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.searchLine button {
+  border: 0;
+  border-radius: 10px;
+  padding: 0 14px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.searchLine button:disabled {
+  opacity: 0.65;
 }
 
 /* ── Actions ── */

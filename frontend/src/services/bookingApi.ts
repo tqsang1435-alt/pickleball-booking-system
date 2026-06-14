@@ -31,6 +31,7 @@ export type Booking = {
   CancelReason: string | null;
   CreatedAt: string;
   PaymentDeadline: string | null;
+  RefundStatus?: string;
 
   // Detail
   BookingDetailID?: number;
@@ -63,6 +64,17 @@ export type CreateCourtBookingPayload = {
   bookingDate: string;
   startTime: string;
   endTime: string;
+};
+
+export type CreateWalkInBookingPayload = {
+  courtId: number;
+  bookingDate: string;
+  startTime: string;
+  endTime: string;
+  customerId?: number;
+  guestName?: string;
+  guestPhone?: string;
+  paymentMethod: "Cash" | "BankTransfer";
 };
 
 export type CreateCoachBookingPayload = {
@@ -114,6 +126,8 @@ export type DailyBooking = {
   CoachName: string | null;
   PaymentMethod: string | null;
   PaymentStatus: string | null;
+  RefundCode?: string;
+  CreatedAt: string;
 };
 
 // ===== API Functions =====
@@ -124,6 +138,18 @@ export async function bookCourt(
   payload: CreateCourtBookingPayload
 ): Promise<Booking> {
   const res = await apiClient<ApiResponse<Booking>>("/api/bookings/court", {
+    method: "POST",
+    token,
+    body: payload,
+  });
+  return res.data;
+}
+
+export async function createWalkInBooking(
+  token: string,
+  payload: CreateWalkInBookingPayload
+): Promise<Booking> {
+  const res = await apiClient<ApiResponse<Booking>>("/api/staff/bookings/walk-in", {
     method: "POST",
     token,
     body: payload,

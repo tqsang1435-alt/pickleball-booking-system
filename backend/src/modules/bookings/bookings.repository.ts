@@ -11,12 +11,65 @@ export async function findUserById(userId: number) {
     .request()
     .input("UserID", sql.Int, userId)
     .query(`
-      SELECT UserID, FullName, Email, Status
+      SELECT UserID, FullName, Email, PhoneNumber, Status
       FROM Users
       WHERE UserID = @UserID
     `);
 
   return result.recordset[0] ?? null;
+}
+
+export async function getOrCreateWalkInGuestUser() {
+  const pool = await getPool();
+  const transaction = new sql.Transaction(pool);
+
+  try {
+    await transaction.begin();
+
+    const result = await new sql.Request(transaction)
+      .input("Email", sql.NVarChar(100), "walkin.guest@pickleclub.local")
+      .input("FullName", sql.NVarChar(100), "Khach vang lai")
+      .input("PasswordHash", sql.NVarChar(255), "WALKIN_GUEST_DISABLED")
+      .query(`
+        DECLARE @UserID INT;
+        DECLARE @GuestRoleID INT;
+
+        SELECT @UserID = UserID
+        FROM Users WITH (UPDLOCK, HOLDLOCK)
+        WHERE Email = @Email;
+
+        IF @UserID IS NULL
+        BEGIN
+          INSERT INTO Users (FullName, Email, PhoneNumber, PasswordHash, Status)
+          VALUES (@FullName, @Email, NULL, @PasswordHash, 'Active');
+
+          SET @UserID = SCOPE_IDENTITY();
+        END;
+
+        SELECT @GuestRoleID = RoleID
+        FROM Roles
+        WHERE RoleName = 'Guest';
+
+        IF @GuestRoleID IS NOT NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM UserRoles WHERE UserID = @UserID AND RoleID = @GuestRoleID
+          )
+        BEGIN
+          INSERT INTO UserRoles (UserID, RoleID)
+          VALUES (@UserID, @GuestRoleID);
+        END;
+
+        SELECT UserID, FullName, Email, PhoneNumber, Status
+        FROM Users
+        WHERE UserID = @UserID;
+      `);
+
+    await transaction.commit();
+    return result.recordset[0] ?? null;
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
 }
 
 export async function findCourtByIdForBooking(courtId: number) {
@@ -241,6 +294,11 @@ export async function repoCreateCourtBooking(data: {
   startTime: string;
   endTime: string;
   courtFee: number;
+  paymentMethod?: "Cash" | "BankTransfer";
+  walkInNote?: string;
+  bookedByStaffId?: number;
+  guestName?: string;
+  guestPhone?: string;
 }): Promise<CreatedBooking> {
   const pool = await getPool();
   const transaction = new sql.Transaction(pool);
@@ -264,6 +322,12 @@ export async function repoCreateCourtBooking(data: {
       .input("CourtID", sql.Int, data.courtId)
       .input("StartTime", sql.VarChar(5), data.startTime)
       .input("EndTime", sql.VarChar(5), data.endTime)
+      .input("PaymentMethod", sql.NVarChar(50), data.paymentMethod ?? null)
+      .input("WalkInNote", sql.NVarChar(255), data.walkInNote ?? null)
+      .input("BookedByStaffID", sql.Int, data.bookedByStaffId ?? null)
+      .input("GuestName", sql.NVarChar(100), data.guestName ?? null)
+      .input("GuestPhone", sql.NVarChar(20), data.guestPhone ?? null)
+      .input("TransactionCode", sql.NVarChar(100), data.paymentMethod ? `WALKIN-${Date.now()}` : null)
       .query(`
         -- BR-27/28: Lock slot truoc khi insert
         IF NOT EXISTS (
@@ -276,14 +340,20 @@ export async function repoCreateCourtBooking(data: {
           THROW 50001, 'Court slot is not available', 1;
         END;
 
+        DECLARE @BookingStatus NVARCHAR(30) =
+          CASE WHEN @PaymentMethod IS NULL THEN 'PendingPayment' ELSE 'Confirmed' END;
+
         INSERT INTO Bookings (
           BookingCode, UserID, BookingType, BookingDate,
-          CourtFee, CoachFee, DiscountAmount, TotalAmount, Status
+          CourtFee, CoachFee, DiscountAmount, TotalAmount, Status, CancelReason,
+          GuestName, GuestPhone, BookedByStaffID, PaymentMethod, PaymentStatus
         )
         OUTPUT INSERTED.*
         VALUES (
           @BookingCode, @UserID, @BookingType, @BookingDate,
-          @CourtFee, @CoachFee, @DiscountAmount, @TotalAmount, 'PendingPayment'
+          @CourtFee, @CoachFee, @DiscountAmount, @TotalAmount, @BookingStatus, @WalkInNote,
+          @GuestName, @GuestPhone, @BookedByStaffID, @PaymentMethod,
+          CASE WHEN @PaymentMethod IS NULL THEN 'Pending' ELSE 'Paid' END
         );
 
         DECLARE @NewBookingID INT = SCOPE_IDENTITY();
@@ -298,19 +368,39 @@ export async function repoCreateCourtBooking(data: {
           @CourtFee, 0, @CourtFee
         );
 
-        DECLARE @HoldUntil DATETIME;
-        DECLARE @StartDateTime DATETIME = CAST(CAST(@BookingDate AS VARCHAR(10)) + ' ' + CAST(@StartTime AS VARCHAR(5)) AS DATETIME);
-        IF DATEADD(MINUTE, 10, GETDATE()) < @StartDateTime
-            SET @HoldUntil = DATEADD(MINUTE, 10, GETDATE());
-        ELSE
-            SET @HoldUntil = @StartDateTime;
+        IF @PaymentMethod IS NULL
+        BEGIN
+          DECLARE @HoldUntil DATETIME;
+          DECLARE @StartDateTime DATETIME = CAST(CAST(@BookingDate AS VARCHAR(10)) + ' ' + CAST(@StartTime AS VARCHAR(5)) AS DATETIME);
+          IF DATEADD(MINUTE, 10, GETDATE()) < @StartDateTime
+              SET @HoldUntil = DATEADD(MINUTE, 10, GETDATE());
+          ELSE
+              SET @HoldUntil = @StartDateTime;
 
-        -- BR-25: Hold slot 10 phut hoac den gio bat dau
-        UPDATE CourtSlots
-        SET Status = 'Holding',
-            HoldUntil = @HoldUntil,
-            UpdatedAt = GETDATE()
-        WHERE SlotID = @SlotID;
+          -- BR-25: Hold slot 10 phut hoac den gio bat dau
+          UPDATE CourtSlots
+          SET Status = 'Holding',
+              HoldUntil = @HoldUntil,
+              UpdatedAt = GETDATE()
+          WHERE SlotID = @SlotID;
+        END
+        ELSE
+        BEGIN
+          INSERT INTO Payments (
+            BookingID, PaymentMethod, Amount, TransactionCode, Status, PaidAt, CreatedAt,
+            ConfirmedByStaffID, Note
+          )
+          VALUES (
+            @NewBookingID, @PaymentMethod, @TotalAmount, @TransactionCode, 'Paid', GETDATE(), GETDATE(),
+            @BookedByStaffID, @WalkInNote
+          );
+
+          UPDATE CourtSlots
+          SET Status = 'Booked',
+              HoldUntil = NULL,
+              UpdatedAt = GETDATE()
+          WHERE SlotID = @SlotID;
+        END;
 
         SELECT
           b.BookingID, b.BookingCode, b.UserID, b.BookingType, b.BookingDate,
@@ -578,6 +668,11 @@ export async function repoCancelBookingById(
         WHERE CoachScheduleID IN (
           SELECT CoachScheduleID FROM BookingDetails WHERE BookingID = @BookingID AND CoachScheduleID IS NOT NULL
         );
+
+        -- Release voucher dang reserved
+        UPDATE PromotionUsages
+        SET Status = 'Released', UpdatedAt = GETDATE()
+        WHERE BookingID = @BookingID AND Status = 'Reserved';
       `);
 
     await transaction.commit();
@@ -720,6 +815,13 @@ export async function repoReleaseExpiredHoldings(): Promise<{ releasedCount: num
           AND CoachScheduleID IS NOT NULL
       );
 
+      -- Release voucher usages dang reserved
+      UPDATE PromotionUsages
+      SET Status = 'Released', UpdatedAt = GETDATE()
+      WHERE BookingID IN (SELECT BookingID FROM @ExpiredIDs)
+        AND Status = 'Reserved';
+
+
       SELECT 
         b.BookingID, 
         b.BookingCode, 
@@ -840,7 +942,7 @@ export async function findBookingsByUserId(userId: number) {
         b.DiscountAmount,
         b.TotalAmount,
         b.Status,
-        b.CheckInTime,
+        DATEADD(HOUR, -7, b.CheckInTime) AS CheckInTime,
         b.CancelledAt,
         b.CancelReason,
         b.CreatedAt,
@@ -865,13 +967,28 @@ export async function findBookingsByUserId(userId: number) {
         p.PaymentMethod,
         p.TransactionCode,
         p.Status AS PaymentStatus,
-        p.PaidAt
+        p.PaidAt,
+        
+        r.Status AS RefundStatus
       FROM Bookings b
       LEFT JOIN BookingDetails bd ON bd.BookingID = b.BookingID
       LEFT JOIN Courts c ON bd.CourtID = c.CourtID
       LEFT JOIN Coaches co ON bd.CoachID = co.CoachID
       LEFT JOIN Users cu ON co.UserID = cu.UserID
-      LEFT JOIN Payments p ON p.BookingID = b.BookingID
+      OUTER APPLY (
+        SELECT TOP 1 PaymentID, PaymentMethod, TransactionCode, Status, PaidAt
+        FROM Payments
+        WHERE BookingID = b.BookingID
+        ORDER BY 
+          CASE WHEN Status = 'Paid' THEN 1 ELSE 2 END ASC, 
+          CreatedAt DESC
+      ) p
+      OUTER APPLY (
+        SELECT TOP 1 Status
+        FROM Refunds
+        WHERE BookingID = b.BookingID
+        ORDER BY RequestedAt DESC
+      ) r
       WHERE b.UserID = @UserID
       ORDER BY b.CreatedAt DESC
     `);
@@ -919,7 +1036,12 @@ export async function findBookingsByCoachUserId(userId: number) {
       JOIN BookingDetails bd ON bd.BookingID = b.BookingID
       JOIN Coaches co ON bd.CoachID = co.CoachID
       LEFT JOIN Courts c ON bd.CourtID = c.CourtID
-      LEFT JOIN Payments p ON p.BookingID = b.BookingID
+      OUTER APPLY (
+        SELECT TOP 1 PaymentMethod, Status, PaidAt
+        FROM Payments
+        WHERE BookingID = b.BookingID
+        ORDER BY CASE WHEN Status = 'Paid' THEN 1 ELSE 2 END ASC, CreatedAt DESC
+      ) p
       WHERE co.UserID = @UserID
       ORDER BY b.BookingDate DESC, bd.StartTime DESC
     `);
@@ -945,7 +1067,7 @@ export async function findBookingById(bookingId: number) {
         b.DiscountAmount,
         b.TotalAmount,
         b.Status,
-        b.CheckInTime,
+        DATEADD(HOUR, -7, b.CheckInTime) AS CheckInTime,
         b.CancelledAt,
         b.CancelReason,
         b.CreatedAt,
@@ -976,7 +1098,12 @@ export async function findBookingById(bookingId: number) {
       LEFT JOIN Courts c ON bd.CourtID = c.CourtID
       LEFT JOIN Coaches co ON bd.CoachID = co.CoachID
       LEFT JOIN Users cu ON co.UserID = cu.UserID
-      LEFT JOIN Payments p ON p.BookingID = b.BookingID
+      OUTER APPLY (
+        SELECT TOP 1 PaymentID, PaymentMethod, TransactionCode, Status, PaidAt
+        FROM Payments
+        WHERE BookingID = b.BookingID
+        ORDER BY CASE WHEN Status = 'Paid' THEN 1 ELSE 2 END ASC, CreatedAt DESC
+      ) p
       WHERE b.BookingID = @BookingID
     `);
 
@@ -986,6 +1113,7 @@ export async function findBookingById(bookingId: number) {
 /**
  * UC-49: Staff xem booking trong ngay.
  * Co the loc theo ngay cu the (mac dinh la hom nay).
+ * Sap xep: moi nhat len dau (CreatedAt DESC).
  */
 export async function findDailyBookingsForStaff(
   date?: string
@@ -1005,27 +1133,37 @@ export async function findDailyBookingsForStaff(
         CONVERT(VARCHAR(5), bd.EndTime, 108) AS EndTime,
         b.TotalAmount,
         b.Status,
-        b.CheckInTime,
+        -- Fix timezone: SQL Server GETDATE() is VN local time but driver reads it as UTC
+        -- Subtract 7 hours to get real UTC so JS Date shows correct VN time
+        DATEADD(HOUR, -7, b.CheckInTime) AS CheckInTime,
         b.CreatedAt,
 
-        u.FullName AS PlayerName,
+        COALESCE(NULLIF(b.GuestName, ''), u.FullName) AS PlayerName,
         u.Email AS PlayerEmail,
-        u.PhoneNumber AS PlayerPhone,
+        COALESCE(NULLIF(b.GuestPhone, ''), u.PhoneNumber) AS PlayerPhone,
 
         c.CourtName,
         cu.FullName AS CoachName,
 
         p.PaymentMethod,
-        p.Status AS PaymentStatus
+        p.Status AS PaymentStatus,
+
+        r.RefundCode
       FROM Bookings b
       JOIN Users u ON u.UserID = b.UserID
       LEFT JOIN BookingDetails bd ON bd.BookingID = b.BookingID
       LEFT JOIN Courts c ON bd.CourtID = c.CourtID
       LEFT JOIN Coaches co ON bd.CoachID = co.CoachID
       LEFT JOIN Users cu ON co.UserID = cu.UserID
-      LEFT JOIN Payments p ON p.BookingID = b.BookingID
+      OUTER APPLY (
+        SELECT TOP 1 PaymentMethod, Status
+        FROM Payments
+        WHERE BookingID = b.BookingID
+        ORDER BY CASE WHEN Status = 'Paid' THEN 1 ELSE 2 END ASC, CreatedAt DESC
+      ) p
+      LEFT JOIN Refunds r ON r.BookingID = b.BookingID
       WHERE b.BookingDate = @TargetDate
-      ORDER BY bd.StartTime ASC, b.CreatedAt ASC
+      ORDER BY b.CreatedAt DESC
     `);
 
   return result.recordset;

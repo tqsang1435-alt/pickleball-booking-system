@@ -1,12 +1,10 @@
 import { NextRequest } from "next/server";
-import jwt from "jsonwebtoken";
 
 import * as authService from "./auth.service";
 import { loginSchema, registerSchema } from "./auth.validation";
 import { successResponse } from "@/utils/response";
 import { handleError } from "@/middlewares/error";
-
-const JWT_SECRET = process.env.JWT_SECRET || "default_secret_key";
+import { verifyAccessToken } from "@/utils/jwt";
 
 export async function registerController(req: NextRequest) {
   try {
@@ -59,11 +57,7 @@ export async function meController(req: NextRequest) {
 
     const token = authHeader.split(" ")[1];
 
-    const decoded = jwt.verify(token, JWT_SECRET) as {
-      userId: number;
-      email: string;
-      roles: string[];
-    };
+    const decoded = verifyAccessToken(token);
 
     const result = await authService.me(decoded.userId);
 

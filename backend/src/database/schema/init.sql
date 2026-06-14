@@ -59,6 +59,7 @@ CREATE TABLE Users (
 
     FailedLoginAttempts INT NOT NULL DEFAULT 0,
     LockedUntil DATETIME NULL,
+    LockReason NVARCHAR(255) NULL,
 
     Status NVARCHAR(30) NOT NULL DEFAULT 'Active'
         CHECK (Status IN ('Active', 'Inactive', 'Locked', 'Pending')),
@@ -270,11 +271,17 @@ CREATE TABLE Bookings (
     CheckInTime DATETIME NULL,
     CancelledAt DATETIME NULL,
     CancelReason NVARCHAR(255),
+    GuestName NVARCHAR(100) NULL,
+    GuestPhone NVARCHAR(20) NULL,
+    BookedByStaffID INT NULL,
+    PaymentMethod NVARCHAR(50) NULL,
+    PaymentStatus NVARCHAR(30) NULL,
 
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
     UpdatedAt DATETIME,
 
     FOREIGN KEY (UserID) REFERENCES Users(UserID),
+    FOREIGN KEY (BookedByStaffID) REFERENCES Users(UserID),
     FOREIGN KEY (PromotionID) REFERENCES Promotions(PromotionID)
 );
 
@@ -318,7 +325,7 @@ CREATE TABLE Payments (
     BookingID INT NOT NULL,
 
     PaymentMethod NVARCHAR(50) NOT NULL
-        CHECK (PaymentMethod IN ('VNPay', 'Momo')),
+        CHECK (PaymentMethod IN ('PayOS', 'VNPay', 'Momo', 'Cash', 'BankTransfer')),
     Amount DECIMAL(18,2) NOT NULL CHECK (Amount >= 0),
 
     TransactionCode NVARCHAR(100) UNIQUE,
@@ -328,9 +335,12 @@ CREATE TABLE Payments (
         CHECK (Status IN ('Pending', 'Paid', 'Failed', 'Refunded')),
 
     PaidAt DATETIME NULL,
+    ConfirmedByStaffID INT NULL,
+    Note NVARCHAR(255) NULL,
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
 
-    FOREIGN KEY (BookingID) REFERENCES Bookings(BookingID)
+    FOREIGN KEY (BookingID) REFERENCES Bookings(BookingID),
+    FOREIGN KEY (ConfirmedByStaffID) REFERENCES Users(UserID)
 );
 
 -- =========================
@@ -346,7 +356,7 @@ CREATE TABLE Refunds (
     Reason NVARCHAR(255),
 
     Status NVARCHAR(30) NOT NULL DEFAULT 'Requested'
-        CHECK (Status IN ('Requested', 'Approved', 'Rejected', 'Processing', 'Completed', 'Failed')),
+        CHECK (Status IN ('Requested', 'Approved', 'Rejected', 'Processing', 'PendingManual', 'Completed', 'Failed')),
 
     RequestedAt DATETIME NOT NULL DEFAULT GETDATE(),
     ProcessedAt DATETIME NULL,

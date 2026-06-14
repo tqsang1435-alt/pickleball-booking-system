@@ -46,7 +46,9 @@ export async function markAsReadController(req: NextRequest, { params }: { param
     if (auth instanceof Response) return auth;
     const userId = auth.userId;
 
-    const notificationId = parseInt(params.id, 10);
+    console.log("[Notifications] markAsRead - params:", params);
+
+    const notificationId = parseInt(params?.id, 10);
     if (isNaN(notificationId)) {
       return NextResponse.json({ success: false, message: "Invalid ID" }, { status: 400 });
     }

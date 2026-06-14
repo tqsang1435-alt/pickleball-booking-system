@@ -12,6 +12,7 @@ export type OperationBooking = {
   bookingCode: string;
   customerName: string;
   customerPhone: string | null;
+  customerEmail: string | null;
   courtName: string | null;
   bookingDate: string;
   startTime: string;

@@ -137,21 +137,7 @@ export async function checkInOperation(bookingId: number, note?: string, actorId
   if (!booking) throw new Error("Booking not found");
   
   if (booking.Status !== 'Confirmed') {
-    throw new Error("Only confirmed bookings can be checked in");
-  }
-
-  const bookingStart = getVNAbsoluteTime(booking.BookingDate, booking.StartTime);
-  const now = new Date();
-  
-  const minCheckInTime = new Date(bookingStart.getTime() - 30 * 60000);
-  const maxCheckInTime = new Date(bookingStart.getTime() + 15 * 60000);
-
-  if (now < minCheckInTime) {
-    throw new Error("Chưa đến thời gian check-in. Chỉ có thể check-in trong vòng 30 phút trước giờ chơi.");
-  }
-  
-  if (now > maxCheckInTime) {
-    throw new Error("Đã quá thời gian check-in cho phép. Vui lòng xử lý No-show nếu khách không đến.");
+    throw new Error("Chỉ có thể check-in booking ở trạng thái Đã xác nhận.");
   }
 
   // Update status to CheckedIn and set CheckInTime
@@ -204,14 +190,7 @@ export async function completeOperation(bookingId: number, actorId?: number) {
   if (!booking) throw new Error("Booking not found");
   
   if (booking.Status !== 'CheckedIn') {
-    throw new Error("Only checked-in bookings can be completed");
-  }
-
-  const bookingEnd = getVNAbsoluteTime(booking.BookingDate, booking.EndTime);
-  const now = new Date();
-
-  if (now < bookingEnd) {
-    throw new Error("Chưa đến thời gian kết thúc lượt chơi. Không thể hoàn tất booking trước giờ kết thúc.");
+    throw new Error("Chỉ có thể hoàn thành booking đang ở trạng thái Check-in.");
   }
 
   // Update status to Completed
@@ -263,18 +242,10 @@ export async function noShowOperation(bookingId: number, note?: string, actorId?
   if (!booking) throw new Error("Booking not found");
   
   if (booking.Status !== 'Confirmed') {
-    throw new Error("Only confirmed bookings can be marked as no-show");
+    throw new Error("Chỉ có thể đánh dấu No-show booking ở trạng thái Đã xác nhận.");
   }
 
-  const bookingStart = getVNAbsoluteTime(booking.BookingDate, booking.StartTime);
-  const now = new Date();
-  const minNoShowTime = new Date(bookingStart.getTime() + 15 * 60000);
-
-  if (now < minNoShowTime) {
-    throw new Error("Chưa thể đánh dấu No-show. Chỉ xử lý No-show sau 15 phút kể từ giờ bắt đầu.");
-  }
-
-  // Update status to NoShow and store note in CancelReason
+  // Update status to NoShow
   await repoUpdateBookingStatus(bookingId, 'NoShow', note);
 
   const fullBooking = await findBookingById(bookingId);

@@ -1,585 +1,554 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { getTodayOperations, checkInBooking, completeBooking, markBookingNoShow, getBookingLogs } from "@/services/operationApi";
-import type { TodayOperationsResponse, OperationBooking, AuditLogItem } from "@/types/operationTypes";
+import {
+  getTodayOperations,
+  checkInBooking,
+  completeBooking,
+  markBookingNoShow,
+  getBookingLogs,
+} from "@/services/operationApi";
+import type {
+  TodayOperationsResponse,
+  OperationBooking,
+  AuditLogItem,
+} from "@/types/operationTypes";
 import { getToken, getUser } from "@/utils/authStorage";
-import StateBox from "@/components/common/StateBox";
 import styles from "./OperationsPage.module.css";
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function todayVN() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
+}
+
+function nowVN() {
+  return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  PendingPayment: "Chờ thanh toán",
+  Paid:           "Đã thanh toán",
+  Confirmed:      "Chờ check-in",
+  CheckedIn:      "Đang sử dụng sân",
+  Completed:      "Hoàn thành",
+  Cancelled:      "Đã hủy",
+  Refunded:       "Đã hoàn tiền",
+  NoShow:         "Vắng mặt",
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function OperationsPage() {
   const router = useRouter();
-  const [token, setToken] = useState<string | null>(null);
-  const [data, setData] = useState<TodayOperationsResponse | null>(null);
+  const [token, setToken]     = useState<string | null>(null);
+  const [data, setData]       = useState<TodayOperationsResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [actioningId, setActioningId] = useState<number | null>(null);
-  const [selectedCourt, setSelectedCourt] = useState<string>("Tất cả");
+  const [error, setError]     = useState("");
+  const [date, setDate]       = useState(todayVN);
+  const [search, setSearch]   = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [actioningId, setActioningId]   = useState<number | null>(null);
 
-  // Filter states
-  const [selectedDate, setSelectedDate] = useState<string>(() => {
-    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
-  });
-  const [filterStatus, setFilterStatus] = useState<string>("Tất cả");
-  const [searchKeyword, setSearchKeyword] = useState<string>("");
-  const [debouncedKeyword, setDebouncedKeyword] = useState<string>("");
-
-  // Debounce search keyword
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedKeyword(searchKeyword);
-    }, 300);
-    return () => clearTimeout(handler);
-  }, [searchKeyword]);
+  // Confirm modal
+  const [confirm, setConfirm] = useState<{
+    booking: OperationBooking;
+    type: "checkin" | "complete" | "noshow";
+  } | null>(null);
+  const [noShowNote, setNoShowNote] = useState("");
+  const [confirmError, setConfirmError] = useState("");
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   // Logs modal
-  const [logModalOpen, setLogModalOpen] = useState(false);
-  const [selectedLogs, setSelectedLogs] = useState<AuditLogItem[]>([]);
-  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [logsBooking, setLogsBooking] = useState<OperationBooking | null>(null);
+  const [logs, setLogs]               = useState<AuditLogItem[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
 
-  // No-show Modal
-  const [noShowModalOpen, setNoShowModalOpen] = useState(false);
-  const [selectedNoShowBooking, setSelectedNoShowBooking] = useState<OperationBooking | null>(null);
-  const [noShowReason, setNoShowReason] = useState("");
-  const [noShowErrorMsg, setNoShowErrorMsg] = useState("");
-  const [isSubmittingNoShow, setIsSubmittingNoShow] = useState(false);
+  // Auth
+  const [isStaff, setIsStaff] = useState(false);
 
-  // Verify Role and Fetch Data
   useEffect(() => {
-    const userToken = getToken();
-    const user = getUser();
-    const role = String(
-      user?.RoleName || user?.role || user?.roles?.[0] || ""
-    ).toLowerCase();
-
-    // Chi Staff/Admin duoc truy cap
-    if (!userToken || (!role.includes("admin") && !role.includes("staff"))) {
+    const t = getToken();
+    const u = getUser();
+    const role = String(u?.RoleName || u?.role || u?.roles?.[0] || "").toLowerCase();
+    if (!t || (!role.includes("admin") && !role.includes("staff") && !role.includes("manager"))) {
       router.push("/login");
       return;
     }
-
-    setToken(userToken);
+    // Staff chỉ check-in / no-show — không được "Hoàn thành"
+    setIsStaff(role.includes("staff") && !role.includes("admin") && !role.includes("manager"));
+    setToken(t);
   }, [router]);
 
-  useEffect(() => {
-    if (token) {
-      loadOperations();
-    }
-  }, [token, selectedDate]);
+  useEffect(() => { if (token) load(); }, [token, date]);
 
-  async function loadOperations(silent = false) {
+  async function load(silent = false) {
     if (!token) return;
     try {
       if (!silent) setLoading(true);
       setError("");
-      const responseData = await getTodayOperations(token, selectedDate);
-      setData(responseData);
-    } catch (err: any) {
-      setError(err.message || "Không thể tải danh sách vận hành.");
+      setData(await getTodayOperations(token, date));
+    } catch (e: any) {
+      setError(e.message || "Không thể tải dữ liệu.");
     } finally {
       if (!silent) setLoading(false);
     }
   }
 
-  async function handleCheckIn(bookingId: number) {
-    if (!token) return;
-    if (!window.confirm("Bạn có chắc muốn check-in booking này?")) return;
+  // ── Filtered bookings ──
+  const bookings = data?.bookings ?? [];
 
-    try {
-      setActioningId(bookingId);
-      await checkInBooking(token, bookingId);
-      await loadOperations(true);
-    } catch (err: any) {
-      alert(err.message || "Check-in thất bại");
-    } finally {
-      setActioningId(null);
-    }
+  const filtered = useMemo(() => {
+    return bookings.filter((b) => {
+      if (filterStatus !== "all" && b.status !== filterStatus) return false;
+      if (search.trim()) {
+        const kw = search.toLowerCase();
+        return (
+          b.bookingCode.toLowerCase().includes(kw) ||
+          b.customerName.toLowerCase().includes(kw) ||
+          (b.customerPhone ?? "").toLowerCase().includes(kw) ||
+          (b.customerEmail ?? "").toLowerCase().includes(kw)
+        );
+      }
+      return true;
+    });
+  }, [bookings, filterStatus, search]);
+
+  // Sort: Confirmed first, then CheckedIn, then rest
+  const sorted = useMemo(() => {
+    const order: Record<string, number> = { Confirmed: 0, CheckedIn: 1, Completed: 2, Cancelled: 3, NoShow: 4 };
+    return [...filtered].sort((a, b) => {
+      const oa = order[a.status] ?? 5;
+      const ob = order[b.status] ?? 5;
+      if (oa !== ob) return oa - ob;
+      return a.startTime.localeCompare(b.startTime);
+    });
+  }, [filtered]);
+
+  // ── Actions ──
+  function openConfirm(booking: OperationBooking, type: "checkin" | "complete" | "noshow") {
+    setConfirm({ booking, type });
+    setNoShowNote("");
+    setConfirmError("");
   }
 
-  async function handleComplete(bookingId: number) {
-    if (!token) return;
-    if (!window.confirm("Bạn có chắc muốn hoàn thành booking này?")) return;
-
-    try {
-      setActioningId(bookingId);
-      await completeBooking(token, bookingId);
-      await loadOperations(true);
-    } catch (err: any) {
-      alert(err.message || "Hoàn thành thất bại");
-    } finally {
-      setActioningId(null);
-    }
-  }
-
-  function handleOpenNoShowModal(booking: OperationBooking) {
-    if (!token) return;
-    setSelectedNoShowBooking(booking);
-    setNoShowReason("");
-    setNoShowErrorMsg("");
-    setNoShowModalOpen(true);
-  }
-
-  async function confirmNoShow() {
-    if (!token || !selectedNoShowBooking) return;
-    const trimmedReason = noShowReason.trim();
-    if (!trimmedReason) {
-      setNoShowErrorMsg("Vui lòng nhập lý do No-show.");
+  async function submitConfirm() {
+    if (!confirm || !token) return;
+    const { booking, type } = confirm;
+    if (type === "noshow" && !noShowNote.trim()) {
+      setConfirmError("Vui lòng nhập lý do vắng mặt.");
       return;
     }
-
+    setConfirmLoading(true);
+    setConfirmError("");
     try {
-      setNoShowErrorMsg("");
-      setIsSubmittingNoShow(true);
-      setActioningId(selectedNoShowBooking.bookingId);
-      await markBookingNoShow(token, selectedNoShowBooking.bookingId, trimmedReason);
-      setNoShowModalOpen(false);
-      await loadOperations(true);
-    } catch (err: any) {
-      setNoShowErrorMsg(err.message || "Đánh dấu No-show thất bại");
+      setActioningId(booking.bookingId);
+      if (type === "checkin")  await checkInBooking(token, booking.bookingId);
+      if (type === "complete") await completeBooking(token, booking.bookingId);
+      if (type === "noshow")   await markBookingNoShow(token, booking.bookingId, noShowNote.trim());
+      setConfirm(null);
+      await load(true);
+    } catch (e: any) {
+      setConfirmError(e.message || "Thao tác thất bại. Vui lòng thử lại.");
     } finally {
-      setIsSubmittingNoShow(false);
+      setConfirmLoading(false);
       setActioningId(null);
     }
   }
 
-  async function handleViewLogs(bookingId: number) {
+  async function openLogs(booking: OperationBooking) {
     if (!token) return;
+    setLogsBooking(booking);
+    setLogs([]);
+    setLogsLoading(true);
     try {
-      setLogModalOpen(true);
-      setLoadingLogs(true);
-      const logs = await getBookingLogs(token, bookingId);
-      setSelectedLogs(logs);
-    } catch (err: any) {
-      alert(err.message || "Không thể tải lịch sử.");
-      setLogModalOpen(false);
-    } finally {
-      setLoadingLogs(false);
-    }
+      setLogs(await getBookingLogs(token, booking.bookingId));
+    } catch { /* silent */ }
+    setLogsLoading(false);
   }
 
-  function getStatusLabel(status: string) {
-    const map: Record<string, string> = {
-      PendingPayment: "Chờ thanh toán",
-      Paid: "Đã thanh toán",
-      Confirmed: "Đã xác nhận",
-      CheckedIn: "Đã Check-in",
-      Completed: "Hoàn thành",
-      Cancelled: "Đã hủy",
-      Refunded: "Đã hoàn tiền",
-      NoShow: "No-show (Vắng)",
-    };
-    return map[status] ?? status;
-  }
+  // ── Summary ──
+  const s = data?.summary;
 
-  function getStatusClass(status: string) {
-    if (["Confirmed", "Paid"].includes(status)) return styles.badgeSuccess;
-    if (status === "CheckedIn") return styles.badgeCheckedIn;
-    if (status === "Completed") return styles.badgeCompleted;
-    if (status === "PendingPayment") return styles.badgeWarning;
-    if (["Cancelled", "Refunded", "NoShow"].includes(status)) return styles.badgeError;
-    return styles.badgeDefault;
-  }
+  // ── Time validation helpers — không giới hạn time window ──
+  function canCheckIn(_b: OperationBooking) { return true; }
+  function canNoShow(_b: OperationBooking)  { return true; }
+  function canComplete(_b: OperationBooking) { return true; }
 
-  if (loading) {
-    return (
-      <div className={styles.page}>
-         <StateBox variant="loading" title="Đang tải dữ liệu vận hành" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className={styles.page}>
-        <StateBox variant="error" title="Lỗi tải dữ liệu" description={error} />
-      </div>
-    );
-  }
-
-  const { summary, bookings } = data || { summary: null, bookings: [] };
-  
-  // Client-side filtering
-  const filteredBookings = bookings.filter((b) => {
-    // Status Filter
-    if (filterStatus !== "Tất cả" && b.status !== filterStatus) {
-      return false;
-    }
-    
-    // Keyword Filter
-    if (debouncedKeyword.trim()) {
-      const keyword = debouncedKeyword.toLowerCase();
-      const matchName = b.customerName?.toLowerCase().includes(keyword);
-      const matchEmail = b.customerEmail?.toLowerCase().includes(keyword);
-      const matchPhone = b.customerPhone?.toLowerCase().includes(keyword);
-      const matchCode = b.bookingCode?.toLowerCase().includes(keyword);
-      
-      if (!matchName && !matchEmail && !matchPhone && !matchCode) {
-        return false;
-      }
-    }
-    return true;
-  });
-
-  const groupedBookings: Record<string, OperationBooking[]> = {};
-  filteredBookings.forEach((b) => {
-    const courtName = b.courtName || "Khu vực HLV";
-    if (!groupedBookings[courtName]) {
-      groupedBookings[courtName] = [];
-    }
-    groupedBookings[courtName].push(b);
-  });
-
+  // ── Render ──
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <div className={styles.titleArea}>
-          <h1>Vận hành hôm nay 📋</h1>
-          <p>Quản lý check-in, theo dõi trạng thái sân và khách đến chơi trong ngày.</p>
+
+      {/* ── Header ── */}
+      <div className={styles.header}>
+        <div>
+          <h1 className={styles.title}>Vận hành hôm nay</h1>
+          <p className={styles.subtitle}>Check-in khách, theo dõi sân và xử lý ca làm việc</p>
         </div>
         <div className={styles.headerRight}>
-          <button onClick={() => loadOperations(false)} className={styles.refreshButton}>
-            🔄 Làm mới
+          <input
+            type="date"
+            value={date}
+            onChange={e => setDate(e.target.value)}
+            className={styles.datePicker}
+          />
+          <button className={styles.btnRefresh} onClick={() => load(false)}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M23 4v6h-6M1 20v-6h6"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+            Làm mới
           </button>
         </div>
-      </header>
+      </div>
 
+      {/* ── Auto no-show banner ── */}
       {data?.autoNoShowCount ? (
-        <div style={{ backgroundColor: '#eef2ff', color: '#4f46e5', padding: '12px 16px', borderRadius: '8px', marginBottom: '24px', fontSize: '14px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span>🤖</span> Đã tự động đánh dấu {data.autoNoShowCount} booking quá hạn là No-show.
+        <div className={styles.autoBanner}>
+          🤖 Hệ thống đã tự động đánh dấu <strong>{data.autoNoShowCount}</strong> booking quá hạn là No-show.
         </div>
       ) : null}
 
-      {summary && (
+      {/* ── Summary cards ── */}
+      {s && (
         <div className={styles.summaryGrid}>
-          <div className={styles.summaryCard}>
-            <h3>Tổng Booking</h3>
-            <div className={styles.summaryValue}>{summary.totalBookings}</div>
-          </div>
-          <div className={styles.summaryCard}>
-            <h3>Chờ Check-in</h3>
-            <div className={`${styles.summaryValue} ${styles.textWarning}`}>{summary.waitingCheckIn}</div>
-          </div>
-          <div className={styles.summaryCard}>
-            <h3>Đã Check-in</h3>
-            <div className={`${styles.summaryValue} ${styles.textBlue}`}>{summary.checkedIn}</div>
-          </div>
-          <div className={styles.summaryCard}>
-            <h3>Hoàn thành</h3>
-            <div className={`${styles.summaryValue} ${styles.textSuccess}`}>{summary.completed}</div>
-          </div>
-          <div className={styles.summaryCard}>
-            <h3>Đã hủy</h3>
-            <div className={`${styles.summaryValue} ${styles.textError}`}>{summary.cancelled}</div>
-          </div>
-          <div className={styles.summaryCard}>
-            <h3>No-show</h3>
-            <div className={`${styles.summaryValue} ${styles.textPurple}`}>{summary.noShow}</div>
-          </div>
+          <SummaryCard label="Tổng booking"   value={s.totalBookings} />
+          <SummaryCard label="Chờ check-in"   value={s.waitingCheckIn} accent="orange" onClick={() => setFilterStatus("Confirmed")} />
+          <SummaryCard label="Đang sử dụng sân" value={s.checkedIn}      accent="blue"   onClick={() => setFilterStatus("CheckedIn")} />
+          <SummaryCard label="Hoàn thành"     value={s.completed}      accent="green"  onClick={() => setFilterStatus("Completed")} />
+          <SummaryCard label="Đã hủy"         value={s.cancelled}      accent="red"    onClick={() => setFilterStatus("Cancelled")} />
+          <SummaryCard label="Vắng mặt"       value={s.noShow}         accent="purple" onClick={() => setFilterStatus("NoShow")} />
         </div>
       )}
 
-      {/* FILTERS */}
+      {/* ── Search + filter bar ── */}
       <div className={styles.filterBar}>
-        <div className={styles.filterGroup}>
-          <label>Ngày:</label>
-          <input
-            type="date"
-            className={styles.filterInput}
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-          />
-        </div>
-        <div className={styles.filterGroup}>
-          <label>Trạng thái:</label>
-          <select
-            className={styles.filterSelect}
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-          >
-            <option value="Tất cả">Tất cả trạng thái</option>
-            <option value="Confirmed">Đã xác nhận</option>
-            <option value="CheckedIn">Đã Check-in</option>
-            <option value="Completed">Hoàn thành</option>
-            <option value="PendingPayment">Chờ thanh toán</option>
-            <option value="Paid">Đã thanh toán</option>
-            <option value="Cancelled">Đã hủy</option>
-            <option value="Refunded">Đã hoàn tiền</option>
-            <option value="NoShow">No-show (Vắng)</option>
-          </select>
-        </div>
-        <div className={`${styles.filterGroup} ${styles.filterSearch}`}>
-          <label>Tìm kiếm:</label>
+        <div className={styles.searchWrap}>
+          <svg className={styles.searchIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
           <input
             type="text"
-            className={styles.filterInput}
-            style={{ width: "100%" }}
-            placeholder="Tên, Email, SĐT, Mã Booking..."
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
+            placeholder="Tìm mã booking, tên khách, số điện thoại..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className={styles.searchInput}
           />
+          {search && (
+            <button className={styles.searchClear} onClick={() => setSearch("")}>×</button>
+          )}
+        </div>
+        <div className={styles.statusTabs}>
+          {[
+            { key: "all",           label: "Tất cả" },
+            { key: "Confirmed",     label: "Chờ check-in" },
+            { key: "CheckedIn",     label: "Đang sử dụng sân" },
+            { key: "Completed",     label: "Hoàn thành" },
+            { key: "Cancelled",     label: "Đã hủy" },
+            { key: "NoShow",        label: "Vắng mặt" },
+          ].map(tab => (
+            <button
+              key={tab.key}
+              className={`${styles.statusTab} ${filterStatus === tab.key ? styles.statusTabActive : ""}`}
+              onClick={() => setFilterStatus(tab.key)}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {bookings.length === 0 ? (
-        <StateBox
-          variant="empty"
-          title="Không có booking nào"
-          description="Hiện tại chưa có khách hàng nào đặt lịch vào ngày này."
-        />
-      ) : filteredBookings.length === 0 ? (
-        <StateBox
-          variant="empty"
-          title="Không tìm thấy kết quả"
-          description="Không có booking nào khớp với bộ lọc của bạn."
-        />
-      ) : (
-        <>
-          <div className={styles.tabsContainer}>
-            <button
-              className={`${styles.tabBtn} ${selectedCourt === "Tất cả" ? styles.tabActive : ""}`}
-              onClick={() => setSelectedCourt("Tất cả")}
-            >
-              Tất cả
+      {/* ── Content ── */}
+      {loading ? (
+        <SkeletonRows />
+      ) : error ? (
+        <div className={styles.errorBox}>
+          <span>⚠️ {error}</span>
+          <button className={styles.retryBtn} onClick={() => load(false)}>Thử lại</button>
+        </div>
+      ) : sorted.length === 0 ? (
+        <div className={styles.emptyBox}>
+          <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="#D1D5DB" strokeWidth="1.2">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+          </svg>
+          <p className={styles.emptyTitle}>
+            {search || filterStatus !== "all"
+              ? "Không tìm thấy booking phù hợp"
+              : `Không có booking ngày ${new Date(date + "T00:00:00").toLocaleDateString("vi-VN")}`}
+          </p>
+          {(search || filterStatus !== "all") && (
+            <button className={styles.clearFilter} onClick={() => { setSearch(""); setFilterStatus("all"); }}>
+              Xóa bộ lọc
             </button>
-            {Object.keys(groupedBookings).map((courtName) => (
-              <button
-                key={courtName}
-                className={`${styles.tabBtn} ${selectedCourt === courtName ? styles.tabActive : ""}`}
-                onClick={() => setSelectedCourt(courtName)}
-              >
-                {courtName}
-              </button>
-            ))}
-          </div>
+          )}
+        </div>
+      ) : (
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Mã booking</th>
+                <th>Khách hàng</th>
+                <th>Sân / Thời gian</th>
+                <th>Trạng thái</th>
+                <th style={{ textAlign: "right" }}>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map(b => {
+                const isActioning = actioningId === b.bookingId;
+                const isConfirmed  = b.status === "Confirmed";
+                const isCheckedIn  = b.status === "CheckedIn";
 
-          {Object.entries(groupedBookings)
-            .filter(([courtName]) => selectedCourt === "Tất cả" || selectedCourt === courtName)
-            .map(([courtName, courtBookings]) => (
-            <div key={courtName} className={styles.courtSection}>
-              <h2 className={styles.courtTitle}>{courtName}</h2>
-              <div className={styles.tablePanel}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>Mã & Thời gian</th>
-                      <th>Khách hàng</th>
-                      <th>Sân</th>
-                      <th>Trạng thái</th>
-                      <th>Hành động</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {courtBookings.map((b) => {
-                      const isActioning = actioningId === b.bookingId;
-                      
-                      // Calculate times for validation
-                      const bookingStart = new Date(`${b.bookingDate}T${b.startTime}:00+07:00`);
-                      const bookingEnd = new Date(`${b.bookingDate}T${b.endTime}:00+07:00`);
-                      const now = new Date();
+                return (
+                  <tr
+                    key={b.bookingId}
+                    className={`${styles.tableRow} ${isActioning ? styles.rowActioning : ""} ${isConfirmed ? styles.rowPriority : ""}`}
+                  >
+                    {/* Mã + giờ */}
+                    <td>
+                      <span className={styles.bookingCode}>{b.bookingCode}</span>
+                      <div className={styles.bookingTime}>⏱ {b.startTime} – {b.endTime}</div>
+                    </td>
 
-                      const minCheckInTime = new Date(bookingStart.getTime() - 30 * 60000);
-                      const maxCheckInTime = new Date(bookingStart.getTime() + 15 * 60000);
-                      const minNoShowTime = new Date(bookingStart.getTime() + 15 * 60000);
+                    {/* Khách */}
+                    <td>
+                      <div className={styles.customerName}>{b.customerName}</div>
+                      <div className={styles.customerContact}>
+                        {b.customerPhone && <span>📱 {b.customerPhone}</span>}
+                        {b.customerEmail && !b.customerPhone && <span>{b.customerEmail}</span>}
+                      </div>
+                    </td>
 
-                      const isTooEarlyForCheckIn = now < minCheckInTime;
-                      const isTooLateForCheckIn = now > maxCheckInTime;
-                      const isTooEarlyForComplete = now < bookingEnd;
-                      const isTooEarlyForNoShow = now < minNoShowTime;
+                    {/* Sân */}
+                    <td>
+                      <div className={styles.courtName}>
+                        {b.courtName ? `🏟 ${b.courtName}` : "—"}
+                      </div>
+                      <div className={styles.bookingDate}>
+                        {new Date(b.bookingDate + "T00:00:00").toLocaleDateString("vi-VN")}
+                      </div>
+                    </td>
 
-                      // Titles for tooltips
-                      let checkInTitle = "Đánh dấu khách đã đến";
-                      if (isTooEarlyForCheckIn) checkInTitle = "Chưa đến thời gian check-in (chỉ được check-in trước 30 phút).";
-                      if (isTooLateForCheckIn) checkInTitle = "Đã quá thời gian check-in (sau 15 phút). Vui lòng xử lý No-show.";
+                    {/* Status */}
+                    <td>
+                      <StatusBadge status={b.status} />
+                      {b.checkInTime && (
+                        <div className={styles.checkInTime}>
+                          Check-in lúc {new Date(b.checkInTime).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                        </div>
+                      )}
+                    </td>
 
-                      let completeTitle = "Đánh dấu khách đã chơi xong";
-                      if (isTooEarlyForComplete) completeTitle = "Chưa đến thời gian kết thúc lượt chơi.";
-
-                      let noShowTitle = "Đánh dấu khách không đến sân";
-                      if (isTooEarlyForNoShow) noShowTitle = "Chỉ xử lý No-show sau 15 phút kể từ giờ bắt đầu.";
-
-                      const isConfirmed = b.status === "Confirmed";
-                      const isCheckedIn = b.status === "CheckedIn";
-
-                      return (
-                        <tr key={b.bookingId} className={isActioning ? styles.rowActioning : ""}>
-                          <td>
-                            <div className={styles.bookingCode}>{b.bookingCode}</div>
-                            <div className={styles.bookingTime}>
-                              ⏱️ {b.startTime} - {b.endTime}
-                            </div>
-                          </td>
-
-                          <td>
-                            <div className={styles.playerName}>{b.customerName}</div>
-                            <div className={styles.playerContact}>
-                              {b.customerPhone || "Chưa cập nhật SDT"}
-                            </div>
-                          </td>
-
-                          <td>
-                            <div className={styles.serviceItem}>
-                              {b.courtName ? `🏟️ ${b.courtName}` : "N/A"}
-                            </div>
-                          </td>
-
-                          <td>
-                            <span className={`${styles.badge} ${getStatusClass(b.status)}`}>
-                              {getStatusLabel(b.status)}
-                            </span>
-                            {b.checkInTime && (
-                              <div className={styles.checkInTime}>
-                                Lúc {new Date(b.checkInTime).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
-                              </div>
-                            )}
-                          </td>
-
-                          <td>
-                            <div className={styles.actionCell}>
-                              {isConfirmed && (
-                                <button
-                                  onClick={() => handleCheckIn(b.bookingId)}
-                                  disabled={isActioning || isTooEarlyForCheckIn || isTooLateForCheckIn}
-                                  className={`${styles.btnAction} ${styles.btnCheckIn}`}
-                                  title={checkInTitle}
-                                  style={{ opacity: (isTooEarlyForCheckIn || isTooLateForCheckIn) ? 0.5 : 1, cursor: (isTooEarlyForCheckIn || isTooLateForCheckIn) ? 'not-allowed' : 'pointer' }}
-                                >
-                                  {isActioning ? "..." : "✅ Check-in"}
-                                </button>
-                              )}
-                              {isCheckedIn && (
-                                <button
-                                  onClick={() => handleComplete(b.bookingId)}
-                                  disabled={isActioning || isTooEarlyForComplete}
-                                  className={`${styles.btnAction} ${styles.btnComplete}`}
-                                  title={completeTitle}
-                                  style={{ opacity: isTooEarlyForComplete ? 0.5 : 1, cursor: isTooEarlyForComplete ? 'not-allowed' : 'pointer' }}
-                                >
-                                  {isActioning ? "..." : "🏁 Hoàn thành"}
-                                </button>
-                              )}
-                              {isConfirmed && (
-                                <button
-                                  onClick={() => handleOpenNoShowModal(b)}
-                                  disabled={isActioning || isTooEarlyForNoShow}
-                                  className={`${styles.btnAction} ${styles.btnNoShow}`}
-                                  title={noShowTitle}
-                                  style={{ opacity: isTooEarlyForNoShow ? 0.5 : 1, cursor: isTooEarlyForNoShow ? 'not-allowed' : 'pointer' }}
-                                >
-                                  {isActioning ? "..." : "❌ No-show"}
-                                </button>
-                              )}
-                              {!isConfirmed && !isCheckedIn && (
-                                <span className={styles.noAction}></span>
-                              )}
-                              <button
-                                onClick={() => handleViewLogs(b.bookingId)}
-                                className={styles.btnLog}
-                                title="Xem lịch sử"
-                              >
-                                📜 Lịch sử
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ))}
-        </>
+                    {/* Actions */}
+                    <td>
+                      <div className={styles.actionCell}>
+                        {isConfirmed && (
+                          <>
+                            <button
+                              className={styles.btnCheckIn}
+                              disabled={isActioning}
+                              title="Check-in khách"
+                              onClick={() => openConfirm(b, "checkin")}
+                            >
+                              ✅ Check-in
+                            </button>
+                            <button
+                              className={styles.btnNoShow}
+                              disabled={isActioning}
+                              title="Ghi nhận vắng mặt"
+                              onClick={() => openConfirm(b, "noshow")}
+                            >
+                              ❌ No-show
+                            </button>
+                          </>
+                        )}
+                        {isCheckedIn && !isStaff && (
+                          <button
+                            className={styles.btnComplete}
+                            disabled={isActioning}
+                            title="Xác nhận khách đã chơi xong"
+                            onClick={() => openConfirm(b, "complete")}
+                          >
+                            🏁 Hoàn thành
+                          </button>
+                        )}
+                        {isCheckedIn && isStaff && (
+                          <span className={styles.checkedInNote}>Đang sử dụng sân</span>
+                        )}
+                        <button
+                          className={styles.btnLog}
+                          onClick={() => openLogs(b)}
+                        >
+                          📜
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
-      {/* MODAL LỊCH SỬ LOGS */}
-      {logModalOpen && (
-        <div className={styles.modalOverlay} onClick={() => setLogModalOpen(false)}>
-          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+      {/* ── Confirm Modal ── */}
+      {confirm && (
+        <div className={styles.modalOverlay} onClick={() => setConfirm(null)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h3>📜 Lịch sử Booking</h3>
-              <button onClick={() => setLogModalOpen(false)} className={styles.closeBtn}>✕</button>
+              <h3 className={styles.modalTitle}>
+                {confirm.type === "checkin"  && "✅ Xác nhận Check-in"}
+                {confirm.type === "complete" && "🏁 Xác nhận Hoàn thành"}
+                {confirm.type === "noshow"   && "❌ Ghi nhận Vắng mặt"}
+              </h3>
+              <button className={styles.modalClose} onClick={() => setConfirm(null)} disabled={confirmLoading}>×</button>
             </div>
             <div className={styles.modalBody}>
-              {loadingLogs ? (
-                <div style={{ textAlign: "center", padding: 20 }}>Đang tải...</div>
-              ) : selectedLogs.length === 0 ? (
-                <div style={{ textAlign: "center", padding: 20, color: "#64748b" }}>Chưa có lịch sử nào.</div>
+              <div className={styles.bookingCard}>
+                <div className={styles.bookingCardCode}>{confirm.booking.bookingCode}</div>
+                <div className={styles.bookingCardName}>{confirm.booking.customerName}</div>
+                {confirm.booking.customerPhone && (
+                  <div className={styles.bookingCardSub}>📱 {confirm.booking.customerPhone}</div>
+                )}
+                <div className={styles.bookingCardSub}>
+                  🏟 {confirm.booking.courtName ?? "—"} &nbsp;·&nbsp; ⏱ {confirm.booking.startTime} – {confirm.booking.endTime}
+                </div>
+              </div>
+
+              {confirm.type === "checkin" && (
+                <div className={styles.infoBox}>
+                  Khách đã có mặt tại sân. Xác nhận check-in để bắt đầu lượt chơi.
+                </div>
+              )}
+              {confirm.type === "complete" && (
+                <div className={styles.infoBox}>
+                  Xác nhận khách đã chơi xong, rời sân và lượt đặt đã hoàn thành.
+                </div>
+              )}
+              {confirm.type === "noshow" && (
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Lý do vắng mặt *</label>
+                  <textarea
+                    className={styles.formTextarea}
+                    rows={3}
+                    placeholder="VD: Khách không đến sau 15 phút kể từ giờ bắt đầu..."
+                    value={noShowNote}
+                    onChange={e => { setNoShowNote(e.target.value); setConfirmError(""); }}
+                    disabled={confirmLoading}
+                  />
+                </div>
+              )}
+
+              {confirmError && <div className={styles.modalError}>⚠️ {confirmError}</div>}
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={styles.btnCancel} onClick={() => setConfirm(null)} disabled={confirmLoading}>
+                Hủy
+              </button>
+              <button
+                className={confirm.type === "noshow" ? styles.btnDanger : styles.btnPrimary}
+                onClick={submitConfirm}
+                disabled={confirmLoading}
+              >
+                {confirmLoading ? "Đang xử lý..." : "Xác nhận"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Logs Modal ── */}
+      {logsBooking && (
+        <div className={styles.modalOverlay} onClick={() => setLogsBooking(null)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>📜 Lịch sử — {logsBooking.bookingCode}</h3>
+              <button className={styles.modalClose} onClick={() => setLogsBooking(null)}>×</button>
+            </div>
+            <div className={styles.modalBody}>
+              {logsLoading ? (
+                <div className={styles.logsLoading}><div className={styles.miniSpinner} /><span>Đang tải...</span></div>
+              ) : logs.length === 0 ? (
+                <div className={styles.logsEmpty}>Chưa có lịch sử thao tác.</div>
               ) : (
-                <ul className={styles.logList}>
-                  {selectedLogs.map(log => (
-                    <li key={log.logId} className={styles.logItem}>
-                      <div className={styles.logHeader}>
+                <div className={styles.logList}>
+                  {logs.map(log => (
+                    <div key={log.logId} className={styles.logItem}>
+                      <div className={styles.logTop}>
                         <span className={styles.logAction}>{log.action}</span>
                         <span className={styles.logTime}>{new Date(log.createdAt).toLocaleString("vi-VN")}</span>
                       </div>
                       <div className={styles.logActor}>Bởi: {log.actorName}</div>
-                      {log.note && <div className={styles.logNote}>Note: {log.note}</div>}
-                    </li>
+                      {log.note && <div className={styles.logNote}>{log.note}</div>}
+                    </div>
                   ))}
-                </ul>
+                </div>
               )}
             </div>
           </div>
         </div>
       )}
+    </div>
+  );
+}
 
-      {/* MODAL NO-SHOW */}
-      {noShowModalOpen && selectedNoShowBooking && (
-        <div className={styles.modalOverlay} onClick={() => setNoShowModalOpen(false)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3>Xác nhận No-show</h3>
-              <button onClick={() => setNoShowModalOpen(false)} className={styles.closeBtn}>
-                ✕
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <p style={{ color: "#64748b", fontSize: "14px", marginBottom: "16px" }}>
-                Vui lòng nhập lý do khách không đến để ghi nhận vào lịch sử thao tác.
-              </p>
-              
-              <div className={styles.bookingInfo}>
-                <div><strong>Mã booking:</strong> {selectedNoShowBooking.bookingCode}</div>
-                <div><strong>Khách hàng:</strong> {selectedNoShowBooking.customerName}</div>
-                <div><strong>Sân:</strong> {selectedNoShowBooking.courtName || "N/A"}</div>
-                <div><strong>Thời gian:</strong> {selectedNoShowBooking.startTime} - {selectedNoShowBooking.endTime}</div>
-              </div>
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
-              <div className={styles.formGroup}>
-                <textarea
-                  className={styles.modalTextarea}
-                  placeholder="Ví dụ: Khách không đến sau 15 phút kể từ giờ bắt đầu..."
-                  value={noShowReason}
-                  onChange={(e) => {
-                    setNoShowReason(e.target.value);
-                    if (noShowErrorMsg) setNoShowErrorMsg("");
-                  }}
-                  disabled={isSubmittingNoShow}
-                />
-                {noShowErrorMsg && <div className={styles.modalError}>{noShowErrorMsg}</div>}
-              </div>
+function SummaryCard({ label, value, accent, onClick }: {
+  label: string; value: number;
+  accent?: "orange" | "blue" | "green" | "red" | "purple";
+  onClick?: () => void;
+}) {
+  const accentClass = accent ? styles[`accent_${accent}`] : "";
+  return (
+    <div className={`${styles.summaryCard} ${onClick ? styles.summaryCardClickable : ""} ${accentClass}`} onClick={onClick}>
+      <div className={styles.summaryValue}>{value}</div>
+      <div className={styles.summaryLabel}>{label}</div>
+    </div>
+  );
+}
 
-              <div className={styles.modalFooter}>
-                <button 
-                  className={styles.btnCancel} 
-                  onClick={() => setNoShowModalOpen(false)}
-                  disabled={isSubmittingNoShow}
-                >
-                  Hủy
-                </button>
-                <button 
-                  className={styles.btnConfirmNoShow} 
-                  onClick={confirmNoShow}
-                  disabled={isSubmittingNoShow}
-                >
-                  {isSubmittingNoShow ? "Đang xử lý..." : "Xác nhận No-show"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    Confirmed:      styles.badgeOrange,
+    CheckedIn:      styles.badgeBlue,
+    Completed:      styles.badgeGreen,
+    Cancelled:      styles.badgeRed,
+    NoShow:         styles.badgePurple,
+    PendingPayment: styles.badgeGray,
+    Paid:           styles.badgeGreen,
+    Refunded:       styles.badgeGray,
+  };
+  return (
+    <span className={`${styles.badge} ${map[status] ?? styles.badgeGray}`}>
+      {STATUS_LABEL[status] ?? status}
+    </span>
+  );
+}
+
+function SkeletonRows() {
+  return (
+    <div className={styles.tableWrap}>
+      <table className={styles.table}>
+        <thead>
+          <tr>
+            <th>Mã booking</th><th>Khách hàng</th><th>Sân / Thời gian</th><th>Trạng thái</th><th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          {[...Array(5)].map((_, i) => (
+            <tr key={i} className={styles.tableRow}>
+              <td><div className={styles.skLine} style={{ width: 100 }} /><div className={styles.skLine} style={{ width: 70, marginTop: 6 }} /></td>
+              <td><div className={styles.skLine} style={{ width: 130 }} /><div className={styles.skLine} style={{ width: 90, marginTop: 6 }} /></td>
+              <td><div className={styles.skLine} style={{ width: 110 }} /></td>
+              <td><div className={styles.skPill} /></td>
+              <td><div className={styles.skActions} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

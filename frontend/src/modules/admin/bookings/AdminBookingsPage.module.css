@@ -60,7 +60,7 @@
 /* ── Summary Grid ── */
 .summaryGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -89,6 +89,7 @@
 }
 
 .textSuccess { color: #16a34a; }
+.textBlue { color: #2563eb; }
 .textWarning { color: #d97706; }
 .textError { color: #dc2626; }
 
@@ -242,6 +243,7 @@
 
 .badgeSuccess { background: #dcfce7; color: #16a34a; }
 .badgeCheckedIn { background: #dbeafe; color: #2563eb; }
+.badgeCompleted { background: #dcfce7; color: #15803d; }
 .badgeWarning { background: #fef3c7; color: #d97706; }
 .badgeError { background: #fee2e2; color: #dc2626; }
 .badgeDefault { background: #f1f5f9; color: #64748b; }

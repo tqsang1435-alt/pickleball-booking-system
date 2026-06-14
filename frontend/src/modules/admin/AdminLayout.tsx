@@ -45,20 +45,22 @@ export default function AdminLayout({
   const userEmail = user?.Email || user?.email || "admin@pickleclub.vn";
 
   const navItems = [
-    { href: "/admin", label: "Tổng quan", icon: <DashboardIcon />, hideForStaff: true },
-    { href: "/admin/courts", label: "Sân", icon: <CourtIcon />, hideForStaff: true },
-    { href: "/admin/bookings", label: "Quản lý Booking", icon: <CalendarIcon /> },
-    { href: "/staff/operations", label: "Vận hành", icon: <OperationsIcon /> },
-    { href: "/admin/combos", label: "Combo", icon: <ComboIcon /> },
-    { href: "/admin/players", label: "Người chơi", icon: <PlayerIcon /> },
-    { href: "/admin/coaches", label: "Coach", icon: <CoachIcon /> },
-    { href: "/admin/staff", label: "Staff", icon: <StaffIcon /> },
-    { href: "/admin/events", label: "Sự kiện", icon: <CalendarIcon /> },
-    { href: "/admin/revenue", label: "Doanh thu", icon: <RevenueIcon />, hideForStaff: true },
-    { href: "/admin/statistics", label: "Thống kê", icon: <BarChartIcon />, hideForStaff: true },
-    { href: "/admin/promotions", label: "Khuyến mãi", icon: <PromotionIcon /> },
-    { href: "/admin/permissions", label: "Phân quyền", icon: <CheckShieldIcon /> },
-    { href: "/admin/settings", label: "Cài đặt hệ thống", icon: <SettingsIcon /> },
+    { href: "/admin",              label: "Tổng quan",          icon: <DashboardIcon />,  hideForStaff: true },
+    { href: "/admin/courts",       label: "Sân",                icon: <CourtIcon />,      hideForStaff: true },
+    { href: "/admin/bookings",     label: "Quản lý Booking",    icon: <CalendarIcon /> },
+    { href: "/admin/refunds",      label: "Quản lý Hoàn tiền",  icon: <RevenueIcon /> },
+    { href: "/staff/operations",   label: "Vận hành",           icon: <OperationsIcon /> },
+    { href: "/staff/bookings/walk-in", label: "Đặt sân trực tiếp", icon: <CalendarIcon /> },
+    { href: "/admin/combos",       label: "Combo",             icon: <ComboIcon />,      hideForStaff: true },
+    { href: "/admin/players",      label: "Người chơi",         icon: <PlayerIcon />,     hideForStaff: true },
+    { href: "/admin/coaches",      label: "Coach",             icon: <CoachIcon />,      hideForStaff: true },
+    { href: "/admin/staff",        label: "Nhân viên",          icon: <StaffIcon />,      hideForStaff: true },
+    { href: "/admin/events",       label: "Sự kiện",            icon: <CalendarIcon />,   hideForStaff: true },
+    { href: "/admin/revenue",      label: "Doanh thu",         icon: <RevenueIcon />,    hideForStaff: true },
+    { href: "/admin/reports",      label: "Thống kê",           icon: <BarChartIcon />,   hideForStaff: true },
+    { href: "/admin/promotions",   label: "Khuyến mãi",         icon: <PromotionIcon />,  hideForStaff: true },
+    { href: "/admin/permissions",  label: "Phân quyền",         icon: <CheckShieldIcon />,hideForStaff: true },
+    { href: "/admin/settings",     label: "Cài đặt hệ thống",   icon: <SettingsIcon />,   hideForStaff: true },
   ];
 
   return (

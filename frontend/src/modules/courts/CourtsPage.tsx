@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
+import Image from "next/image";
 import { getCourts, getCourtSlots, type CourtSlot } from "@/services/courtApi";
 import type { Court } from "@/types/court";
 import { formatCurrency } from "@/utils/formatCurrency";
@@ -16,6 +17,7 @@ import { CourtScheduleDrawer } from "./CourtScheduleDrawer";
 export default function CourtsPage() {
   const [courts, setCourts] = useState<Court[]>([]);
   const [type, setType] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [keyword, setKeyword] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -44,15 +46,16 @@ export default function CourtsPage() {
   }, []);
 
   const filteredCourts = useMemo(() => {
-    return courts.filter((court) => {
+    return (courts || []).filter((court) => {
       const matchType = type === "all" || court.CourtType === type;
+      const matchStatus = statusFilter === "all" || court.Status === statusFilter;
       const searchText = [court.CourtName, court.CourtCode, court.Location, court.Description, court.CourtType]
         .filter(Boolean).join(" ").toLowerCase();
-      return matchType && searchText.includes(keyword.toLowerCase());
+      return matchType && matchStatus && searchText.includes(keyword.toLowerCase());
     });
-  }, [courts, keyword, type]);
+  }, [courts, keyword, type, statusFilter]);
 
-  function resetFilter() { setKeyword(""); setType("all"); }
+  function resetFilter() { setKeyword(""); setType("all"); setStatusFilter("all"); }
 
   return (
     <main className={styles.page}>
@@ -79,7 +82,13 @@ export default function CourtsPage() {
             </div>
             <div className={styles.heroVisual}>
               <div className={styles.heroImage}>
-                <img src="/images/courts/c1.jpg" alt="Pickleball court" />
+                <Image 
+                  src="/images/courts/c1.jpg" 
+                  alt="Pickleball court" 
+                  width={600} 
+                  height={400} 
+                  priority 
+                />
               </div>
             </div>
           </div>
@@ -97,7 +106,8 @@ export default function CourtsPage() {
         </label>
         <label>
           <span>Trạng thái</span>
-          <select defaultValue="Available">
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="all">Tất cả</option>
             <option value="Available">Còn trống</option>
             <option value="Maintenance">Bảo trì</option>
           </select>
@@ -134,9 +144,12 @@ export default function CourtsPage() {
             {filteredCourts.map((court) => (
               <article className={styles.card} key={court.CourtID}>
                 <div className={styles.imageWrap}>
-                  <img
+                  <Image
                     src={court.CourtImage || "/images/courts/c1.jpg"}
                     alt={court.CourtName}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    style={{ objectFit: 'cover' }}
                   />
                   <span className={styles.status}>
                     {court.Status === "Available" ? "Còn trống"
