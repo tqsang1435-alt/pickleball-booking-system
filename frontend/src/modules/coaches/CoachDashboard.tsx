@@ -12,6 +12,7 @@ import {
   updateMySchedule,
   deleteMySchedule,
   getMyReceivedBookings,
+  getMyIncome,
 } from "@/services/coachApi";
 import { cancelBookingByCoach } from "@/services/bookingApi";
 import type { Coach, CoachSchedule } from "@/types/coach";
@@ -148,6 +149,11 @@ export default function CoachDashboard({ token }: Props) {
   const [feeSaving, setFeeSaving] = useState(false);
   const [feeMsg, setFeeMsg] = useState("");
 
+  // ── Income form ───────────────────────────────────────────
+  const [incomeData, setIncomeData] = useState<any>(null);
+  const [incomeLoading, setIncomeLoading] = useState(false);
+  const [incomeError, setIncomeError] = useState("");
+
   // ── Schedules ─────────────────────────────────────────────
   const [schedules, setSchedules] = useState<CoachSchedule[]>([]);
   const [schedulesLoading, setSchedulesLoading] = useState(false);
@@ -239,6 +245,26 @@ export default function CoachDashboard({ token }: Props) {
       loadBookings();
     }
   }, [activeTab, loadBookings]);
+
+  // ── Load income ─────────────────────────────────────────
+  const loadIncome = useCallback(async () => {
+    try {
+      setIncomeLoading(true);
+      setIncomeError("");
+      const data = await getMyIncome(token);
+      setIncomeData(data);
+    } catch (err: any) {
+      setIncomeError(err.message || "Không thể tải dữ liệu thu nhập");
+    } finally {
+      setIncomeLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (activeTab === "income") {
+      loadIncome();
+    }
+  }, [activeTab, loadIncome]);
 
   // ── Save profile ──────────────────────────────────────────
   async function handleSaveProfile(e: React.FormEvent) {
@@ -1044,7 +1070,10 @@ export default function CoachDashboard({ token }: Props) {
                     return timeB.localeCompare(timeA); // Giờ trễ hơn lên đầu
                   })
                   .map((b) => {
-                  const canCancel = b.Status === "Confirmed";
+                  const bookingDateStr = b.BookingDate.includes('T') ? b.BookingDate.split('T')[0] : b.BookingDate;
+                  const sessionStartTime = new Date(`${bookingDateStr}T${b.StartTime}`);
+                  const isFutureSession = sessionStartTime > new Date();
+                  const canCancel = (b.Status === "Confirmed" || b.Status === "PendingPayment") && isFutureSession;
                   const isActioning = bookingActionId === b.BookingID;
                   return (
                     <div key={b.BookingID} className={`${styles.scheduleItem} ${styles.scheduleBooked}`}>
@@ -1076,6 +1105,97 @@ export default function CoachDashboard({ token }: Props) {
                     </div>
                   );
                 })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Tab: Income ─────────────────────────────── */}
+        {activeTab === "income" && (
+          <div className={styles.scheduleWrap}>
+            <div className={styles.scheduleHeader}>
+              <h2 className={styles.formTitle}>Thống kê & Thu nhập</h2>
+            </div>
+            
+            {incomeLoading ? (
+              <StateBox variant="loading" title="Đang tải dữ liệu thu nhập..." />
+            ) : incomeError ? (
+              <StateBox variant="error" title="Lỗi tải dữ liệu" description={incomeError} />
+            ) : !incomeData || incomeData.sessions.length === 0 ? (
+              <StateBox
+                variant="empty"
+                title="Chưa có dữ liệu thu nhập"
+                description="Bạn chưa có buổi dạy nào hoàn thành."
+              />
+            ) : (
+              <div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
+                  <div style={{ padding: "1.5rem", background: "#f8f9fa", borderRadius: "8px", border: "1px solid #e9ecef" }}>
+                    <div style={{ color: "#6c757d", fontSize: "0.9rem", marginBottom: "0.5rem" }}>Tổng buổi dạy</div>
+                    <div style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#212529" }}>{incomeData.summary.completedSessions}</div>
+                  </div>
+                  <div style={{ padding: "1.5rem", background: "#f8f9fa", borderRadius: "8px", border: "1px solid #e9ecef" }}>
+                    <div style={{ color: "#6c757d", fontSize: "0.9rem", marginBottom: "0.5rem" }}>Tổng giờ dạy</div>
+                    <div style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#212529" }}>{incomeData.summary.totalWorkingHours} giờ</div>
+                  </div>
+                  <div style={{ padding: "1.5rem", background: "#e8f5e9", borderRadius: "8px", border: "1px solid #c8e6c9" }}>
+                    <div style={{ color: "#2e7d32", fontSize: "0.9rem", marginBottom: "0.5rem" }}>Tổng thu nhập</div>
+                    <div style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#1b5e20" }}>{formatCurrency(incomeData.summary.totalIncome)}</div>
+                  </div>
+                </div>
+
+                {incomeData.monthlyIncome.length > 0 && (
+                  <div style={{ marginBottom: "2rem" }}>
+                    <h3 style={{ fontSize: "1.2rem", marginBottom: "1rem", color: "#343a40" }}>Thu nhập theo tháng</h3>
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "600px" }}>
+                        <thead>
+                          <tr style={{ background: "#f8f9fa", borderBottom: "2px solid #dee2e6" }}>
+                            <th style={{ padding: "12px", textAlign: "left", color: "#495057" }}>Tháng</th>
+                            <th style={{ padding: "12px", textAlign: "left", color: "#495057" }}>Số buổi</th>
+                            <th style={{ padding: "12px", textAlign: "left", color: "#495057" }}>Số giờ</th>
+                            <th style={{ padding: "12px", textAlign: "right", color: "#495057" }}>Thu nhập</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {incomeData.monthlyIncome.map((m: any) => (
+                            <tr key={m.month} style={{ borderBottom: "1px solid #e9ecef" }}>
+                              <td style={{ padding: "12px" }}>{m.month}</td>
+                              <td style={{ padding: "12px" }}>{m.sessions}</td>
+                              <td style={{ padding: "12px" }}>{m.workingHours}</td>
+                              <td style={{ padding: "12px", textAlign: "right", fontWeight: "500", color: "#2e7d32" }}>
+                                {formatCurrency(m.income)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <h3 style={{ fontSize: "1.2rem", marginBottom: "1rem", color: "#343a40" }}>Chi tiết buổi dạy đã hoàn thành</h3>
+                  <div className={styles.scheduleList}>
+                    {incomeData.sessions.map((s: any) => (
+                      <div key={s.bookingId} className={`${styles.scheduleItem} ${styles.scheduleBooked}`}>
+                        <div className={styles.scheduleDate}>
+                          📅 {new Date(s.workingDate).toLocaleDateString("vi-VN")}
+                        </div>
+                        <div className={styles.scheduleTime}>
+                          ⏰ {s.startTime} – {s.endTime} ({s.workingHours} giờ)
+                        </div>
+                        
+                        <div style={{ marginTop: 10, fontSize: "0.95rem" }}>
+                          <strong>Loại:</strong> {s.bookingType} <br />
+                          <strong>Học viên:</strong> {s.playerName} <br />
+                          <strong>Thu nhập:</strong> <span style={{ color: "#2e7d32", fontWeight: "bold" }}>{formatCurrency(s.coachFee)}</span> <br />
+                          <strong>Trạng thái:</strong> {s.status}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </div>

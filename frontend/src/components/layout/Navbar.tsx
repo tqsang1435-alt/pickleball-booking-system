@@ -174,6 +174,7 @@ export default function Navbar() {
       { href: "/coach-dashboard?tab=fee", label: "Học phí" },
       { href: "/coach-dashboard?tab=schedules", label: "Lịch dạy" },
       { href: "/coach-dashboard?tab=bookings", label: "Đơn đặt lịch" },
+      { href: "/coach-dashboard?tab=income", label: "Thống kê & Thu nhập" },
     ];
   }
 

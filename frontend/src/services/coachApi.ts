@@ -152,6 +152,39 @@ export async function getMyReceivedBookings(token: string): Promise<any[]> {
   return response.data;
 }
 
+export async function getMyIncome(token: string): Promise<{
+  summary: {
+    totalSessions: number;
+    completedSessions: number;
+    totalWorkingHours: number;
+    totalIncome: number;
+  };
+  monthlyIncome: {
+    month: string;
+    sessions: number;
+    workingHours: number;
+    income: number;
+  }[];
+  sessions: {
+    bookingId: number;
+    bookingType: string;
+    playerName: string;
+    workingDate: string;
+    startTime: string;
+    endTime: string;
+    workingHours: number;
+    coachFee: number;
+    status: string;
+    paymentStatus: string;
+  }[];
+}> {
+  const response = await apiClient<ApiResponse<any>>(
+    "/api/coaches/me/income",
+    { token }
+  );
+  return response.data;
+}
+
 // ─── ADMIN ────────────────────────────────────────────────────
 
 export async function adminGetAllCoaches(token: string): Promise<Coach[]> {
