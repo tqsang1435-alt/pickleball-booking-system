@@ -395,7 +395,7 @@ export default function StaffDashboard() {
             </Link>
 
             <Link
-              href="/staff/operations"
+              href="/staff/operations?view=detail"
               className={styles.fnCard}
               style={{ "--fn-color": "#0891B2", "--fn-bg": "#ECFEFF" } as React.CSSProperties}
             >

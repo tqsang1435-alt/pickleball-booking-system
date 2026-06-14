@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+// navigation handled via window.location for reliability in this environment
 import styles from "./QuickActions.module.css";
 
 interface QuickActionItem {
@@ -62,7 +62,7 @@ const ACTIONS: QuickActionItem[] = [
     icon: <SearchIcon />,
     title: "Tra cứu lịch đặt sân",
     subtitle: "Tìm theo ngày, mã, tên, SĐT",
-    href: "/staff/operations",
+    href: "/staff/operations?view=detail",
     colorClass: "teal",
   },
   {
@@ -82,7 +82,6 @@ const ACTIONS: QuickActionItem[] = [
 ];
 
 export default function QuickActions() {
-  const router = useRouter();
 
   return (
     <div className={styles.wrapper}>
@@ -92,7 +91,11 @@ export default function QuickActions() {
           <button
             key={action.href + action.title}
             className={`${styles.card} ${styles[action.colorClass]}`}
-            onClick={() => router.push(action.href)}
+            onClick={() => {
+              console.log("QuickAction click:", action.title, action.href);
+              // force full navigation so address bar always updates
+              try { window.location.assign(action.href); } catch { window.location.href = action.href; }
+            }}
           >
             <div className={`${styles.iconWrap} ${styles[`icon_${action.colorClass}`]}`}>
               {action.icon}
