@@ -18,7 +18,8 @@ export default function Page() {
       user?.RoleName || user?.role || user?.roles?.[0] || ""
     ).toLowerCase();
 
-    if (!userToken || !role.includes("admin")) {
+    // Chỉ Admin và Manager được quản lý nhân viên
+    if (!userToken || (!role.includes("admin") && !role.includes("manager"))) {
       router.push("/login");
       return;
     }
@@ -28,9 +29,7 @@ export default function Page() {
   }, [router]);
 
   if (checking) {
-    return (
-      <StateBox variant="loading" title="Đang kiểm tra quyền truy cập" />
-    );
+    return <StateBox variant="loading" title="Đang kiểm tra quyền truy cập" />;
   }
 
   if (!token) return null;

@@ -11,12 +11,65 @@ export async function findUserById(userId: number) {
     .request()
     .input("UserID", sql.Int, userId)
     .query(`
-      SELECT UserID, FullName, Email, Status
+      SELECT UserID, FullName, Email, PhoneNumber, Status
       FROM Users
       WHERE UserID = @UserID
     `);
 
   return result.recordset[0] ?? null;
+}
+
+export async function getOrCreateWalkInGuestUser() {
+  const pool = await getPool();
+  const transaction = new sql.Transaction(pool);
+
+  try {
+    await transaction.begin();
+
+    const result = await new sql.Request(transaction)
+      .input("Email", sql.NVarChar(100), "walkin.guest@pickleclub.local")
+      .input("FullName", sql.NVarChar(100), "Khach vang lai")
+      .input("PasswordHash", sql.NVarChar(255), "WALKIN_GUEST_DISABLED")
+      .query(`
+        DECLARE @UserID INT;
+        DECLARE @GuestRoleID INT;
+
+        SELECT @UserID = UserID
+        FROM Users WITH (UPDLOCK, HOLDLOCK)
+        WHERE Email = @Email;
+
+        IF @UserID IS NULL
+        BEGIN
+          INSERT INTO Users (FullName, Email, PhoneNumber, PasswordHash, Status)
+          VALUES (@FullName, @Email, NULL, @PasswordHash, 'Active');
+
+          SET @UserID = SCOPE_IDENTITY();
+        END;
+
+        SELECT @GuestRoleID = RoleID
+        FROM Roles
+        WHERE RoleName = 'Guest';
+
+        IF @GuestRoleID IS NOT NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM UserRoles WHERE UserID = @UserID AND RoleID = @GuestRoleID
+          )
+        BEGIN
+          INSERT INTO UserRoles (UserID, RoleID)
+          VALUES (@UserID, @GuestRoleID);
+        END;
+
+        SELECT UserID, FullName, Email, PhoneNumber, Status
+        FROM Users
+        WHERE UserID = @UserID;
+      `);
+
+    await transaction.commit();
+    return result.recordset[0] ?? null;
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
 }
 
 export async function findCourtByIdForBooking(courtId: number) {
@@ -241,6 +294,11 @@ export async function repoCreateCourtBooking(data: {
   startTime: string;
   endTime: string;
   courtFee: number;
+  paymentMethod?: "Cash" | "BankTransfer";
+  walkInNote?: string;
+  bookedByStaffId?: number;
+  guestName?: string;
+  guestPhone?: string;
 }): Promise<CreatedBooking> {
   const pool = await getPool();
   const transaction = new sql.Transaction(pool);
@@ -264,6 +322,12 @@ export async function repoCreateCourtBooking(data: {
       .input("CourtID", sql.Int, data.courtId)
       .input("StartTime", sql.VarChar(5), data.startTime)
       .input("EndTime", sql.VarChar(5), data.endTime)
+      .input("PaymentMethod", sql.NVarChar(50), data.paymentMethod ?? null)
+      .input("WalkInNote", sql.NVarChar(255), data.walkInNote ?? null)
+      .input("BookedByStaffID", sql.Int, data.bookedByStaffId ?? null)
+      .input("GuestName", sql.NVarChar(100), data.guestName ?? null)
+      .input("GuestPhone", sql.NVarChar(20), data.guestPhone ?? null)
+      .input("TransactionCode", sql.NVarChar(100), data.paymentMethod ? `WALKIN-${Date.now()}` : null)
       .query(`
         -- BR-27/28: Lock slot truoc khi insert
         IF NOT EXISTS (
@@ -276,14 +340,20 @@ export async function repoCreateCourtBooking(data: {
           THROW 50001, 'Court slot is not available', 1;
         END;
 
+        DECLARE @BookingStatus NVARCHAR(30) =
+          CASE WHEN @PaymentMethod IS NULL THEN 'PendingPayment' ELSE 'Confirmed' END;
+
         INSERT INTO Bookings (
           BookingCode, UserID, BookingType, BookingDate,
-          CourtFee, CoachFee, DiscountAmount, TotalAmount, Status
+          CourtFee, CoachFee, DiscountAmount, TotalAmount, Status, CancelReason,
+          GuestName, GuestPhone, BookedByStaffID, PaymentMethod, PaymentStatus
         )
         OUTPUT INSERTED.*
         VALUES (
           @BookingCode, @UserID, @BookingType, @BookingDate,
-          @CourtFee, @CoachFee, @DiscountAmount, @TotalAmount, 'PendingPayment'
+          @CourtFee, @CoachFee, @DiscountAmount, @TotalAmount, @BookingStatus, @WalkInNote,
+          @GuestName, @GuestPhone, @BookedByStaffID, @PaymentMethod,
+          CASE WHEN @PaymentMethod IS NULL THEN 'Pending' ELSE 'Paid' END
         );
 
         DECLARE @NewBookingID INT = SCOPE_IDENTITY();
@@ -298,19 +368,39 @@ export async function repoCreateCourtBooking(data: {
           @CourtFee, 0, @CourtFee
         );
 
-        DECLARE @HoldUntil DATETIME;
-        DECLARE @StartDateTime DATETIME = CAST(CAST(@BookingDate AS VARCHAR(10)) + ' ' + CAST(@StartTime AS VARCHAR(5)) AS DATETIME);
-        IF DATEADD(MINUTE, 10, GETDATE()) < @StartDateTime
-            SET @HoldUntil = DATEADD(MINUTE, 10, GETDATE());
-        ELSE
-            SET @HoldUntil = @StartDateTime;
+        IF @PaymentMethod IS NULL
+        BEGIN
+          DECLARE @HoldUntil DATETIME;
+          DECLARE @StartDateTime DATETIME = CAST(CAST(@BookingDate AS VARCHAR(10)) + ' ' + CAST(@StartTime AS VARCHAR(5)) AS DATETIME);
+          IF DATEADD(MINUTE, 10, GETDATE()) < @StartDateTime
+              SET @HoldUntil = DATEADD(MINUTE, 10, GETDATE());
+          ELSE
+              SET @HoldUntil = @StartDateTime;
 
-        -- BR-25: Hold slot 10 phut hoac den gio bat dau
-        UPDATE CourtSlots
-        SET Status = 'Holding',
-            HoldUntil = @HoldUntil,
-            UpdatedAt = GETDATE()
-        WHERE SlotID = @SlotID;
+          -- BR-25: Hold slot 10 phut hoac den gio bat dau
+          UPDATE CourtSlots
+          SET Status = 'Holding',
+              HoldUntil = @HoldUntil,
+              UpdatedAt = GETDATE()
+          WHERE SlotID = @SlotID;
+        END
+        ELSE
+        BEGIN
+          INSERT INTO Payments (
+            BookingID, PaymentMethod, Amount, TransactionCode, Status, PaidAt, CreatedAt,
+            ConfirmedByStaffID, Note
+          )
+          VALUES (
+            @NewBookingID, @PaymentMethod, @TotalAmount, @TransactionCode, 'Paid', GETDATE(), GETDATE(),
+            @BookedByStaffID, @WalkInNote
+          );
+
+          UPDATE CourtSlots
+          SET Status = 'Booked',
+              HoldUntil = NULL,
+              UpdatedAt = GETDATE()
+          WHERE SlotID = @SlotID;
+        END;
 
         SELECT
           b.BookingID, b.BookingCode, b.UserID, b.BookingType, b.BookingDate,
@@ -1048,9 +1138,9 @@ export async function findDailyBookingsForStaff(
         DATEADD(HOUR, -7, b.CheckInTime) AS CheckInTime,
         b.CreatedAt,
 
-        u.FullName AS PlayerName,
+        COALESCE(NULLIF(b.GuestName, ''), u.FullName) AS PlayerName,
         u.Email AS PlayerEmail,
-        u.PhoneNumber AS PlayerPhone,
+        COALESCE(NULLIF(b.GuestPhone, ''), u.PhoneNumber) AS PlayerPhone,
 
         c.CourtName,
         cu.FullName AS CoachName,

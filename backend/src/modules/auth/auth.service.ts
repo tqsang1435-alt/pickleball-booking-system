@@ -1,22 +1,14 @@
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 
 import * as authRepo from "./auth.repository";
-import type { LoginInput, RegisterInput } from "./auth.type";
+import type { LoginInput, RegisterInput, JwtPayload } from "./auth.type";
 import { generateOtp, hashOtp, compareOtp } from "@/utils/otp";
 import { sendOtpEmail } from "@/utils/mail";
+import { signAccessToken } from "@/utils/jwt";
 
-const JWT_SECRET = process.env.JWT_SECRET || "default_secret_key";
-
-function createToken(payload: {
-  userId: number;
-  email: string;
-  roles: string[];
-}) {
-  return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: "24h",
-  });
+function createToken(payload: JwtPayload) {
+  return signAccessToken(payload);
 }
 
 export async function register(input: RegisterInput) {

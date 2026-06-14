@@ -12,4 +12,4 @@ END
 
 -- Thêm constraint mới
 ALTER TABLE Payments
-ADD CONSTRAINT CHK_Payments_PaymentMethod CHECK (PaymentMethod IN ('PayOS', 'Momo'));
+ADD CONSTRAINT CHK_Payments_PaymentMethod CHECK (PaymentMethod IN ('PayOS', 'VNPay', 'Momo', 'Cash', 'BankTransfer'));

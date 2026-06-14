@@ -31,7 +31,25 @@ export async function getPool() {
   if (pool) return pool;
 
   pool = await sql.connect(databaseConfig);
+
   startBackgroundJobs();
+
+
+  // Self-migration: ensure LockReason column exists in Users table
+  try {
+    await pool.request().query(`
+      IF NOT EXISTS (
+        SELECT * FROM sys.columns 
+        WHERE object_id = OBJECT_ID('Users') AND name = 'LockReason'
+      )
+      BEGIN
+        ALTER TABLE Users ADD LockReason NVARCHAR(255) NULL;
+      END
+    `);
+  } catch (err) {
+    console.error("Migration error (ensuring LockReason column in Users):", err);
+  }
+
   return pool;
 }
 

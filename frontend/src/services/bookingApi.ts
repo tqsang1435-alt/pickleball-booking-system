@@ -66,6 +66,17 @@ export type CreateCourtBookingPayload = {
   endTime: string;
 };
 
+export type CreateWalkInBookingPayload = {
+  courtId: number;
+  bookingDate: string;
+  startTime: string;
+  endTime: string;
+  customerId?: number;
+  guestName?: string;
+  guestPhone?: string;
+  paymentMethod: "Cash" | "BankTransfer";
+};
+
 export type CreateCoachBookingPayload = {
   coachId: number;
   bookingDate: string;
@@ -127,6 +138,18 @@ export async function bookCourt(
   payload: CreateCourtBookingPayload
 ): Promise<Booking> {
   const res = await apiClient<ApiResponse<Booking>>("/api/bookings/court", {
+    method: "POST",
+    token,
+    body: payload,
+  });
+  return res.data;
+}
+
+export async function createWalkInBooking(
+  token: string,
+  payload: CreateWalkInBookingPayload
+): Promise<Booking> {
+  const res = await apiClient<ApiResponse<Booking>>("/api/staff/bookings/walk-in", {
     method: "POST",
     token,
     body: payload,

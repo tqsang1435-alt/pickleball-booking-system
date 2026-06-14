@@ -1,0 +1,56 @@
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  height: 100px;
+  border-radius: 8px;
+}
+
+.tableSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.row {
+  height: 48px;
+  border-radius: 4px;
+}
+
+.formSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  height: 16px;
+  width: 30%;
+}
+
+.input {
+  height: 48px;
+  border-radius: 6px;
+}

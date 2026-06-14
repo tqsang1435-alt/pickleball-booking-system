@@ -3,7 +3,10 @@ import { OperationBooking } from "./operations.type";
 
 export async function repoGetTodayOperations(targetDate: string): Promise<OperationBooking[]> {
   const pool = await getPool();
-  // Lấy danh sách booking trong ngày
+
+  // GROUP BY booking để tránh duplicate rows với booking combo (nhiều BookingDetails)
+  // Lấy startTime sớm nhất và endTime muộn nhất trong booking
+  // courtName: ưu tiên lấy sân đầu tiên (có CourtID)
   const query = `
     SELECT 
       b.BookingID as bookingId,
@@ -11,20 +14,38 @@ export async function repoGetTodayOperations(targetDate: string): Promise<Operat
       u.FullName as customerName,
       u.PhoneNumber as customerPhone,
       u.Email as customerEmail,
-      c.CourtName as courtName,
+      (
+        SELECT TOP 1 c2.CourtName
+        FROM BookingDetails bd2
+        LEFT JOIN Courts c2 ON bd2.CourtID = c2.CourtID
+        WHERE bd2.BookingID = b.BookingID AND c2.CourtName IS NOT NULL
+        ORDER BY bd2.BookingDetailID ASC
+      ) as courtName,
       b.BookingDate as bookingDate,
-      CONVERT(VARCHAR(5), bd.StartTime, 108) as startTime,
-      CONVERT(VARCHAR(5), bd.EndTime, 108) as endTime,
+      CONVERT(VARCHAR(5), MIN(bd.StartTime), 108) as startTime,
+      CONVERT(VARCHAR(5), MAX(bd.EndTime), 108) as endTime,
       b.Status as status,
-      p.Status as paymentStatus,
+      (
+        SELECT TOP 1 p2.Status
+        FROM Payments p2
+        WHERE p2.BookingID = b.BookingID
+        ORDER BY CASE WHEN p2.Status = 'Paid' THEN 1 ELSE 2 END ASC, p2.CreatedAt DESC
+      ) as paymentStatus,
       b.CheckInTime as checkInTime
     FROM Bookings b
     INNER JOIN Users u ON b.UserID = u.UserID
     LEFT JOIN BookingDetails bd ON b.BookingID = bd.BookingID
-    LEFT JOIN Courts c ON bd.CourtID = c.CourtID
-    LEFT JOIN Payments p ON b.BookingID = p.BookingID
     WHERE b.BookingDate = @TargetDate
-    ORDER BY bd.StartTime ASC
+    GROUP BY
+      b.BookingID,
+      b.BookingCode,
+      u.FullName,
+      u.PhoneNumber,
+      u.Email,
+      b.BookingDate,
+      b.Status,
+      b.CheckInTime
+    ORDER BY MIN(bd.StartTime) ASC
   `;
   
   const result = await pool.request()
@@ -79,16 +100,18 @@ export async function repoUpdateBookingStatus(
 
 export async function repoGetBookingStatus(bookingId: number): Promise<{ Status: string, BookingCode: string, BookingDate: Date, StartTime: Date, EndTime: Date } | null> {
   const pool = await getPool();
+  // Dùng aggregate để tránh duplicate khi booking có nhiều BookingDetails (combo)
   const query = `
     SELECT 
       b.Status, 
       b.BookingCode,
       b.BookingDate,
-      bd.StartTime,
-      bd.EndTime
+      MIN(bd.StartTime) as StartTime,
+      MAX(bd.EndTime) as EndTime
     FROM Bookings b
     LEFT JOIN BookingDetails bd ON b.BookingID = bd.BookingID
     WHERE b.BookingID = @BookingID
+    GROUP BY b.Status, b.BookingCode, b.BookingDate
   `;
   const result = await pool.request()
     .input("BookingID", sql.Int, bookingId)

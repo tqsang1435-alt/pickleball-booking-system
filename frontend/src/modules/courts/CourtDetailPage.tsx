@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { getCourtById } from "@/services/courtApi";
 import type { Court } from "@/types/court";
 import { formatCurrency } from "@/utils/formatCurrency";
@@ -67,7 +68,13 @@ export default function CourtDetailPage({ courtId }: { courtId: string }) {
     <main className={styles.page}>
       <div className={styles.heroSection}>
         <div className={styles.heroBg}>
-          <img src={court.CourtImage || "/images/courts/c1.jpg"} alt={court.CourtName} />
+          <Image 
+            src={court.CourtImage || "/images/courts/c1.jpg"} 
+            alt={court.CourtName}
+            fill
+            priority
+            style={{ objectFit: 'cover' }}
+          />
           <div className={styles.overlay}></div>
         </div>
         <div className={`container ${styles.heroContent}`}>
