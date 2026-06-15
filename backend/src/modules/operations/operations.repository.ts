@@ -11,8 +11,8 @@ export async function repoGetTodayOperations(targetDate: string): Promise<Operat
     SELECT 
       b.BookingID as bookingId,
       b.BookingCode as bookingCode,
-      u.FullName as customerName,
-      u.PhoneNumber as customerPhone,
+      COALESCE(NULLIF(b.GuestName, ''), u.FullName) as customerName,
+      COALESCE(NULLIF(b.GuestPhone, ''), u.PhoneNumber) as customerPhone,
       u.Email as customerEmail,
       (
         SELECT TOP 1 c2.CourtName
@@ -39,6 +39,8 @@ export async function repoGetTodayOperations(targetDate: string): Promise<Operat
     GROUP BY
       b.BookingID,
       b.BookingCode,
+      b.GuestName,
+      b.GuestPhone,
       u.FullName,
       u.PhoneNumber,
       u.Email,

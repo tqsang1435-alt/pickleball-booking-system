@@ -29,21 +29,29 @@ export async function getOrCreateWalkInGuestUser() {
     const result = await new sql.Request(transaction)
       .input("Email", sql.NVarChar(100), "walkin.guest@pickleclub.local")
       .input("FullName", sql.NVarChar(100), "Khach vang lai")
+      .input("PhoneNumber", sql.NVarChar(20), "WALKIN_GUEST")
       .input("PasswordHash", sql.NVarChar(255), "WALKIN_GUEST_DISABLED")
       .query(`
         DECLARE @UserID INT;
         DECLARE @GuestRoleID INT;
+        DECLARE @InsertedUsers TABLE (UserID INT);
 
         SELECT @UserID = UserID
         FROM Users WITH (UPDLOCK, HOLDLOCK)
-        WHERE Email = @Email;
+        WHERE Email = @Email OR PhoneNumber = @PhoneNumber;
 
         IF @UserID IS NULL
         BEGIN
           INSERT INTO Users (FullName, Email, PhoneNumber, PasswordHash, Status)
-          VALUES (@FullName, @Email, NULL, @PasswordHash, 'Active');
+          OUTPUT INSERTED.UserID INTO @InsertedUsers
+          VALUES (@FullName, @Email, @PhoneNumber, @PasswordHash, 'Active');
 
-          SET @UserID = SCOPE_IDENTITY();
+          SELECT @UserID = UserID FROM @InsertedUsers;
+        END;
+
+        IF @UserID IS NULL
+        BEGIN
+          THROW 50010, 'Cannot resolve walk-in guest user id', 1;
         END;
 
         SELECT @GuestRoleID = RoleID
@@ -387,11 +395,11 @@ export async function repoCreateCourtBooking(data: {
         ELSE
         BEGIN
           INSERT INTO Payments (
-            BookingID, PaymentMethod, Amount, TransactionCode, Status, PaidAt, CreatedAt,
+            BookingID, PaymentMethod, Amount, PaymentCode, TransactionCode, Status, PaidAt, CreatedAt,
             ConfirmedByStaffID, Note
           )
           VALUES (
-            @NewBookingID, @PaymentMethod, @TotalAmount, @TransactionCode, 'Paid', GETDATE(), GETDATE(),
+            @NewBookingID, @PaymentMethod, @TotalAmount, @TransactionCode, @TransactionCode, 'Paid', GETDATE(), GETDATE(),
             @BookedByStaffID, @WalkInNote
           );
 
@@ -728,8 +736,8 @@ export async function repoMockPayBooking(
         DECLARE @TotalAmount DECIMAL(18,2);
         SELECT @TotalAmount = TotalAmount FROM Bookings WHERE BookingID = @BookingID;
 
-        INSERT INTO Payments (BookingID, PaymentMethod, Amount, TransactionCode, Status, PaidAt, CreatedAt)
-        VALUES (@BookingID, @PaymentMethod, @TotalAmount, @TransactionCode, 'Paid', GETDATE(), GETDATE());
+        INSERT INTO Payments (BookingID, PaymentMethod, Amount, PaymentCode, TransactionCode, Status, PaidAt, CreatedAt)
+        VALUES (@BookingID, @PaymentMethod, @TotalAmount, @TransactionCode, @TransactionCode, 'Paid', GETDATE(), GETDATE());
 
         UPDATE Bookings
         SET Status = 'Confirmed', UpdatedAt = GETDATE()

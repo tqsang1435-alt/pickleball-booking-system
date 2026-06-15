@@ -3,8 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./AdminPage.module.css";
-import { getDashboardStats, DashboardStats } from "@/services/adminApi";
-import { getDailyBookings, DailyBooking } from "@/services/bookingApi";
+import {
+  getDashboardSnapshot,
+  getDemoDashboardSnapshot,
+  DashboardStats,
+  type DashboardSnapshot,
+} from "@/services/adminApi";
+import { DailyBooking } from "@/services/bookingApi";
 import { getToken, getUser } from "@/utils/authStorage";
 import { 
   CourtIcon, CalendarIcon, PlayerIcon, CoachIcon, StaffIcon, 
@@ -12,53 +17,63 @@ import {
   WrenchIcon, CheckShieldIcon, BarChartIcon, MoreIcon 
 } from "./AdminIcons";
 
-function todayStr() {
-  return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" });
-}
-
 export default function AdminPage() {
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
-  const [role, setRole] = useState<string | undefined>(undefined);
+  const [role, setRole] = useState("");
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [dailyBookings, setDailyBookings] = useState<DailyBooking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dataSource, setDataSource] = useState<DashboardSnapshot["source"]>("api");
 
   useEffect(() => {
     const currentToken = getToken();
     const currentUser = getUser();
     setToken(currentToken);
-    setRole(currentUser?.role);
+    const currentRole = String(
+      currentUser?.RoleName || currentUser?.role || currentUser?.roles?.[0] || ""
+    );
+    setRole(currentRole);
   }, []);
 
   useEffect(() => {
-    if (!token || !role) return;
+    if (!token) {
+      const snapshot = getDemoDashboardSnapshot();
+      setStats(snapshot.stats);
+      setDailyBookings(snapshot.dailyBookings);
+      setDataSource(snapshot.source);
+      setLoading(false);
+      return;
+    }
 
-    if (role.toLowerCase().includes("staff")) {
+    const normalizedRole = role.toLowerCase();
+
+    if (normalizedRole.includes("staff") && !normalizedRole.includes("admin") && !normalizedRole.includes("manager")) {
       router.push("/admin/bookings");
       return;
     }
 
-    if (!role.toLowerCase().includes("admin") && !role.toLowerCase().includes("manager")) return;
+    if (normalizedRole && !normalizedRole.includes("admin") && !normalizedRole.includes("manager")) {
+      setLoading(false);
+      return;
+    }
 
     async function loadData() {
       try {
         setLoading(true);
-        // Load stats
-        try {
-          const statsData = await getDashboardStats(token as string);
-          setStats(statsData);
-        } catch (err) {
-          console.error("Lỗi tải dữ liệu dashboard stats:", err);
+        const snapshot = await getDashboardSnapshot(token as string);
+        setStats(snapshot.stats);
+        setDailyBookings(snapshot.dailyBookings);
+        setDataSource(snapshot.source);
+        if (snapshot.source === "demo") {
+          console.info("Admin dashboard is using in-memory demo data.");
         }
-        
-        // Load daily bookings
-        try {
-          const dailyData = await getDailyBookings(token as string, todayStr());
-          setDailyBookings(dailyData);
-        } catch (err) {
-          console.error("Lỗi tải dữ liệu daily bookings:", err);
-        }
+      } catch (err) {
+        console.error("Lỗi tải dữ liệu dashboard:", err);
+        const snapshot = getDemoDashboardSnapshot();
+        setStats(snapshot.stats);
+        setDailyBookings(snapshot.dailyBookings);
+        setDataSource(snapshot.source);
       } finally {
         setLoading(false);
       }
@@ -118,6 +133,11 @@ export default function AdminPage() {
           </span>
         </div>
         <div className={styles.headerRight}>
+          {(loading || dataSource === "demo") && (
+            <span className={styles.sourceBadge}>
+              {loading ? "Đang tải" : "Dữ liệu demo"}
+            </span>
+          )}
           <button className={styles.iconBtn} aria-label="Notifications">
             <BellIcon />
           </button>
