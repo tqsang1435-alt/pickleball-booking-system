@@ -20,3 +20,14 @@ export interface GroupInvitation {
   Status: "Pending" | "Accepted" | "Rejected" | "Expired";
   CreatedAt: string; // BR-90: Expire after 48h
 }
+
+export interface GroupMessage {
+  MessageID: number;
+  GroupID: number;
+  SenderID: number;
+  SenderName?: string;
+  SenderAvatar?: string;
+  Content: string;
+  CreatedAt: string;
+  IsMine?: boolean;
+}

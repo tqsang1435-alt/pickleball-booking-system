@@ -561,3 +561,85 @@ export async function sendRefundCompletedEmail(
     );
   }
 }
+
+// ── Generic Notification Email ────────────────────────
+export interface NotificationEmailParams {
+  to: string;
+  fullName: string;
+  type: string;
+  subject: string;
+  title: string;
+  message: string;
+  actionUrl?: string;
+  actionText?: string;
+}
+
+export async function sendNotificationEmail(
+  params: NotificationEmailParams
+): Promise<void> {
+  try {
+    if (!params.to) return;
+    const transporter = getTransporter();
+
+    const actionButton = params.actionUrl
+      ? `<div style="text-align: center; margin-top: 24px;">
+           <a href="${params.actionUrl}" style="display: inline-block; background: #16a34a; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold;">
+             ${params.actionText || "Xem chi tiết"}
+           </a>
+         </div>`
+      : "";
+
+    const html = `
+      <!DOCTYPE html>
+      <html lang="vi">
+      <head><meta charset="UTF-8" /></head>
+      <body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 0;">
+          <tr><td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);">
+              <!-- Header -->
+              <tr>
+                <td style="background:#16a34a;padding:24px 32px;text-align:center;">
+                  <h1 style="margin:0;color:#ffffff;font-size:22px;">${params.title}</h1>
+                </td>
+              </tr>
+              <!-- Content -->
+              <tr>
+                <td style="padding:32px;">
+                  <p style="margin:0 0 16px 0;font-size:15px;color:#111;">
+                    Chào <strong>${params.fullName}</strong>,
+                  </p>
+                  <p style="margin:0 0 16px 0;color:#4b5563;font-size:14px;line-height:1.6;white-space:pre-wrap;">${params.message}</p>
+                  ${actionButton}
+                </td>
+              </tr>
+              <!-- Footer -->
+              <tr>
+                <td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #e5e7eb;">
+                  <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
+                    Email này được gửi tự động từ hệ thống PCS Pickleball Booking.<br/>
+                    Vui lòng không reply email này.
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td></tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    await transporter.sendMail({
+      from: `"PCS Booking" <${process.env.GMAIL_USER}>`,
+      to: params.to,
+      subject: params.subject,
+      html,
+    });
+  } catch (err: any) {
+    console.error(
+      `[Mail] sendNotificationEmail [${params.type}] FAILED to ${params.to}:`,
+      err?.message ?? err
+    );
+    throw err; // throw to let caller know and log as failed in DB
+  }
+}

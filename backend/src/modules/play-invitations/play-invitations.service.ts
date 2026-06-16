@@ -1,12 +1,14 @@
 import * as repo from "./play-invitations.repository";
 import * as groupRepo from "../playgroups/playgroups.repository";
 import * as matchingRepo from "../player-matching/player-matching.repository";
+import * as notificationsService from "../notifications/notifications.service";
 import { getPool, sql } from "@/database/connection";
 
 export async function createPlayInvitation(
   senderId: number,
   receiverId: number | null,
   groupId: number | null,
+  targetGroupId: number | null,
   invitationType: string,
   message: string,
   challengeDate?: string,
@@ -112,29 +114,48 @@ export async function createPlayInvitation(
       throw new Error("Chỉ trưởng nhóm mới được gửi lời mời thách đấu.");
     }
 
-    // Get target group owned by the receiver
+    const senderActiveCount = await groupRepo.countActiveGroupMembers(groupId);
+    if (senderActiveCount < 2) {
+      throw new Error("Nhóm của bạn phải có ít nhất 2 thành viên đang hoạt động để gửi lời thách đấu.");
+    }
+
+    if (!targetGroupId) {
+      throw new Error("Thiếu targetGroupId của nhóm đối thủ.");
+    }
+
+    // Get exact target group and verify ownership
     const pool = await getPool();
-    const targetGroupRes = await pool.request()
-      .input("ReceiverID", sql.Int, receiverId)
-      .query(`
-        SELECT TOP 1 GroupID, GroupName, Status
-        FROM PlayingGroups
-        WHERE CreatedBy = @ReceiverID AND Status IN ('Open', 'Active', 'Full')
-        ORDER BY GroupID DESC
-      `);
+    const req = pool.request();
+
+    req.input("TargetGroupID", sql.Int, targetGroupId);
+    req.input("ReceiverID", sql.Int, receiverId);
+
+    const targetGroupQuery = `
+      SELECT GroupID, GroupName, Status, CreatedBy
+      FROM PlayingGroups
+      WHERE GroupID = @TargetGroupID
+        AND CreatedBy = @ReceiverID
+        AND Status IN ('Open', 'Active', 'Full')
+    `;
+
+    const targetGroupRes = await req.query(targetGroupQuery);
     
+    if (targetGroupRes.recordset.length === 0) {
+      throw new Error("Nhóm đối thủ không hợp lệ hoặc không thuộc người nhận.");
+    }
     const targetGroup = targetGroupRes.recordset[0];
-    if (!targetGroup) {
-      throw new Error("Không tìm thấy nhóm đối thủ hoặc nhóm đối thủ đã bị đóng.");
+    const targetActiveCount = await groupRepo.countActiveGroupMembers(targetGroup.GroupID);
+    if (targetActiveCount < 2) {
+      throw new Error("Nhóm đối thủ không đủ điều kiện (cần ít nhất 2 thành viên) để nhận lời thách đấu.");
     }
 
     if (groupId === targetGroup.GroupID) {
       throw new Error("Không thể thách đấu nhóm của chính bạn.");
     }
 
-    const isSenderInTargetGroup = await groupRepo.checkUserInGroup(targetGroup.GroupID, senderId);
-    if (isSenderInTargetGroup) {
-      throw new Error("Bạn không thể thách đấu nhóm mà bạn đang tham gia.");
+    const hasOverlap = await groupRepo.checkGroupOverlap(groupId, targetGroup.GroupID);
+    if (hasOverlap) {
+      throw new Error("Không thể thách đấu do hai nhóm có thành viên bị trùng lặp.");
     }
 
     const pendingOpponentInvite = await repo.findPendingInvitationBetweenUsers(senderId, receiverId, 'InviteOpponent');
@@ -157,7 +178,13 @@ export async function createPlayInvitation(
     challengeStartTime,
     challengeEndTime
   );
-  return repo.getInvitationById(invitationId);
+
+  const createdInv = await repo.getInvitationById(invitationId);
+
+  // Gửi email notification
+  notificationsService.notifyPlayInvitationCreated(createdInv).catch(err => console.error("notifyPlayInvitationCreated error:", err));
+
+  return createdInv;
 }
 
 export async function getReceived(userId: number) {
@@ -257,6 +284,39 @@ export async function acceptInvitation(invitationId: number, userId: number) {
       groupId = txGroupId;
     }
   } else if (invite.InvitationType === 'InviteOpponent') {
+    if (!invite.GroupID) throw new Error("Lời mời thách đấu không hợp lệ (thiếu GroupID).");
+
+    const senderActiveCount = await groupRepo.countActiveGroupMembers(invite.GroupID);
+
+    // Get target group owned by the receiver
+    const pool = await getPool();
+    const targetGroupRes = await pool.request()
+      .input("ReceiverID", sql.Int, userId)
+      .query(`
+        SELECT TOP 1 GroupID
+        FROM PlayingGroups
+        WHERE CreatedBy = @ReceiverID AND Status IN ('Open', 'Active', 'Full')
+        ORDER BY GroupID DESC
+      `);
+
+    const targetGroup = targetGroupRes.recordset[0];
+    if (!targetGroup) {
+      throw new Error("Không tìm thấy nhóm đối thủ hoặc nhóm đối thủ đã bị đóng.");
+    }
+
+    const receiverActiveCount = await groupRepo.countActiveGroupMembers(targetGroup.GroupID);
+
+    if (senderActiveCount < 2 || receiverActiveCount < 2) {
+      throw new Error("Không thể chấp nhận lời thách đấu do một trong hai nhóm không đủ thành viên hoạt động (cần ít nhất 2 thành viên).");
+    }
+
+    const hasOverlap = await groupRepo.checkGroupOverlap(invite.GroupID, targetGroup.GroupID);
+    if (hasOverlap) {
+      throw new Error("Không thể chấp nhận lời thách đấu do hai nhóm có thành viên bị trùng lặp.");
+    }
+
+    // Upsert opponent match record with 'Accepted' status
+    await matchingRepo.upsertPlayerMatch(invite.SenderID, userId, 100.00, 'Opponent', 'Accepted');
     await repo.updateInvitationStatus(invitationId, 'Accepted');
   }
 
@@ -265,6 +325,9 @@ export async function acceptInvitation(invitationId: number, userId: number) {
   if (invite.InvitationType === 'InviteToPlay') {
     associatedGroupId = await groupRepo.findActiveGroupBetweenPlayers(invite.SenderID, userId);
   }
+
+  // Gửi email notification
+  notificationsService.notifyInvitationStatusChanged(updatedInvitation, 'Accepted').catch(err => console.error("notifyInvitationStatusChanged error:", err));
 
   return {
     ...updatedInvitation,
@@ -287,7 +350,12 @@ export async function rejectInvitation(invitationId: number, userId: number) {
   }
 
   await repo.updateInvitationStatus(invitationId, 'Rejected');
-  return repo.getInvitationById(invitationId);
+
+  const rejectedInv = await repo.getInvitationById(invitationId);
+  // Gửi email notification
+  notificationsService.notifyInvitationStatusChanged(rejectedInv, 'Rejected').catch(err => console.error("notifyInvitationStatusChanged error:", err));
+
+  return rejectedInv;
 }
 
 export async function getPendingCount(userId: number) {
