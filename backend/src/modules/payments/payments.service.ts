@@ -16,6 +16,7 @@ import {
   getPaymentStatus,
   markPaymentPaid,
   markPaymentFailed,
+  getCoachOrComboPaymentSuccessEmailData,
 } from "./payments.repository";
 
 import {
@@ -327,26 +328,94 @@ async function sendPaymentNotification(
       if (bk.BookingType === "Coach") bookingTypeStr = "HLV (Coach)";
       if (bk.BookingType === "Combo") bookingTypeStr = "Combo (Sân + HLV)";
 
-      // 4. Gửi email – PHẢI dùng await, không dùng void
-      if (!bk.Email) {
-        console.warn(`[PaymentNotif] User ${bk.UserID} không có email, bỏ qua gửi mail`);
+      const { sendPaymentSuccessEmail, sendCoachNewTeachingScheduleEmail } = await import("@/utils/mail");
+
+      if (bk.BookingType === "Coach" || bk.BookingType === "Combo") {
+        console.log(`[CoachComboEmail] START sending email for bookingId=${bookingId}, type=${bk.BookingType}`);
+        const detailedData = await getCoachOrComboPaymentSuccessEmailData(bookingId);
+        
+        if (detailedData) {
+          // Gửi cho Player
+          if (detailedData.playerEmail) {
+            console.log(`[CoachComboEmail] sending player confirmation email to ${detailedData.playerEmail}`);
+            await sendPaymentSuccessEmail(detailedData.playerEmail, {
+              playerName:     detailedData.playerName,
+              bookingCode:    detailedData.bookingCode,
+              bookingType:    bookingTypeStr,
+              bookingDate:    detailedData.bookingDate,
+              startTime:      detailedData.startTime,
+              endTime:        detailedData.endTime,
+              courtName:      detailedData.courtName ?? undefined,
+              coachName:      detailedData.coachName ?? undefined,
+              courtFee:       Number(detailedData.courtFee),
+              coachFee:       Number(detailedData.coachFee),
+              originalAmount: Number(detailedData.originalAmount),
+              amount:         Number(detailedData.paidAmount),
+              discountAmount: detailedData.discountAmount ? Number(detailedData.discountAmount) : undefined,
+              paymentMethod:  method,
+              paymentCode:    paymentCode,
+              transactionCode: transactionCode,
+            });
+            console.log(`[CoachComboEmail] player email sent`);
+          } else {
+            console.warn(`[CoachComboEmail] Player ${detailedData.playerUserId} không có email`);
+          }
+
+          // Gửi cho Coach
+          if (detailedData.coachUserId && detailedData.coachEmail) {
+            console.log(`[CoachComboEmail] sending coach schedule email to ${detailedData.coachEmail}`);
+            await sendCoachNewTeachingScheduleEmail(detailedData.coachEmail, {
+              coachName: detailedData.coachName,
+              playerName: detailedData.playerName,
+              playerEmail: detailedData.playerEmail ?? undefined,
+              playerPhone: detailedData.playerPhone ?? undefined,
+              bookingId: detailedData.bookingId,
+              bookingCode: detailedData.bookingCode,
+              bookingType: bookingTypeStr,
+              courtName: detailedData.courtName ?? undefined,
+              courtCode: detailedData.courtCode ?? undefined,
+              courtLocation: detailedData.courtLocation ?? undefined,
+              bookingDate: detailedData.bookingDate,
+              startTime: detailedData.startTime,
+              endTime: detailedData.endTime,
+              coachFee: Number(detailedData.coachFee)
+            });
+            console.log(`[CoachComboEmail] coach email sent`);
+
+            // Tạo notification cho Coach
+            await createNotification({
+              userId: detailedData.coachUserId,
+              title: "Bạn có lịch dạy mới",
+              message: bk.BookingType === "Combo" 
+                ? `Booking ${detailedData.bookingCode} với học viên ${detailedData.playerName} tại sân ${detailedData.courtName} vào ${detailedData.bookingDate} ${detailedData.startTime}-${detailedData.endTime} đã được xác nhận.`
+                : `Booking ${detailedData.bookingCode} với học viên ${detailedData.playerName} vào ${detailedData.bookingDate} ${detailedData.startTime}-${detailedData.endTime} đã được xác nhận.`,
+              notificationType: "Payment" // using Payment or Booking type
+            });
+          } else {
+             console.warn(`[CoachComboEmail] Coach email missing or no coach for bookingId=${bookingId}`);
+          }
+        }
       } else {
-        const { sendPaymentSuccessEmail } = await import("@/utils/mail");
-        await sendPaymentSuccessEmail(bk.Email, {
-          playerName:     bk.FullName,
-          bookingCode:    bk.BookingCode,
-          bookingType:    bookingTypeStr,
-          bookingDate:    bk.BookingDate,
-          startTime:      bk.StartTime,
-          endTime:        bk.EndTime,
-          courtName:      bk.CourtName ?? undefined,
-          coachName:      bk.BookingType !== "Court" ? coachName : undefined,
-          amount:         Number(bk.TotalAmount),
-          discountAmount: bk.DiscountAmount ? Number(bk.DiscountAmount) : undefined,
-          paymentMethod:  method,
-          paymentCode:    paymentCode,
-          transactionCode: transactionCode,
-        });
+        // Gửi email – PHẢI dùng await, không dùng void
+        if (!bk.Email) {
+          console.warn(`[PaymentNotif] User ${bk.UserID} không có email, bỏ qua gửi mail`);
+        } else {
+          await sendPaymentSuccessEmail(bk.Email, {
+            playerName:     bk.FullName,
+            bookingCode:    bk.BookingCode,
+            bookingType:    bookingTypeStr,
+            bookingDate:    bk.BookingDate,
+            startTime:      bk.StartTime,
+            endTime:        bk.EndTime,
+            courtName:      bk.CourtName ?? undefined,
+            coachName:      bk.BookingType !== "Court" ? coachName : undefined,
+            amount:         Number(bk.TotalAmount),
+            discountAmount: bk.DiscountAmount ? Number(bk.DiscountAmount) : undefined,
+            paymentMethod:  method,
+            paymentCode:    paymentCode,
+            transactionCode: transactionCode,
+          });
+        }
       }
     } else {
       // Payment thất bại – chỉ tạo notification, không gửi email

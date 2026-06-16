@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { bookCoach, mockPayBooking } from "@/services/bookingApi";
+import { bookCoach } from "@/services/bookingApi";
 import type { Booking } from "@/services/bookingApi";
 import type { Coach, CoachSchedule } from "@/types/coach";
 import { getToken } from "@/utils/authStorage";
 import { formatCurrency } from "@/utils/formatCurrency";
+import PaymentModal from "@/modules/payments/PaymentModal";
 import styles from "../courts/BookingModal.module.css";
 
 type Props = {
@@ -26,7 +27,6 @@ export default function CoachBookingModal({
   onSuccess,
 }: Props) {
   const [step, setStep] = useState<Step>("confirm");
-  const [paymentMethod, setPaymentMethod] = useState<"VNPay" | "Momo">("VNPay");
   const [booking, setBooking] = useState<Booking | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
@@ -58,25 +58,6 @@ export default function CoachBookingModal({
       setStep("paying");
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Đặt HLV thất bại. Vui lòng thử lại.");
-      setStep("error");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleMockPay() {
-    if (!booking) return;
-    const token = getToken();
-    if (!token) return;
-
-    setLoading(true);
-    try {
-      await mockPayBooking(token, booking.BookingID, paymentMethod);
-      setBooking((prev) => prev ? { ...prev, Status: "Confirmed", PaymentMethod: paymentMethod } : prev);
-      setStep("success");
-      onSuccess({ ...booking, Status: "Confirmed" });
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "Thanh toán thất bại.");
       setStep("error");
     } finally {
       setLoading(false);
@@ -145,114 +126,12 @@ export default function CoachBookingModal({
 
         {/* ── STEP: Thanh toán ── */}
         {step === "paying" && booking && (
-          <>
-            <div className={styles.header}>
-              <div className={styles.headerIcon}>💳</div>
-              <h2>Thanh toán Phí HLV</h2>
-              <p>Mã booking: <strong>{booking.BookingCode}</strong></p>
-            </div>
-
-            <div className={styles.infoCard}>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Tổng tiền</span>
-                <span className={`${styles.infoValue} ${styles.price}`}>
-                  {formatCurrency(Number(booking.TotalAmount))}
-                </span>
-              </div>
-            </div>
-
-            <div className={styles.payMethodSection}>
-              <p className={styles.payMethodLabel}>Chọn phương thức thanh toán:</p>
-              <div className={styles.payMethods}>
-                {(["VNPay", "Momo"] as const).map((method) => (
-                  <label
-                    key={method}
-                    className={`${styles.payMethodCard} ${paymentMethod === method ? styles.payMethodActive : ""}`}
-                  >
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value={method}
-                      checked={paymentMethod === method}
-                      onChange={() => setPaymentMethod(method)}
-                    />
-                    <span className={styles.payMethodIcon}>
-                      {method === "VNPay" ? "🏦" : "📱"}
-                    </span>
-                    <span>{method}</span>
-                  </label>
-                ))}
-              </div>
-
-              <div className={styles.mockBadge}>
-                🔧 Demo mode — Thanh toán giả lập (không trừ tiền thật)
-              </div>
-            </div>
-
-            <div className={styles.actions}>
-              <button className={styles.btnCancel} onClick={onClose} disabled={loading}>
-                Hủy & giữ chỗ
-              </button>
-              <button
-                className={styles.btnConfirm}
-                onClick={handleMockPay}
-                disabled={loading}
-              >
-                {loading ? "Đang thanh toán..." : `Thanh toán ${paymentMethod} →`}
-              </button>
-            </div>
-          </>
-        )}
-
-        {/* ── STEP: Thành công ── */}
-        {step === "success" && booking && (
-          <>
-            <div className={styles.successHeader}>
-              <div className={styles.successIcon}>✅</div>
-              <h2>Thuê HLV Thành công!</h2>
-              <p>Lịch học của bạn đã được xác nhận</p>
-            </div>
-
-            <div className={styles.infoCard}>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Mã booking</span>
-                <span className={`${styles.infoValue} ${styles.bookingCode}`}>
-                  {booking.BookingCode}
-                </span>
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>HLV</span>
-                <span className={styles.infoValue}>{coach.FullName}</span>
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Ngày</span>
-                <span className={styles.infoValue}>
-                  {new Date(bookingDate).toLocaleDateString("vi-VN")}
-                </span>
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Giờ học</span>
-                <span className={styles.infoValue}>
-                  {schedule.StartTime} – {schedule.EndTime}
-                </span>
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Thanh toán</span>
-                <span className={`${styles.infoValue} ${styles.paidBadge}`}>
-                  ✅ {paymentMethod} · {formatCurrency(Number(booking.TotalAmount))}
-                </span>
-              </div>
-            </div>
-
-            <div className={styles.notice}>
-              <span>📍</span>
-              <p>HLV sẽ liên hệ với bạn hoặc bạn có thể gọi theo số ĐT trong hồ sơ HLV. Vui lòng đến sân trước <strong>10 phút</strong>.</p>
-            </div>
-
-            <button className={styles.btnFullSuccess} onClick={onClose}>
-              Hoàn thành →
-            </button>
-          </>
+          <PaymentModal
+            bookingId={booking.BookingID}
+            bookingCode={booking.BookingCode}
+            totalAmount={Number(booking.TotalAmount)}
+            onClose={onClose}
+          />
         )}
 
         {/* ── STEP: Lỗi ── */}

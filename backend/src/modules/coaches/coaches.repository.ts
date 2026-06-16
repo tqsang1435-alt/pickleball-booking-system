@@ -702,11 +702,13 @@ export async function findCoachIncome(coachId: number) {
         c.HourlyRate
       FROM BookingDetails bd
       INNER JOIN Bookings b ON bd.BookingID = b.BookingID
+      LEFT JOIN Payments p ON b.BookingID = p.BookingID
       INNER JOIN Users u ON b.UserID = u.UserID
       INNER JOIN Coaches c ON bd.CoachID = c.CoachID
       WHERE bd.CoachID = @CoachID
         AND b.BookingType IN ('Coach', 'Combo')
         AND b.Status = 'Completed'
+        AND (b.PaymentStatus = 'Paid' OR p.Status = 'Paid')
       ORDER BY bd.BookingDate DESC, bd.StartTime DESC
     `);
 

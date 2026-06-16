@@ -577,8 +577,67 @@ export async function expirePaymentAndCancelBooking(
     try {
       await transaction.rollback();
     } catch {
-      // Ignore
     }
     throw err;
   }
+}
+
+// ── Get Coach/Combo Email Data ──────────────────────────
+
+/**
+ * Lấy toàn bộ data cần thiết để gửi email cho Player và Coach (cho Coach/Combo booking).
+ */
+export async function getCoachOrComboPaymentSuccessEmailData(
+  bookingId: number
+): Promise<any | null> {
+  const pool = await getPool();
+
+  const result = await pool
+    .request()
+    .input("BookingID", sql.Int, bookingId)
+    .query(`
+      SELECT
+        u.UserID AS playerUserId,
+        u.FullName AS playerName,
+        u.Email AS playerEmail,
+        u.PhoneNumber AS playerPhone,
+
+        co.UserID AS coachUserId,
+        cu.FullName AS coachName,
+        cu.Email AS coachEmail,
+        co.SkillLevel AS coachSkillLevel,
+        co.Specialization AS coachSpecialization,
+
+        b.BookingID AS bookingId,
+        b.BookingCode AS bookingCode,
+        b.BookingType AS bookingType,
+        CONVERT(VARCHAR(10), bd.BookingDate, 120) AS bookingDate, -- YYYY-MM-DD
+        CONVERT(VARCHAR(5), bd.StartTime, 108) AS startTime,
+        CONVERT(VARCHAR(5), bd.EndTime, 108) AS endTime,
+
+        c.CourtName AS courtName,
+        c.CourtCode AS courtCode,
+        c.Location AS courtLocation,
+
+        -- Coalesce fee để tránh null
+        ISNULL(bd.CourtFee, 0) AS courtFee,
+        ISNULL(bd.CoachFee, 0) AS coachFee,
+        ISNULL(bd.SubTotal, ISNULL(b.TotalAmount, 0)) AS originalAmount,
+        ISNULL(b.DiscountAmount, 0) AS discountAmount,
+        ISNULL(p.Amount, b.TotalAmount) AS paidAmount,
+
+        p.PaymentMethod AS paymentMethod,
+        p.PaymentCode AS paymentCode,
+        p.TransactionCode AS transactionCode
+      FROM Bookings b
+      JOIN Users u ON b.UserID = u.UserID
+      LEFT JOIN BookingDetails bd ON bd.BookingID = b.BookingID
+      LEFT JOIN Courts c ON bd.CourtID = c.CourtID
+      LEFT JOIN Coaches co ON bd.CoachID = co.CoachID
+      LEFT JOIN Users cu ON co.UserID = cu.UserID
+      LEFT JOIN Payments p ON p.BookingID = b.BookingID AND p.Status = 'Paid'
+      WHERE b.BookingID = @BookingID
+    `);
+
+  return result.recordset[0] ?? null;
 }
