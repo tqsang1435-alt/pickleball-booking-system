@@ -202,6 +202,9 @@ CREATE TABLE PlayerProfiles (
     MatchingStatus NVARCHAR(30) NOT NULL DEFAULT 'Available'
         CHECK (MatchingStatus IN ('Available', 'Busy', 'Hidden')),
 
+    AvailableStartTime TIME NULL,
+    AvailableEndTime TIME NULL,
+
     CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
     UpdatedAt DATETIME,
 

@@ -98,6 +98,9 @@ export async function sendPaymentSuccessEmail(
     endTime: string;
     courtName?: string;
     coachName?: string;
+    courtFee?: number;
+    coachFee?: number;
+    originalAmount?: number;
     amount: number;
     discountAmount?: number;
     paymentMethod: string;
@@ -143,6 +146,27 @@ export async function sendPaymentSuccessEmail(
     ? `<tr style="background:#f0fdf4;">
         <td style="${tdStyle}">Mã thanh toán</td>
         <td style="${tdStyle}">${details.paymentCode}</td>
+       </tr>`
+    : "";
+
+  const courtFeeRow = (details.courtFee && details.courtFee > 0)
+    ? `<tr>
+        <td style="${tdStyle}">Phí thuê sân</td>
+        <td style="${tdStyle}">${fmtMoney(details.courtFee)}</td>
+       </tr>`
+    : "";
+
+  const coachFeeRow = (details.coachFee && details.coachFee > 0)
+    ? `<tr>
+        <td style="${tdStyle}">Phí thuê HLV</td>
+        <td style="${tdStyle}">${fmtMoney(details.coachFee)}</td>
+       </tr>`
+    : "";
+
+  const originalAmountRow = (details.originalAmount && details.originalAmount > 0 && details.discountAmount && details.discountAmount > 0)
+    ? `<tr>
+        <td style="${tdStyle}">Tổng tiền trước giảm</td>
+        <td style="${tdStyle}">${fmtMoney(details.originalAmount)}</td>
        </tr>`
     : "";
 
@@ -221,6 +245,9 @@ export async function sendPaymentSuccessEmail(
                   </tr>
                   ${payCodeRow}
                   ${txRow}
+                  ${courtFeeRow}
+                  ${coachFeeRow}
+                  ${originalAmountRow}
                   ${discountRow}
                   <tr style="background:#fef2f2;">
                     <td style="${tdStyle};color:#555;font-weight:bold;">Số tiền đã thanh toán</td>
@@ -311,6 +338,121 @@ export async function sendCoachAssignedEmail(
     });
   } catch (err: any) {
     console.error("[Mail] sendCoachAssignedEmail FAILED:", err?.message ?? err);
+  }
+}
+
+// ── Coach New Teaching Schedule Email (Payment Success) ─
+export async function sendCoachNewTeachingScheduleEmail(
+  email: string,
+  details: {
+    coachName: string;
+    playerName: string;
+    playerEmail?: string;
+    playerPhone?: string;
+    bookingId: number;
+    bookingCode: string;
+    bookingType: string;
+    courtName?: string;
+    courtCode?: string;
+    courtLocation?: string;
+    bookingDate: string;
+    startTime: string;
+    endTime: string;
+    coachFee?: number;
+  }
+): Promise<void> {
+  try {
+    if (!email) return;
+    const transporter = getTransporter();
+
+    const fmtMoney = (n: number) => (n ? n.toLocaleString("vi-VN") + " ₫" : "0 ₫");
+
+    const courtInfo = details.courtName
+      ? `<li><strong>Sân:</strong> ${details.courtName} ${details.courtCode ? `(${details.courtCode})` : ""}</li>
+         ${details.courtLocation ? `<li><strong>Địa chỉ/Vị trí:</strong> ${details.courtLocation}</li>` : ""}`
+      : "";
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #333;">
+        <h2 style="color: #16a34a;">Lịch dạy mới đã được xác nhận</h2>
+        <p>Chào Coach <strong>${details.coachName}</strong>,</p>
+        <p>Bạn có một lịch dạy mới đã được thanh toán và xác nhận thành công.</p>
+        
+        <table style="width: 100%; border-collapse: collapse; margin-top: 15px; max-width: 600px;">
+          <tr style="background: #f3f4f6;">
+            <td colspan="2" style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Thông tin Booking</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px; border: 1px solid #ddd; width: 35%;"><strong>Mã booking:</strong></td>
+            <td style="padding: 10px; border: 1px solid #ddd;">${details.bookingCode}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Loại dịch vụ:</strong></td>
+            <td style="padding: 10px; border: 1px solid #ddd;">${details.bookingType}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Ngày dạy:</strong></td>
+            <td style="padding: 10px; border: 1px solid #ddd;">${details.bookingDate}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Khung giờ:</strong></td>
+            <td style="padding: 10px; border: 1px solid #ddd;">${details.startTime} - ${details.endTime}</td>
+          </tr>
+          ${details.courtName ? `
+          <tr>
+            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Tên sân:</strong></td>
+            <td style="padding: 10px; border: 1px solid #ddd;">${details.courtName} ${details.courtCode ? `(${details.courtCode})` : ""}</td>
+          </tr>
+          ${details.courtLocation ? `
+          <tr>
+            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Vị trí sân:</strong></td>
+            <td style="padding: 10px; border: 1px solid #ddd;">${details.courtLocation}</td>
+          </tr>` : ""}
+          ` : ""}
+          <tr style="background: #f3f4f6;">
+            <td colspan="2" style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Thông tin Học viên</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Học viên:</strong></td>
+            <td style="padding: 10px; border: 1px solid #ddd;">${details.playerName}</td>
+          </tr>
+          ${details.playerEmail ? `
+          <tr>
+            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Email:</strong></td>
+            <td style="padding: 10px; border: 1px solid #ddd;">${details.playerEmail}</td>
+          </tr>` : ""}
+          ${details.playerPhone ? `
+          <tr>
+            <td style="padding: 10px; border: 1px solid #ddd;"><strong>SĐT:</strong></td>
+            <td style="padding: 10px; border: 1px solid #ddd;">${details.playerPhone}</td>
+          </tr>` : ""}
+          <tr style="background: #f3f4f6;">
+            <td colspan="2" style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Thông tin Thanh toán</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Phí HLV:</strong></td>
+            <td style="padding: 10px; border: 1px solid #ddd;">${fmtMoney(details.coachFee ?? 0)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Trạng thái:</strong></td>
+            <td style="padding: 10px; border: 1px solid #ddd; color: #16a34a; font-weight: bold;">Đã xác nhận</td>
+          </tr>
+        </table>
+        
+        <p style="margin-top: 20px;"><strong>Ghi chú:</strong> Vui lòng kiểm tra lịch dạy trong hệ thống và có mặt đúng giờ.</p>
+        <p>Chúc bạn một buổi dạy thành công!</p>
+      </div>
+    `;
+
+    await transporter.sendMail({
+      from: `"PCS Booking" <${process.env.GMAIL_USER}>`,
+      to: email,
+      subject: `Bạn có lịch dạy mới - ${details.bookingCode}`,
+      html,
+    });
+    console.log(`[Mail] ✅ Đã gửi email lịch dạy mới cho Coach → ${email} (booking: ${details.bookingCode})`);
+  } catch (err: any) {
+    console.error("[Mail] sendCoachNewTeachingScheduleEmail FAILED:", err?.message ?? err);
   }
 }
 

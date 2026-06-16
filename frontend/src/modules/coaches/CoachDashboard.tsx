@@ -21,7 +21,7 @@ import StateBox from "@/components/common/StateBox";
 import styles from "./CoachDashboard.module.css";
 import { getImageUrl } from "@/utils/image";
 
-type Tab = "profile" | "expertise" | "fee" | "schedules" | "bookings";
+type Tab = "profile" | "expertise" | "fee" | "schedules" | "bookings" | "income";
 
 const SKILL_OPTIONS = [
   { value: "Beginner", label: "Beginner — Mới bắt đầu" },
@@ -1121,12 +1121,8 @@ export default function CoachDashboard({ token }: Props) {
               <StateBox variant="loading" title="Đang tải dữ liệu thu nhập..." />
             ) : incomeError ? (
               <StateBox variant="error" title="Lỗi tải dữ liệu" description={incomeError} />
-            ) : !incomeData || incomeData.sessions.length === 0 ? (
-              <StateBox
-                variant="empty"
-                title="Chưa có dữ liệu thu nhập"
-                description="Bạn chưa có buổi dạy nào hoàn thành."
-              />
+            ) : !incomeData ? (
+              <StateBox variant="loading" title="Đang tải dữ liệu..." />
             ) : (
               <div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
@@ -1144,9 +1140,9 @@ export default function CoachDashboard({ token }: Props) {
                   </div>
                 </div>
 
-                {incomeData.monthlyIncome.length > 0 && (
-                  <div style={{ marginBottom: "2rem" }}>
-                    <h3 style={{ fontSize: "1.2rem", marginBottom: "1rem", color: "#343a40" }}>Thu nhập theo tháng</h3>
+                <div style={{ marginBottom: "2rem" }}>
+                  <h3 style={{ fontSize: "1.2rem", marginBottom: "1rem", color: "#343a40" }}>Thu nhập theo tháng</h3>
+                  {incomeData.monthlyIncome.length > 0 ? (
                     <div style={{ overflowX: "auto" }}>
                       <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "600px" }}>
                         <thead>
@@ -1171,30 +1167,36 @@ export default function CoachDashboard({ token }: Props) {
                         </tbody>
                       </table>
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <p style={{ color: "#6c757d", fontStyle: "italic" }}>Chưa có thu nhập theo tháng.</p>
+                  )}
+                </div>
 
                 <div>
                   <h3 style={{ fontSize: "1.2rem", marginBottom: "1rem", color: "#343a40" }}>Chi tiết buổi dạy đã hoàn thành</h3>
-                  <div className={styles.scheduleList}>
-                    {incomeData.sessions.map((s: any) => (
-                      <div key={s.bookingId} className={`${styles.scheduleItem} ${styles.scheduleBooked}`}>
-                        <div className={styles.scheduleDate}>
-                          📅 {new Date(s.workingDate).toLocaleDateString("vi-VN")}
+                  {incomeData.sessions.length > 0 ? (
+                    <div className={styles.scheduleList}>
+                      {incomeData.sessions.map((s: any) => (
+                        <div key={s.bookingId} className={`${styles.scheduleItem} ${styles.scheduleBooked}`}>
+                          <div className={styles.scheduleDate}>
+                            📅 {new Date(s.workingDate).toLocaleDateString("vi-VN")}
+                          </div>
+                          <div className={styles.scheduleTime}>
+                            ⏰ {s.startTime} – {s.endTime} ({s.workingHours} giờ)
+                          </div>
+                          
+                          <div style={{ marginTop: 10, fontSize: "0.95rem" }}>
+                            <strong>Loại:</strong> {s.bookingType} <br />
+                            <strong>Học viên:</strong> {s.playerName} <br />
+                            <strong>Thu nhập:</strong> <span style={{ color: "#2e7d32", fontWeight: "bold" }}>{formatCurrency(s.coachFee)}</span> <br />
+                            <strong>Trạng thái:</strong> {s.status}
+                          </div>
                         </div>
-                        <div className={styles.scheduleTime}>
-                          ⏰ {s.startTime} – {s.endTime} ({s.workingHours} giờ)
-                        </div>
-                        
-                        <div style={{ marginTop: 10, fontSize: "0.95rem" }}>
-                          <strong>Loại:</strong> {s.bookingType} <br />
-                          <strong>Học viên:</strong> {s.playerName} <br />
-                          <strong>Thu nhập:</strong> <span style={{ color: "#2e7d32", fontWeight: "bold" }}>{formatCurrency(s.coachFee)}</span> <br />
-                          <strong>Trạng thái:</strong> {s.status}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ color: "#6c757d", fontStyle: "italic" }}>Danh sách buổi dạy rỗng.</p>
+                  )}
                 </div>
               </div>
             )}

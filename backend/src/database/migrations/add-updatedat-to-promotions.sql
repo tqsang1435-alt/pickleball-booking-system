@@ -13,9 +13,7 @@ BEGIN
     ADD UpdatedAt DATETIME NULL;
 
     -- Set default value for existing rows
-    UPDATE Promotions
-    SET UpdatedAt = CreatedAt
-    WHERE UpdatedAt IS NULL;
+    EXEC('UPDATE Promotions SET UpdatedAt = CreatedAt WHERE UpdatedAt IS NULL');
 
     PRINT 'Added UpdatedAt column to Promotions table';
 END
@@ -36,9 +34,7 @@ BEGIN
     ALTER TABLE UserPromotions
     ADD UpdatedAt DATETIME NULL;
 
-    UPDATE UserPromotions
-    SET UpdatedAt = CreatedAt
-    WHERE UpdatedAt IS NULL;
+    EXEC('UPDATE UserPromotions SET UpdatedAt = CreatedAt WHERE UpdatedAt IS NULL');
 
     PRINT 'Added UpdatedAt column to UserPromotions table';
 END
@@ -59,9 +55,7 @@ BEGIN
     ALTER TABLE PromotionUsages
     ADD UpdatedAt DATETIME NULL;
 
-    UPDATE PromotionUsages
-    SET UpdatedAt = CreatedAt
-    WHERE UpdatedAt IS NULL;
+    EXEC('UPDATE PromotionUsages SET UpdatedAt = CreatedAt WHERE UpdatedAt IS NULL');
 
     PRINT 'Added UpdatedAt column to PromotionUsages table';
 END

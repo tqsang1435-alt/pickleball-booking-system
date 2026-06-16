@@ -12,6 +12,7 @@ import type { Coach, CoachSchedule } from "@/types/coach";
 import StateBox from "@/components/common/StateBox";
 import styles from "./ComboBookingWizard.module.css";
 import { formatCurrency } from "@/utils/formatCurrency";
+import PaymentModal from "@/modules/payments/PaymentModal";
 
 function todayStr() {
   return new Date().toLocaleDateString("sv-SE", {
@@ -63,6 +64,7 @@ export default function ComboBookingWizard() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [booking, setBooking] = useState<any>(null);
 
   const [bookingDate, setBookingDate] = useState(todayStr());
 
@@ -196,7 +198,7 @@ useEffect(() => {
     try {
       setLoading(true);
 
-      await bookCombo(token, {
+      const created = await bookCombo(token, {
         courtId: selectedCourt.CourtID,
         coachId: selectedCoach.CoachID,
         bookingDate,
@@ -204,8 +206,7 @@ useEffect(() => {
         endTime: formatTime(selectedSlot.EndTime),
       });
 
-      alert("Đặt Combo thành công! Vui lòng thanh toán để giữ chỗ.");
-      router.push("/profile");
+      setBooking(created);
     } catch (err: any) {
       alert(err?.message || "Đặt Combo thất bại.");
     } finally {
@@ -604,6 +605,18 @@ useEffect(() => {
           {step === 3 && (loading ? "Đang xử lý..." : "Thanh toán ngay →")}
         </button>
       </div>
+
+      {booking && (
+        <PaymentModal
+          bookingId={booking.BookingID}
+          bookingCode={booking.BookingCode}
+          totalAmount={Number(booking.TotalAmount)}
+          onClose={() => {
+            setBooking(null);
+            router.push("/profile");
+          }}
+        />
+      )}
     </main>
   );
 }

@@ -33,12 +33,6 @@ export async function createPlayInvitation(
       throw new Error("Hai người đã có lời mời ghép cặp đang chờ xử lý.");
     }
     
-    // Check existing accepted teammate match
-    const hasAcceptedMatch = await matchingRepo.findAcceptedMatchBetweenPlayers(senderId, receiverId);
-    if (hasAcceptedMatch) {
-      throw new Error("Hai người đã ghép cặp hoặc đã ở trong cùng một nhóm.");
-    }
-
     // Check existing active/open playing group between them
     const existingGroupId = await groupRepo.findActiveGroupBetweenPlayers(senderId, receiverId);
     if (existingGroupId) {
@@ -263,8 +257,6 @@ export async function acceptInvitation(invitationId: number, userId: number) {
       groupId = txGroupId;
     }
   } else if (invite.InvitationType === 'InviteOpponent') {
-    // Upsert opponent match record with 'Accepted' status
-    await matchingRepo.upsertPlayerMatch(invite.SenderID, userId, 100.00, 'Opponent', 'Accepted');
     await repo.updateInvitationStatus(invitationId, 'Accepted');
   }
 

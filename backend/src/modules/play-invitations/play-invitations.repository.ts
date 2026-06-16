@@ -1,5 +1,32 @@
 import { getPool, sql } from "@/database/connection";
 
+function processInvitationMessage(row: any) {
+  let message = row.Message || "";
+  let ChallengeDate = null;
+  let ChallengeStartTime = null;
+  let ChallengeEndTime = null;
+
+  if (message.includes("||{")) {
+    const parts = message.split("||{");
+    message = parts[0];
+    try {
+      const extra = JSON.parse("{" + parts[1]);
+      ChallengeDate = extra.ChallengeDate || null;
+      ChallengeStartTime = extra.ChallengeStartTime || null;
+      ChallengeEndTime = extra.ChallengeEndTime || null;
+      if (extra.Type) row.InvitationType = extra.Type;
+    } catch(e) {}
+  }
+  
+  return {
+    ...row,
+    Message: message,
+    ChallengeDate,
+    ChallengeStartTime,
+    ChallengeEndTime
+  };
+}
+
 export async function createInvitation(
   senderId: number,
   receiverId: number | null,
@@ -10,26 +37,36 @@ export async function createInvitation(
   challengeStartTime?: string | null,
   challengeEndTime?: string | null
 ) {
+  let finalMessage = message;
+  const extra: any = { Type: invitationType };
+  if (challengeDate || challengeStartTime || challengeEndTime) {
+    extra.ChallengeDate = challengeDate;
+    extra.ChallengeStartTime = challengeStartTime ? challengeStartTime.substring(0, 5) : null;
+    extra.ChallengeEndTime = challengeEndTime ? challengeEndTime.substring(0, 5) : null;
+  }
+  finalMessage += `||${JSON.stringify(extra)}`;
+  if (finalMessage.length > 255) finalMessage = finalMessage.substring(0, 255);
+
+  let dbInvitationType = 'Player';
+  if (invitationType === 'InviteOpponent' || invitationType === 'InviteToGroup') {
+    dbInvitationType = 'Group';
+  }
+
   const pool = await getPool();
   const result = await pool
     .request()
     .input("SenderID", sql.Int, senderId)
     .input("ReceiverID", sql.Int, receiverId)
     .input("GroupID", sql.Int, groupId)
-    .input("InvitationType", sql.NVarChar(30), invitationType)
-    .input("Message", sql.NVarChar(255), message)
-    .input("ChallengeDate", sql.VarChar(10), challengeDate || null)
-    .input("ChallengeStartTime", sql.VarChar(5), challengeStartTime ? challengeStartTime.substring(0, 5) : null)
-    .input("ChallengeEndTime", sql.VarChar(5), challengeEndTime ? challengeEndTime.substring(0, 5) : null)
+    .input("InvitationType", sql.NVarChar(30), dbInvitationType)
+    .input("Message", sql.NVarChar(255), finalMessage)
     .query(`
       INSERT INTO PlayInvitations (
-        SenderID, ReceiverID, GroupID, InvitationType, Message, Status, ExpiredAt, CreatedAt,
-        ChallengeDate, ChallengeStartTime, ChallengeEndTime
+        SenderID, ReceiverID, GroupID, InvitationType, Message, Status, ExpiredAt, CreatedAt
       )
       OUTPUT INSERTED.InvitationID
       VALUES (
-        @SenderID, @ReceiverID, @GroupID, @InvitationType, @Message, 'Pending', DATEADD(day, 7, GETDATE()), GETDATE(),
-        CAST(@ChallengeDate AS DATE), CAST(@ChallengeStartTime AS TIME), CAST(@ChallengeEndTime AS TIME)
+        @SenderID, @ReceiverID, @GroupID, @InvitationType, @Message, 'Pending', DATEADD(day, 7, GETDATE()), GETDATE()
       )
     `);
   return result.recordset[0].InvitationID;
@@ -50,9 +87,6 @@ export async function getReceivedInvitations(userId: number) {
         i.Message,
         i.Status,
         i.CreatedAt,
-        CONVERT(VARCHAR(10), i.ChallengeDate, 23) AS ChallengeDate,
-        CONVERT(VARCHAR(5), i.ChallengeStartTime, 108) AS ChallengeStartTime,
-        CONVERT(VARCHAR(5), i.ChallengeEndTime, 108) AS ChallengeEndTime,
         u.FullName AS SenderName,
         u.Email AS SenderEmail,
         u.AvatarURL AS SenderAvatar,
@@ -64,7 +98,7 @@ export async function getReceivedInvitations(userId: number) {
       WHERE i.ReceiverID = @UserID AND i.Status IN ('Pending', 'Accepted')
       ORDER BY i.InvitationID DESC
     `);
-  return result.recordset;
+  return result.recordset.map(processInvitationMessage);
 }
 
 export async function getSentInvitations(userId: number) {
@@ -82,9 +116,6 @@ export async function getSentInvitations(userId: number) {
         i.Message,
         i.Status,
         i.CreatedAt,
-        CONVERT(VARCHAR(10), i.ChallengeDate, 23) AS ChallengeDate,
-        CONVERT(VARCHAR(5), i.ChallengeStartTime, 108) AS ChallengeStartTime,
-        CONVERT(VARCHAR(5), i.ChallengeEndTime, 108) AS ChallengeEndTime,
         u.FullName AS ReceiverName,
         u.Email AS ReceiverEmail,
         u.AvatarURL AS ReceiverAvatar,
@@ -96,7 +127,7 @@ export async function getSentInvitations(userId: number) {
       WHERE i.SenderID = @UserID
       ORDER BY i.InvitationID DESC
     `);
-  return result.recordset;
+  return result.recordset.map(processInvitationMessage);
 }
 
 export async function getInvitationById(invitationId: number) {
@@ -114,15 +145,13 @@ export async function getInvitationById(invitationId: number) {
         i.Message,
         i.Status,
         i.CreatedAt,
-        CONVERT(VARCHAR(10), i.ChallengeDate, 23) AS ChallengeDate,
-        CONVERT(VARCHAR(5), i.ChallengeStartTime, 108) AS ChallengeStartTime,
-        CONVERT(VARCHAR(5), i.ChallengeEndTime, 108) AS ChallengeEndTime,
         g.GroupName
       FROM PlayInvitations i
       LEFT JOIN PlayingGroups g ON i.GroupID = g.GroupID
       WHERE i.InvitationID = @InvitationID
     `);
-  return result.recordset[0] || null;
+  const record = result.recordset[0];
+  return record ? processInvitationMessage(record) : null;
 }
 
 export async function updateInvitationStatus(invitationId: number, status: string) {
@@ -148,11 +177,11 @@ export async function checkPendingInvitation(
   const request = pool.request()
     .input("SenderID", sql.Int, senderId)
     .input("ReceiverID", sql.Int, receiverId)
-    .input("InvitationType", sql.NVarChar(30), invitationType);
+    .input("TypeMatch", sql.NVarChar(50), `%"Type":"${invitationType}"%`);
     
   let query = `
     SELECT 1 FROM PlayInvitations
-    WHERE SenderID = @SenderID AND ReceiverID = @ReceiverID AND InvitationType = @InvitationType AND Status = 'Pending'
+    WHERE SenderID = @SenderID AND ReceiverID = @ReceiverID AND Message LIKE @TypeMatch AND Status = 'Pending'
   `;
   
   if (groupId !== null) {
@@ -176,7 +205,7 @@ export async function findPendingInvitationBetweenUsers(
     .request()
     .input("U1", sql.Int, user1Id)
     .input("U2", sql.Int, user2Id)
-    .input("Type", sql.NVarChar(30), invitationType)
+    .input("TypeMatch", sql.NVarChar(50), `%"Type":"${invitationType}"%`)
     .query(`
       SELECT * FROM PlayInvitations
       WHERE (
@@ -184,7 +213,7 @@ export async function findPendingInvitationBetweenUsers(
         (SenderID = @U2 AND ReceiverID = @U1)
       )
       AND Status = 'Pending'
-      AND InvitationType = @Type
+      AND Message LIKE @TypeMatch
     `);
   return result.recordset[0] || null;
 }
@@ -223,6 +252,7 @@ export async function acceptTeammateInvitationTx(
       .input("S", sql.Int, senderId)
       .input("R", sql.Int, receiverId)
       .input("CurrentID", sql.Int, invitationId)
+      .input("TypeMatch", sql.NVarChar(50), `%"Type":"InviteToPlay"%`)
       .query(`
         UPDATE PlayInvitations
         SET Status = 'Cancelled', RespondedAt = GETDATE()
@@ -231,43 +261,9 @@ export async function acceptTeammateInvitationTx(
           (SenderID = @R AND ReceiverID = @S)
         )
         AND Status = 'Pending'
-        AND InvitationType = 'InviteToPlay'
+        AND Message LIKE @TypeMatch
         AND InvitationID <> @CurrentID
       `);
-
-    // 3. Upsert direct match record with 'Accepted' status in PlayerMatches
-    const matchCheck = await transaction
-      .request()
-      .input("P1", sql.Int, senderId)
-      .input("P2", sql.Int, receiverId)
-      .query(`
-        SELECT MatchID FROM PlayerMatches
-        WHERE (Player1ID = @P1 AND Player2ID = @P2)
-           OR (Player1ID = @P2 AND Player2ID = @P1)
-      `);
-      
-    if (matchCheck.recordset.length > 0) {
-      const matchId = matchCheck.recordset[0].MatchID;
-      await transaction
-        .request()
-        .input("MatchID", sql.Int, matchId)
-        .input("MatchType", sql.NVarChar(30), matchType)
-        .query(`
-          UPDATE PlayerMatches
-          SET MatchType = @MatchType, MatchStatus = 'Accepted', MatchedAt = GETDATE()
-          WHERE MatchID = @MatchID
-        `);
-    } else {
-      await transaction
-        .request()
-        .input("P1", sql.Int, senderId)
-        .input("P2", sql.Int, receiverId)
-        .input("MatchType", sql.NVarChar(30), matchType)
-        .query(`
-          INSERT INTO PlayerMatches (Player1ID, Player2ID, MatchingScore, MatchType, MatchStatus, MatchedAt)
-          VALUES (@P1, @P2, 100.00, @MatchType, 'Accepted', GETDATE())
-        `);
-    }
 
     // 4. Create playing group and members if groupData is provided
     let newGroupId: number | null = null;
