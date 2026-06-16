@@ -222,16 +222,18 @@ export async function findAllOtherActiveGroups(excludeGroupId: number, userId: n
   const result = await pool
     .request()
     .input("ExcludeGroupID", sql.Int, excludeGroupId)
-    .input("UserID", sql.Int, userId)
     .query(`
       SELECT GroupID FROM PlayingGroups g
       WHERE g.GroupID <> @ExcludeGroupID 
         AND g.Status IN ('Open', 'Active', 'Full')
         AND NOT EXISTS (
-          SELECT 1 FROM GroupMembers gm
-          WHERE gm.GroupID = g.GroupID
-            AND gm.UserID = @UserID
-            AND gm.Status = 'Active'
+          SELECT 1
+          FROM GroupMembers myMember
+          JOIN GroupMembers opponentMember ON myMember.UserID = opponentMember.UserID
+          WHERE myMember.GroupID = @ExcludeGroupID
+            AND opponentMember.GroupID = g.GroupID
+            AND myMember.Status = 'Active'
+            AND opponentMember.Status = 'Active'
         )
     `);
   return result.recordset.map((r: any) => r.GroupID);

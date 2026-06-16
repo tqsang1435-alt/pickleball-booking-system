@@ -18,6 +18,7 @@ export async function createInvitationController(req: NextRequest) {
       auth.userId,
       body.receiverId ? Number(body.receiverId) : null,
       body.groupId ? Number(body.groupId) : null,
+      body.targetGroupId ? Number(body.targetGroupId) : null,
       body.invitationType,
       body.message || "",
       body.challengeDate,

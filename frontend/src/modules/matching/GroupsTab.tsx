@@ -15,6 +15,79 @@ export default function GroupsTab({ token, userProfile, showToast }: GroupsTabPr
   const [groups, setGroups] = useState<api.PlayGroup[]>([]);
   const [editingGroup, setEditingGroup] = useState<api.PlayGroup | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [chatGroup, setChatGroup] = useState<api.PlayGroup | null>(null);
+  const [messages, setMessages] = useState<api.GroupMessage[]>([]);
+  const [chatContent, setChatContent] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState<Record<number, number>>({});
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const chatInputRef = React.useRef<HTMLInputElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const loadMessages = async (groupId: number) => {
+    try {
+      const data = await api.getGroupMessages(token, groupId);
+      setMessages(data || []);
+    } catch (err: any) {
+      showToast(err.message || "Không thể tải tin nhắn", "error");
+    }
+  };
+
+  const handleOpenChat = async (group: api.PlayGroup) => {
+    setChatGroup(group);
+    setMessages([]);
+    loadMessages(group.GroupID);
+    try {
+      await api.markGroupMessagesAsRead(token, group.GroupID);
+      setUnreadCounts(prev => ({ ...prev, [group.GroupID]: 0 }));
+      window.dispatchEvent(new Event("invitation-count-change"));
+    } catch (err) {}
+  };
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (chatGroup) {
+      interval = setInterval(async () => {
+        try {
+          const data = await api.getGroupMessages(token, chatGroup.GroupID);
+          setMessages(data || []);
+          await api.markGroupMessagesAsRead(token, chatGroup.GroupID);
+          window.dispatchEvent(new Event("invitation-count-change"));
+        } catch (error) {
+          // Silent fail on polling errors to avoid UI toast spam
+        }
+      }, 3000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [chatGroup, token]);
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatGroup || !chatContent.trim() || sendingMessage) return;
+
+    try {
+      setSendingMessage(true);
+      const newMsg = await api.sendGroupMessage(token, chatGroup.GroupID, chatContent);
+      setMessages((prev) => [...prev, newMsg]);
+      setChatContent("");
+      requestAnimationFrame(() => {
+        chatInputRef.current?.focus();
+      });
+    } catch (err: any) {
+      showToast(err.message || "Gửi tin nhắn thất bại", "error");
+    } finally {
+      setSendingMessage(false);
+    }
+  };
 
   // Form states for Edit Group
   const [editForm, setEditForm] = useState({
@@ -44,8 +117,26 @@ export default function GroupsTab({ token, userProfile, showToast }: GroupsTabPr
     }
   };
 
+  const loadUnreadCounts = async () => {
+    try {
+      const counts = await api.getUnreadGroupChatCounts(token);
+      const countsMap: Record<number, number> = {};
+      counts.groups.forEach(g => {
+        countsMap[g.groupId] = g.unreadCount;
+      });
+      setUnreadCounts(countsMap);
+    } catch (err) {}
+  };
+
   useEffect(() => {
     loadGroups();
+    loadUnreadCounts();
+
+    const interval = setInterval(() => {
+      loadUnreadCounts();
+    }, 15000);
+
+    return () => clearInterval(interval);
   }, [token]);
 
   const handleOpenEdit = (group: api.PlayGroup) => {
@@ -194,6 +285,30 @@ export default function GroupsTab({ token, userProfile, showToast }: GroupsTabPr
                 </div>
 
                 <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
+                  <button
+                    onClick={() => handleOpenChat(group)}
+                    className={styles.secondaryBtn}
+                    style={{ flex: 1, backgroundColor: "#e0f2fe", color: "#0369a1", borderColor: "#bae6fd", position: "relative" }}
+                  >
+                    💬 Chat nhóm
+                    {unreadCounts[group.GroupID] > 0 && (
+                      <span style={{
+                        position: "absolute",
+                        top: "-8px",
+                        right: "-8px",
+                        backgroundColor: "#ef4444",
+                        color: "white",
+                        fontSize: "11px",
+                        fontWeight: "bold",
+                        borderRadius: "50%",
+                        padding: "2px 6px",
+                        minWidth: "20px",
+                        textAlign: "center"
+                      }}>
+                        {unreadCounts[group.GroupID] > 9 ? "9+" : unreadCounts[group.GroupID]}
+                      </span>
+                    )}
+                  </button>
                   {isLeader ? (
                     <button
                       onClick={() => handleOpenEdit(group)}
@@ -362,6 +477,74 @@ export default function GroupsTab({ token, userProfile, showToast }: GroupsTabPr
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* CHAT MODAL */}
+      {chatGroup && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent} style={{ display: "flex", flexDirection: "column", height: "600px", maxHeight: "90vh" }}>
+            <div className={styles.modalHeader}>
+              <h4 className={styles.modalTitle}>💬 Chat: {chatGroup.GroupName}</h4>
+              <button className={styles.closeBtn} onClick={() => setChatGroup(null)}>×</button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", padding: "1rem", backgroundColor: "#f8fafc", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              {messages.length === 0 ? (
+                <div style={{ textAlign: "center", color: "#64748b", marginTop: "2rem" }}>
+                  Chưa có tin nhắn nào. Hãy gửi lời chào đến mọi người!
+                </div>
+              ) : (
+                messages.map((msg) => {
+                  const isMine = msg.IsMine;
+                  return (
+                    <div key={msg.MessageID} style={{ display: "flex", flexDirection: "column", alignItems: isMine ? "flex-end" : "flex-start" }}>
+                      {!isMine && <span style={{ fontSize: "12px", color: "#64748b", marginBottom: "0.25rem", marginLeft: "0.25rem" }}>{msg.SenderName}</span>}
+                      <div style={{
+                        maxWidth: "75%",
+                        padding: "0.5rem 0.75rem",
+                        borderRadius: "12px",
+                        backgroundColor: isMine ? "#3b82f6" : "#ffffff",
+                        color: isMine ? "#ffffff" : "#0f172a",
+                        boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                        border: isMine ? "none" : "1px solid #e2e8f0",
+                        wordBreak: "break-word"
+                      }}>
+                        {msg.Content}
+                      </div>
+                      <span style={{ fontSize: "10px", color: "#94a3b8", marginTop: "0.25rem" }}>
+                        {new Date(msg.CreatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            <div style={{ padding: "1rem", borderTop: "1px solid #e2e8f0", backgroundColor: "#ffffff" }}>
+              <form onSubmit={handleSendMessage} style={{ display: "flex", gap: "0.5rem" }}>
+                <input
+                  ref={chatInputRef}
+                  type="text"
+                  value={chatContent}
+                  onChange={(e) => setChatContent(e.target.value)}
+                  placeholder="Nhập tin nhắn..."
+                  className={styles.input}
+                  style={{ flex: 1, marginBottom: 0 }}
+                  maxLength={1000}
+                />
+                <button
+                  type="submit"
+                  className={styles.primaryBtn}
+                  disabled={sendingMessage || !chatContent.trim()}
+                  style={{ whiteSpace: "nowrap" }}
+                >
+                  {sendingMessage ? "..." : "Gửi"}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}

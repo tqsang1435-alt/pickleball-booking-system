@@ -13,8 +13,8 @@ export async function countActiveGroupsForCreator(creatorId: number): Promise<nu
     .request()
     .input("CreatorID", sql.Int, creatorId)
     .query(`
-      SELECT COUNT(*) AS count 
-      FROM PlayingGroups 
+      SELECT COUNT(*) AS count
+      FROM PlayingGroups
       WHERE CreatedBy = @CreatorID AND Status IN ('Open', 'Active', 'Full')
     `);
   return result.recordset[0]?.count || 0;
@@ -23,10 +23,10 @@ export async function countActiveGroupsForCreator(creatorId: number): Promise<nu
 export async function createGroup(data: GroupData, creatorId: number) {
   const pool = await getPool();
   const transaction = new sql.Transaction(pool);
-  
+
   try {
     await transaction.begin();
-    
+
     // 1. Insert PlayingGroup
     const groupResult = await transaction
       .request()
@@ -39,7 +39,7 @@ export async function createGroup(data: GroupData, creatorId: number) {
         OUTPUT INSERTED.GroupID
         VALUES (@GroupName, @CreatorID, @SkillLevel, 'Open', @Description, GETDATE(), GETDATE())
       `);
-      
+
     const groupId = groupResult.recordset[0].GroupID;
 
     // 2. Insert Group Member (Leader)
@@ -63,7 +63,7 @@ export async function createGroup(data: GroupData, creatorId: number) {
 export async function listGroups(filters: { skillLevel?: string; keyword?: string }) {
   const pool = await getPool();
   let query = `
-    SELECT 
+    SELECT
       g.GroupID,
       g.GroupName,
       g.CreatedBy AS CreatorID,
@@ -94,7 +94,7 @@ export async function listGroups(filters: { skillLevel?: string; keyword?: strin
   }
 
   query += `
-    GROUP BY 
+    GROUP BY
       g.GroupID,
       g.GroupName,
       g.CreatedBy,
@@ -117,7 +117,7 @@ export async function getGroupDetails(groupId: number) {
     .request()
     .input("GroupID", sql.Int, groupId)
     .query(`
-      SELECT 
+      SELECT
         g.GroupID,
         g.GroupName,
         g.CreatedBy AS CreatorID,
@@ -139,7 +139,7 @@ export async function getGroupDetails(groupId: number) {
     .request()
     .input("GroupID", sql.Int, groupId)
     .query(`
-      SELECT 
+      SELECT
         m.GroupMemberID,
         m.UserID,
         m.RoleInGroup,
@@ -166,6 +166,37 @@ export async function getGroupDetails(groupId: number) {
   };
 }
 
+export async function countActiveGroupMembers(groupId: number): Promise<number> {
+  const pool = await getPool();
+  const result = await pool
+    .request()
+    .input("GroupID", sql.Int, groupId)
+    .query(`
+      SELECT COUNT(*) AS count
+      FROM GroupMembers
+      WHERE GroupID = @GroupID AND Status = 'Active'
+    `);
+  return result.recordset[0]?.count || 0;
+}
+
+export async function checkGroupOverlap(groupIdA: number, groupIdB: number): Promise<boolean> {
+  const pool = await getPool();
+  const result = await pool
+    .request()
+    .input("GroupID_A", sql.Int, groupIdA)
+    .input("GroupID_B", sql.Int, groupIdB)
+    .query(`
+      SELECT 1
+      FROM GroupMembers myMember
+      JOIN GroupMembers opponentMember ON myMember.UserID = opponentMember.UserID
+      WHERE myMember.GroupID = @GroupID_A
+        AND opponentMember.GroupID = @GroupID_B
+        AND myMember.Status = 'Active'
+        AND opponentMember.Status = 'Active'
+    `);
+  return result.recordset.length > 0;
+}
+
 export async function checkUserInGroup(groupId: number, userId: number): Promise<boolean> {
   const pool = await getPool();
   const result = await pool
@@ -173,7 +204,7 @@ export async function checkUserInGroup(groupId: number, userId: number): Promise
     .input("GroupID", sql.Int, groupId)
     .input("UserID", sql.Int, userId)
     .query(`
-      SELECT 1 FROM GroupMembers 
+      SELECT 1 FROM GroupMembers
       WHERE GroupID = @GroupID AND UserID = @UserID AND Status = 'Active'
     `);
   return result.recordset.length > 0;
@@ -210,7 +241,7 @@ export async function addGroupMember(groupId: number, userId: number) {
       .input("Status", sql.NVarChar(30), status)
       .query(`
         UPDATE PlayingGroups
-        SET 
+        SET
           Status = @Status,
           UpdatedAt = GETDATE()
         WHERE GroupID = @GroupID
@@ -247,7 +278,7 @@ export async function removeGroupMember(groupId: number, userId: number) {
       .input("GroupID", sql.Int, groupId)
       .query(`
         UPDATE PlayingGroups
-        SET 
+        SET
           Status = CASE WHEN Status = 'Full' THEN 'Open' ELSE Status END,
           UpdatedAt = GETDATE()
         WHERE GroupID = @GroupID
@@ -288,8 +319,8 @@ export async function findActiveGroupBetweenPlayers(player1Id: number, player2Id
         AND gm2.UserID = @Player2ID AND gm2.Status = 'Active'
         AND pg.Status IN ('Open', 'Active', 'Full')
         AND (
-          SELECT COUNT(*) 
-          FROM GroupMembers gm3 
+          SELECT COUNT(*)
+          FROM GroupMembers gm3
           WHERE gm3.GroupID = gm1.GroupID AND gm3.Status = 'Active'
         ) = 2
     `);
@@ -308,10 +339,10 @@ export async function createAutoGroup(
 ) {
   const pool = await getPool();
   const transaction = new sql.Transaction(pool);
-  
+
   try {
     await transaction.begin();
-    
+
     // 1. Insert PlayingGroup
     const groupResult = await transaction
       .request()
@@ -325,7 +356,7 @@ export async function createAutoGroup(
         OUTPUT INSERTED.GroupID
         VALUES (@GroupName, @CreatorID, @SkillLevel, @AverageExperience, 'Open', @Description, GETDATE(), GETDATE())
       `);
-      
+
     const groupId = groupResult.recordset[0].GroupID;
 
     // 2. Insert Group Member (Leader)
@@ -377,7 +408,7 @@ export async function updateGroup(
     .input("Status", sql.NVarChar(30), data.status)
     .query(`
       UPDATE PlayingGroups
-      SET 
+      SET
         GroupName = @GroupName,
         SkillLevel = @SkillLevel,
         AverageExperience = @AverageExperience,
@@ -386,4 +417,124 @@ export async function updateGroup(
         UpdatedAt = GETDATE()
       WHERE GroupID = @GroupID
     `);
+}
+
+export async function getGroupMessages(groupId: number, limit: number = 50) {
+  const pool = await getPool();
+  const result = await pool
+    .request()
+    .input("GroupID", sql.Int, groupId)
+    .input("Limit", sql.Int, limit)
+    .query(`
+      SELECT TOP (@Limit)
+        m.MessageID,
+        m.GroupID,
+        m.SenderID,
+        u.FullName AS SenderName,
+        u.AvatarURL AS SenderAvatar,
+        m.Content,
+        m.CreatedAt
+      FROM GroupMessages m
+      JOIN Users u ON m.SenderID = u.UserID
+      WHERE m.GroupID = @GroupID AND m.IsDeleted = 0
+      ORDER BY m.CreatedAt DESC
+    `);
+
+  // Return in ascending order for chat UI
+  return result.recordset.reverse();
+}
+
+export async function createGroupMessage(groupId: number, senderId: number, content: string) {
+  const pool = await getPool();
+  const result = await pool
+    .request()
+    .input("GroupID", sql.Int, groupId)
+    .input("SenderID", sql.Int, senderId)
+    .input("Content", sql.NVarChar(1000), content)
+    .query(`
+      INSERT INTO GroupMessages (GroupID, SenderID, Content, CreatedAt, IsDeleted)
+      OUTPUT
+        INSERTED.MessageID,
+        INSERTED.GroupID,
+        INSERTED.SenderID,
+        INSERTED.Content,
+        INSERTED.CreatedAt
+      VALUES (@GroupID, @SenderID, @Content, GETDATE(), 0)
+    `);
+  return result.recordset[0];
+}
+
+export async function getUnreadCounts(userId: number) {
+  const pool = await getPool();
+  const result = await pool
+    .request()
+    .input("UserID", sql.Int, userId)
+    .query(`
+      WITH UserGroups AS (
+        SELECT GroupID
+        FROM GroupMembers
+        WHERE UserID = @UserID AND Status = 'Active'
+      ),
+      GroupUnreads AS (
+        SELECT
+          ug.GroupID,
+          COUNT(gm.MessageID) AS UnreadCount
+        FROM UserGroups ug
+        LEFT JOIN GroupMessages gm ON ug.GroupID = gm.GroupID
+          AND gm.IsDeleted = 0
+          AND gm.SenderID <> @UserID
+        LEFT JOIN GroupMessageReads gmr ON ug.GroupID = gmr.GroupID AND gmr.UserID = @UserID
+        WHERE gm.MessageID IS NOT NULL
+          AND (gmr.LastReadAt IS NULL OR gm.CreatedAt > gmr.LastReadAt)
+        GROUP BY ug.GroupID
+      )
+      SELECT
+        ISNULL(SUM(UnreadCount), 0) AS TotalUnread,
+        (
+          SELECT GroupID as groupId, UnreadCount as unreadCount
+          FROM GroupUnreads
+          FOR JSON PATH
+        ) AS GroupsJson
+      FROM GroupUnreads
+    `);
+
+  const row = result.recordset[0];
+  return {
+    totalUnread: row?.TotalUnread || 0,
+    groups: row?.GroupsJson ? JSON.parse(row.GroupsJson) : []
+  };
+}
+
+export async function markMessagesAsRead(userId: number, groupId: number) {
+  const pool = await getPool();
+
+  // Verify user is active in the group
+  const checkRes = await pool.request()
+    .input("UserID", sql.Int, userId)
+    .input("GroupID", sql.Int, groupId)
+    .query(`
+      SELECT 1 FROM GroupMembers
+      WHERE UserID = @UserID AND GroupID = @GroupID AND Status = 'Active'
+    `);
+
+  if (checkRes.recordset.length === 0) return false;
+
+  await pool
+    .request()
+    .input("UserID", sql.Int, userId)
+    .input("GroupID", sql.Int, groupId)
+    .query(`
+      IF EXISTS (SELECT 1 FROM GroupMessageReads WHERE GroupID = @GroupID AND UserID = @UserID)
+      BEGIN
+        UPDATE GroupMessageReads
+        SET LastReadAt = GETDATE(), UpdatedAt = GETDATE()
+        WHERE GroupID = @GroupID AND UserID = @UserID
+      END
+      ELSE
+      BEGIN
+        INSERT INTO GroupMessageReads (GroupID, UserID, LastReadAt, UpdatedAt)
+        VALUES (@GroupID, @UserID, GETDATE(), GETDATE())
+      END
+    `);
+  return true;
 }

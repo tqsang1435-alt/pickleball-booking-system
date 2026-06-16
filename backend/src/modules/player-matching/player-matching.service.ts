@@ -157,7 +157,7 @@ export async function getUserActiveGroups(userId: number) {
   return repo.findUserGroups(userId);
 }
 
-import { getGroupDetails } from "../playgroups/playgroups.repository";
+import { getGroupDetails, countActiveGroupMembers } from "../playgroups/playgroups.repository";
 
 interface TeamMetrics {
   avgSkill: number;
@@ -251,12 +251,20 @@ export async function findSuitableOpponents(userId: number, groupId: number) {
     throw new Error("Bạn không thuộc nhóm chơi này.");
   }
 
+  const activeCountA = await countActiveGroupMembers(groupId);
+  if (activeCountA < 2) {
+    throw new Error("Nhóm của bạn cần có ít nhất 2 thành viên đang hoạt động để tìm đối thủ.");
+  }
+
   const metricsA = await calculateTeamMetrics(groupId);
   const otherGroupIds = await repo.findAllOtherActiveGroups(groupId, userId);
 
   const scoredOpponents = await Promise.all(otherGroupIds.map(async (otherId) => {
     const groupB = await getGroupDetails(otherId);
     if (!groupB) return null;
+
+    const activeCountB = await countActiveGroupMembers(otherId);
+    if (activeCountB < 2) return null;
 
     const metricsB = await calculateTeamMetrics(otherId);
 

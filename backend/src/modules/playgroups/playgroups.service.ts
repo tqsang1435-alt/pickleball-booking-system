@@ -1,5 +1,6 @@
 import * as repo from "./playgroups.repository";
 import { findProfileByUserId } from "../player-matching/player-matching.repository";
+import * as notificationsService from "../notifications/notifications.service";
 
 export async function createPlayGroup(data: repo.GroupData, creatorId: number) {
   // 1. Verify creator has a profile
@@ -150,4 +151,58 @@ export async function updatePlayGroup(
   });
 
   return repo.getGroupDetails(groupId);
+}
+
+export async function getGroupMessages(groupId: number, userId: number) {
+  const isMember = await repo.checkUserInGroup(groupId, userId);
+  if (!isMember) {
+    throw new Error("Bạn không có quyền xem tin nhắn của nhóm này.");
+  }
+
+  const messages = await repo.getGroupMessages(groupId, 50);
+
+  // Attach IsMine flag
+  return messages.map((m: any) => ({
+    ...m,
+    IsMine: m.SenderID === userId
+  }));
+}
+
+export async function sendGroupMessage(groupId: number, userId: number, content: string) {
+  const isMember = await repo.checkUserInGroup(groupId, userId);
+  if (!isMember) {
+    throw new Error("Bạn không có quyền gửi tin nhắn vào nhóm này.");
+  }
+
+  const trimmedContent = content ? content.trim() : "";
+  if (!trimmedContent) {
+    throw new Error("Nội dung tin nhắn không được rỗng.");
+  }
+
+  if (trimmedContent.length > 1000) {
+    throw new Error("Nội dung tin nhắn không được vượt quá 1000 ký tự.");
+  }
+
+  const newMessage = await repo.createGroupMessage(groupId, userId, trimmedContent);
+
+  // Gửi email notification (bất đồng bộ, không dùng await/throw lỗi luồng chính)
+  notificationsService.notifyGroupChatMessage(userId, groupId, trimmedContent).catch(err => console.error("notifyGroupChatMessage error:", err));
+
+  // Return with basic info, the client can refetch if needed
+  return {
+    ...newMessage,
+    IsMine: true
+  };
+}
+
+export async function getUnreadCounts(userId: number) {
+  return repo.getUnreadCounts(userId);
+}
+
+export async function markMessagesAsRead(userId: number, groupId: number) {
+  const isMember = await repo.checkUserInGroup(groupId, userId);
+  if (!isMember) {
+    throw new Error("Bạn không có quyền mark read cho nhóm này.");
+  }
+  return repo.markMessagesAsRead(userId, groupId);
 }

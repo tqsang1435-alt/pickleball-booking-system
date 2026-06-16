@@ -103,6 +103,7 @@ export default function OpponentsTab({ token, showToast }: OpponentsTabProps) {
       await api.sendInvitation(token, {
         receiverId: selectedOpponentGroup.CreatorID,
         groupId: Number(selectedGroupId),
+        targetGroupId: selectedOpponentGroup.GroupID,
         invitationType: "InviteOpponent",
         message: challengeMsg,
         challengeDate,

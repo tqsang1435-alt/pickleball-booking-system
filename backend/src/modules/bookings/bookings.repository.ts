@@ -955,21 +955,21 @@ export async function findBookingsByUserId(userId: number) {
         b.CancelReason,
         b.CreatedAt,
 
-        bd.BookingDetailID,
-        bd.SlotID,
-        bd.CourtID,
-        c.CourtName,
-        c.CourtCode,
-        c.CourtImage,
-        c.Location,
+        mainDetail.BookingDetailID,
+        mainDetail.SlotID,
+        mainDetail.CourtID,
+        mainDetail.CourtName,
+        mainDetail.CourtCode,
+        mainDetail.CourtImage,
+        mainDetail.Location,
 
-        bd.CoachID,
-        cu.FullName AS CoachName,
-        cu.AvatarURL AS CoachAvatar,
+        mainDetail.CoachID,
+        mainDetail.CoachName,
+        mainDetail.CoachAvatar,
 
-        bd.CoachScheduleID,
-        CONVERT(VARCHAR(5), bd.StartTime, 108) AS StartTime,
-        CONVERT(VARCHAR(5), bd.EndTime, 108) AS EndTime,
+        mainDetail.CoachScheduleID,
+        CONVERT(VARCHAR(5), timeRange.StartTime, 108) AS StartTime,
+        CONVERT(VARCHAR(5), timeRange.EndTime, 108) AS EndTime,
 
         p.PaymentID,
         p.PaymentMethod,
@@ -979,10 +979,33 @@ export async function findBookingsByUserId(userId: number) {
         
         r.Status AS RefundStatus
       FROM Bookings b
-      LEFT JOIN BookingDetails bd ON bd.BookingID = b.BookingID
-      LEFT JOIN Courts c ON bd.CourtID = c.CourtID
-      LEFT JOIN Coaches co ON bd.CoachID = co.CoachID
-      LEFT JOIN Users cu ON co.UserID = cu.UserID
+      OUTER APPLY (
+        SELECT
+            MIN(bd.StartTime) AS StartTime,
+            MAX(bd.EndTime) AS EndTime
+        FROM BookingDetails bd
+        WHERE bd.BookingID = b.BookingID
+      ) timeRange
+      OUTER APPLY (
+        SELECT TOP 1
+            bd.BookingDetailID,
+            bd.SlotID,
+            bd.CourtID,
+            c.CourtName,
+            c.CourtCode,
+            c.CourtImage,
+            c.Location,
+            bd.CoachID,
+            cu.FullName AS CoachName,
+            cu.AvatarURL AS CoachAvatar,
+            bd.CoachScheduleID
+        FROM BookingDetails bd
+        LEFT JOIN Courts c ON bd.CourtID = c.CourtID
+        LEFT JOIN Coaches co ON bd.CoachID = co.CoachID
+        LEFT JOIN Users cu ON co.UserID = cu.UserID
+        WHERE bd.BookingID = b.BookingID
+        ORDER BY bd.StartTime ASC
+      ) mainDetail
       OUTER APPLY (
         SELECT TOP 1 PaymentID, PaymentMethod, TransactionCode, Status, PaidAt
         FROM Payments
@@ -1027,31 +1050,50 @@ export async function findBookingsByCoachUserId(userId: number) {
         b.CancelReason,
         b.CreatedAt,
 
-        bd.BookingDetailID,
-        bd.CourtID,
-        c.CourtName,
-        c.Location,
+        mainDetail.BookingDetailID,
+        mainDetail.CourtID,
+        mainDetail.CourtName,
+        mainDetail.Location,
 
-        bd.CoachScheduleID,
-        CONVERT(VARCHAR(5), bd.StartTime, 108) AS StartTime,
-        CONVERT(VARCHAR(5), bd.EndTime, 108) AS EndTime,
+        mainDetail.CoachScheduleID,
+        CONVERT(VARCHAR(5), timeRange.StartTime, 108) AS StartTime,
+        CONVERT(VARCHAR(5), timeRange.EndTime, 108) AS EndTime,
 
         p.PaymentMethod,
         p.Status AS PaymentStatus,
         p.PaidAt
       FROM Bookings b
       JOIN Users pu ON pu.UserID = b.UserID
-      JOIN BookingDetails bd ON bd.BookingID = b.BookingID
-      JOIN Coaches co ON bd.CoachID = co.CoachID
-      LEFT JOIN Courts c ON bd.CourtID = c.CourtID
+      OUTER APPLY (
+        SELECT
+            MIN(bd.StartTime) AS StartTime,
+            MAX(bd.EndTime) AS EndTime
+        FROM BookingDetails bd
+        WHERE bd.BookingID = b.BookingID
+      ) timeRange
+      OUTER APPLY (
+        SELECT TOP 1
+            bd.BookingDetailID,
+            bd.CourtID,
+            c.CourtName,
+            c.Location,
+            bd.CoachScheduleID
+        FROM BookingDetails bd
+        WHERE bd.BookingID = b.BookingID
+        ORDER BY bd.StartTime ASC
+      ) mainDetail
       OUTER APPLY (
         SELECT TOP 1 PaymentMethod, Status, PaidAt
         FROM Payments
         WHERE BookingID = b.BookingID
         ORDER BY CASE WHEN Status = 'Paid' THEN 1 ELSE 2 END ASC, CreatedAt DESC
       ) p
-      WHERE co.UserID = @UserID
-      ORDER BY b.BookingDate DESC, bd.StartTime DESC
+      WHERE EXISTS (
+        SELECT 1 FROM BookingDetails bd2
+        JOIN Coaches co2 ON bd2.CoachID = co2.CoachID
+        WHERE bd2.BookingID = b.BookingID AND co2.UserID = @UserID
+      )
+      ORDER BY b.BookingDate DESC, timeRange.StartTime DESC
     `);
 
   return result.recordset;
@@ -1080,21 +1122,21 @@ export async function findBookingById(bookingId: number) {
         b.CancelReason,
         b.CreatedAt,
 
-        bd.BookingDetailID,
-        bd.SlotID,
-        bd.CourtID,
-        c.CourtName,
-        c.CourtCode,
-        c.CourtImage,
-        c.Location,
+        mainDetail.BookingDetailID,
+        mainDetail.SlotID,
+        mainDetail.CourtID,
+        mainDetail.CourtName,
+        mainDetail.CourtCode,
+        mainDetail.CourtImage,
+        mainDetail.Location,
 
-        bd.CoachID,
-        cu.FullName AS CoachName,
-        cu.AvatarURL AS CoachAvatar,
+        mainDetail.CoachID,
+        mainDetail.CoachName,
+        mainDetail.CoachAvatar,
 
-        bd.CoachScheduleID,
-        CONVERT(VARCHAR(5), bd.StartTime, 108) AS StartTime,
-        CONVERT(VARCHAR(5), bd.EndTime, 108) AS EndTime,
+        mainDetail.CoachScheduleID,
+        CONVERT(VARCHAR(5), timeRange.StartTime, 108) AS StartTime,
+        CONVERT(VARCHAR(5), timeRange.EndTime, 108) AS EndTime,
 
         p.PaymentID,
         p.PaymentMethod,
@@ -1102,10 +1144,33 @@ export async function findBookingById(bookingId: number) {
         p.Status AS PaymentStatus,
         p.PaidAt
       FROM Bookings b
-      LEFT JOIN BookingDetails bd ON bd.BookingID = b.BookingID
-      LEFT JOIN Courts c ON bd.CourtID = c.CourtID
-      LEFT JOIN Coaches co ON bd.CoachID = co.CoachID
-      LEFT JOIN Users cu ON co.UserID = cu.UserID
+      OUTER APPLY (
+        SELECT
+            MIN(bd.StartTime) AS StartTime,
+            MAX(bd.EndTime) AS EndTime
+        FROM BookingDetails bd
+        WHERE bd.BookingID = b.BookingID
+      ) timeRange
+      OUTER APPLY (
+        SELECT TOP 1
+            bd.BookingDetailID,
+            bd.SlotID,
+            bd.CourtID,
+            c.CourtName,
+            c.CourtCode,
+            c.CourtImage,
+            c.Location,
+            bd.CoachID,
+            cu.FullName AS CoachName,
+            cu.AvatarURL AS CoachAvatar,
+            bd.CoachScheduleID
+        FROM BookingDetails bd
+        LEFT JOIN Courts c ON bd.CourtID = c.CourtID
+        LEFT JOIN Coaches co ON bd.CoachID = co.CoachID
+        LEFT JOIN Users cu ON co.UserID = cu.UserID
+        WHERE bd.BookingID = b.BookingID
+        ORDER BY bd.StartTime ASC
+      ) mainDetail
       OUTER APPLY (
         SELECT TOP 1 PaymentID, PaymentMethod, TransactionCode, Status, PaidAt
         FROM Payments
@@ -1137,8 +1202,8 @@ export async function findDailyBookingsForStaff(
         b.BookingCode,
         b.BookingType,
         b.BookingDate,
-        CONVERT(VARCHAR(5), bd.StartTime, 108) AS StartTime,
-        CONVERT(VARCHAR(5), bd.EndTime, 108) AS EndTime,
+        CONVERT(VARCHAR(5), timeRange.StartTime, 108) AS StartTime,
+        CONVERT(VARCHAR(5), timeRange.EndTime, 108) AS EndTime,
         b.TotalAmount,
         b.Status,
         -- Fix timezone: SQL Server GETDATE() is VN local time but driver reads it as UTC
@@ -1150,8 +1215,8 @@ export async function findDailyBookingsForStaff(
         u.Email AS PlayerEmail,
         COALESCE(NULLIF(b.GuestPhone, ''), u.PhoneNumber) AS PlayerPhone,
 
-        c.CourtName,
-        cu.FullName AS CoachName,
+        mainDetail.CourtName,
+        mainDetail.CoachName,
 
         p.PaymentMethod,
         p.Status AS PaymentStatus,
@@ -1159,10 +1224,24 @@ export async function findDailyBookingsForStaff(
         r.RefundCode
       FROM Bookings b
       JOIN Users u ON u.UserID = b.UserID
-      LEFT JOIN BookingDetails bd ON bd.BookingID = b.BookingID
-      LEFT JOIN Courts c ON bd.CourtID = c.CourtID
-      LEFT JOIN Coaches co ON bd.CoachID = co.CoachID
-      LEFT JOIN Users cu ON co.UserID = cu.UserID
+      OUTER APPLY (
+        SELECT
+            MIN(bd.StartTime) AS StartTime,
+            MAX(bd.EndTime) AS EndTime
+        FROM BookingDetails bd
+        WHERE bd.BookingID = b.BookingID
+      ) timeRange
+      OUTER APPLY (
+        SELECT TOP 1
+            c.CourtName,
+            cu.FullName AS CoachName
+        FROM BookingDetails bd
+        LEFT JOIN Courts c ON bd.CourtID = c.CourtID
+        LEFT JOIN Coaches co ON bd.CoachID = co.CoachID
+        LEFT JOIN Users cu ON co.UserID = cu.UserID
+        WHERE bd.BookingID = b.BookingID
+        ORDER BY bd.StartTime ASC
+      ) mainDetail
       OUTER APPLY (
         SELECT TOP 1 PaymentMethod, Status
         FROM Payments
@@ -1187,11 +1266,9 @@ export async function repoCreateTeamBooking(data: {
   userId: number;
   groupId: number;
   courtId: number;
-  slotId: number;
   bookingDate: string;
   startTime: string;
   endTime: string;
-  courtFee: number;
 }): Promise<CreatedBooking> {
   const pool = await getPool();
   const transaction = new sql.Transaction(pool);
@@ -1208,60 +1285,137 @@ export async function repoCreateTeamBooking(data: {
       .input("UserID", sql.Int, data.userId)
       .input("BookingType", sql.NVarChar(30), "Court")
       .input("BookingDate", sql.Date, data.bookingDate)
-      .input("CourtFee", sql.Decimal(18, 2), data.courtFee)
-      .input("CoachFee", sql.Decimal(18, 2), 0)
-      .input("DiscountAmount", sql.Decimal(18, 2), 0)
-      .input("TotalAmount", sql.Decimal(18, 2), data.courtFee)
-      .input("SlotID", sql.Int, data.slotId)
       .input("CourtID", sql.Int, data.courtId)
       .input("StartTime", sql.VarChar(5), data.startTime)
       .input("EndTime", sql.VarChar(5), data.endTime)
       .input("GroupNote", sql.NVarChar(200), groupNote)
       .query(`
-        IF NOT EXISTS (
-          SELECT 1
-          FROM CourtSlots WITH (UPDLOCK, HOLDLOCK)
-          WHERE SlotID = @SlotID AND Status = 'Available'
-        )
+        -- 1. App Lock de tranh double click
+        DECLARE @LockResource NVARCHAR(255) = 'TeamBooking_' + CAST(@UserID AS VARCHAR) + '_' + CAST(@CourtID AS VARCHAR) + '_' + REPLACE(CAST(@BookingDate AS VARCHAR), '-', '') + REPLACE(CAST(@StartTime AS VARCHAR), ':', '') + REPLACE(CAST(@EndTime AS VARCHAR), ':', '');
+        DECLARE @LockResult INT;
+        EXEC @LockResult = sp_getapplock @Resource = @LockResource, @LockMode = 'Exclusive', @LockOwner = 'Transaction', @LockTimeout = 0;
+
+        IF @LockResult < 0
         BEGIN
-          THROW 50001, 'Court slot is not available', 1;
+            THROW 50002, 'Hệ thống đang xử lý giao dịch của bạn. Vui lòng chờ.', 1;
         END;
 
+        -- 2. Check Idempotency thong qua Booking hien tai (bao gom ca expired < 10phut neu dung HoldUntil o CourtSlots thi chi check o day)
+        IF EXISTS (
+            SELECT b.BookingID
+            FROM Bookings b
+            JOIN BookingDetails bd ON bd.BookingID = b.BookingID
+            WHERE b.UserID = @UserID AND b.Status = 'PendingPayment'
+              AND b.BookingDate = @BookingDate
+              AND DATEDIFF(MINUTE, b.CreatedAt, GETDATE()) <= 10
+              AND bd.CourtID = @CourtID
+            GROUP BY b.BookingID
+            HAVING MIN(bd.StartTime) = CAST(@StartTime AS TIME)
+               AND MAX(bd.EndTime) = CAST(@EndTime AS TIME)
+        )
+        BEGIN
+            THROW 50003, 'Bạn đang có một giao dịch chưa thanh toán trùng khớp với yêu cầu này.', 1;
+        END;
+
+        -- 3. Lock Slots vat ly theo CourtID va thoi gian (cat dung vao khoang can thiet)
+        DECLARE @LockedSlots TABLE (
+            SlotID INT,
+            StartTime TIME,
+            EndTime TIME,
+            Price DECIMAL(18,2)
+        );
+
+        INSERT INTO @LockedSlots (SlotID, StartTime, EndTime, Price)
+        SELECT SlotID, StartTime, EndTime, Price
+        FROM CourtSlots WITH (UPDLOCK, HOLDLOCK)
+        WHERE CourtID = @CourtID
+          AND SlotDate = @BookingDate
+          AND Status = 'Available'
+          AND StartTime >= CAST(@StartTime AS TIME)
+          AND EndTime <= CAST(@EndTime AS TIME);
+
+        DECLARE @TotalSlots INT = (SELECT COUNT(*) FROM @LockedSlots);
+
+        IF @TotalSlots = 0
+        BEGIN
+            THROW 50001, 'Sân không trống trong khoảng thời gian này.', 1;
+        END;
+
+        -- 4. Kiem tra tinh lien tuc bang LAG (Window Function) va do phu
+        DECLARE @HasGapOrOverlap BIT = 0;
+        DECLARE @ActualStart TIME = NULL;
+        DECLARE @ActualEnd TIME = NULL;
+
+        WITH CheckedSlots AS (
+            SELECT
+                StartTime,
+                EndTime,
+                LAG(EndTime) OVER (ORDER BY StartTime ASC, EndTime ASC) AS PrevEndTime
+            FROM @LockedSlots
+        )
+        SELECT
+            @ActualStart = MIN(StartTime),
+            @ActualEnd = MAX(EndTime),
+            @HasGapOrOverlap = MAX(CASE WHEN PrevEndTime IS NOT NULL AND StartTime <> PrevEndTime THEN 1 ELSE 0 END)
+        FROM CheckedSlots;
+
+        IF @HasGapOrOverlap = 1 OR @ActualStart <> CAST(@StartTime AS TIME) OR @ActualEnd <> CAST(@EndTime AS TIME)
+        BEGIN
+            THROW 50001, 'Sân không trống liên tục, bị chồng lấn, hoặc yêu cầu không khớp trọn vẹn slot vật lý.', 1;
+        END;
+
+        -- 5. Tinh toan tien te cho tung slot
+        DECLARE @SlotDetails TABLE (
+            RowNum INT, SlotID INT, StartTime TIME, EndTime TIME, SubTotal DECIMAL(18,2)
+        );
+
+        INSERT INTO @SlotDetails (RowNum, SlotID, StartTime, EndTime, SubTotal)
+        SELECT
+            ROW_NUMBER() OVER (ORDER BY StartTime ASC),
+            SlotID, StartTime, EndTime,
+            CAST((Price * CAST(DATEDIFF(MINUTE, StartTime, EndTime) AS DECIMAL(18,2)) / 60.0) AS DECIMAL(18,2))
+        FROM @LockedSlots;
+
+        DECLARE @TotalAmount DECIMAL(18,2) = ISNULL((SELECT SUM(SubTotal) FROM @SlotDetails), 0);
+
+        -- 6. Insert Bookings
         INSERT INTO Bookings (
           BookingCode, UserID, BookingType, BookingDate,
           CourtFee, CoachFee, DiscountAmount, TotalAmount, Status, CancelReason
         )
-        OUTPUT INSERTED.*
         VALUES (
           @BookingCode, @UserID, @BookingType, @BookingDate,
-          @CourtFee, @CoachFee, @DiscountAmount, @TotalAmount, 'PendingPayment',
+          @TotalAmount, 0, 0, @TotalAmount, 'PendingPayment',
           @GroupNote
         );
 
         DECLARE @NewBookingID INT = SCOPE_IDENTITY();
 
+        -- 7. Insert BookingDetails cho tat ca slot
         INSERT INTO BookingDetails (
           BookingID, SlotID, CourtID, CoachID, CoachScheduleID,
           BookingDate, StartTime, EndTime, CourtFee, CoachFee, SubTotal
         )
-        VALUES (
-          @NewBookingID, @SlotID, @CourtID, NULL, NULL,
-          @BookingDate, CAST(@StartTime AS TIME), CAST(@EndTime AS TIME),
-          @CourtFee, 0, @CourtFee
-        );
+        SELECT
+          @NewBookingID, SlotID, @CourtID, NULL, NULL,
+          @BookingDate, StartTime, EndTime,
+          SubTotal, 0, SubTotal
+        FROM @SlotDetails;
 
+        -- 8. Chuyen doi trang thai CourtSlots
         UPDATE CourtSlots
         SET Status = 'Holding',
             HoldUntil = DATEADD(MINUTE, 10, GETDATE()),
             UpdatedAt = GETDATE()
-        WHERE SlotID = @SlotID;
+        WHERE SlotID IN (SELECT SlotID FROM @LockedSlots);
 
-        SELECT
+        -- 9. Tra ve ket qua 1 dong duy nhat voi thoi gian bat dau/ket thuc gom
+        SELECT TOP 1
           b.BookingID, b.BookingCode, b.UserID, b.BookingType, b.BookingDate,
           b.CourtFee, b.CoachFee, b.DiscountAmount, b.TotalAmount, b.Status, b.CreatedAt,
           bd.BookingDetailID, bd.SlotID, bd.CourtID, bd.CoachID, bd.CoachScheduleID,
-          CONVERT(VARCHAR(5), bd.StartTime, 108) AS StartTime,
-          CONVERT(VARCHAR(5), bd.EndTime, 108) AS EndTime
+          CONVERT(VARCHAR(5), @ActualStart, 108) AS StartTime,
+          CONVERT(VARCHAR(5), @ActualEnd, 108) AS EndTime
         FROM Bookings b
         JOIN BookingDetails bd ON bd.BookingID = b.BookingID
         WHERE b.BookingID = @NewBookingID;

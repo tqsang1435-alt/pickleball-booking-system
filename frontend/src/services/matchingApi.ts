@@ -144,6 +144,33 @@ export async function leaveGroup(token: string, groupId: number): Promise<any> {
   return response.data;
 }
 
+export interface GroupMessage {
+  MessageID: number;
+  GroupID: number;
+  SenderID: number;
+  SenderName?: string;
+  SenderAvatar?: string;
+  Content: string;
+  CreatedAt: string;
+  IsMine?: boolean;
+}
+
+export async function getGroupMessages(token: string, groupId: number): Promise<GroupMessage[]> {
+  const response = await apiClient<ApiResponse<GroupMessage[]>>(`/api/playgroups/${groupId}/messages`, {
+    token,
+  });
+  return response.data;
+}
+
+export async function sendGroupMessage(token: string, groupId: number, content: string): Promise<GroupMessage> {
+  const response = await apiClient<ApiResponse<GroupMessage>>(`/api/playgroups/${groupId}/messages`, {
+    method: "POST",
+    token,
+    body: { content },
+  });
+  return response.data;
+}
+
 export async function closeGroup(token: string, groupId: number): Promise<PlayGroup> {
   const response = await apiClient<ApiResponse<PlayGroup>>(`/api/playgroups/${groupId}/close`, {
     method: "PATCH",
@@ -171,6 +198,7 @@ export async function sendInvitation(
   payload: {
     receiverId: number | null;
     groupId: number | null;
+    targetGroupId?: number | null;
     invitationType: string;
     message?: string;
     challengeDate?: string;
@@ -226,4 +254,23 @@ export async function getPendingInvitationCount(token: string): Promise<{ count:
     token,
   });
   return response.data;
+}
+
+export interface UnreadCountsResponse {
+  totalUnread: number;
+  groups: { groupId: number; unreadCount: number }[];
+}
+
+export async function getUnreadGroupChatCounts(token: string): Promise<UnreadCountsResponse> {
+  const response = await apiClient<ApiResponse<UnreadCountsResponse>>("/api/playgroups/unread-counts", {
+    token,
+  });
+  return response.data;
+}
+
+export async function markGroupMessagesAsRead(token: string, groupId: number): Promise<void> {
+  await apiClient<ApiResponse<null>>(`/api/playgroups/${groupId}/messages/read`, {
+    method: "POST",
+    token,
+  });
 }

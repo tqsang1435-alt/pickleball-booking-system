@@ -20,6 +20,7 @@ export default function MatchingLayout() {
   const [userProfile, setUserProfile] = useState<api.PlayerProfile | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
 
   // Toast notification state
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -54,21 +55,25 @@ export default function MatchingLayout() {
   useEffect(() => {
     if (!token) return;
 
-    async function fetchPendingCount() {
+    async function fetchCounts() {
       try {
-        const res = await api.getPendingInvitationCount(token!);
-        setPendingCount(res.count);
+        const [pendingRes, unreadRes] = await Promise.all([
+          api.getPendingInvitationCount(token!).catch(() => ({ count: 0 })),
+          api.getUnreadGroupChatCounts(token!).catch(() => ({ totalUnread: 0, groups: [] }))
+        ]);
+        setPendingCount(pendingRes.count || 0);
+        setUnreadChatCount(unreadRes.totalUnread || 0);
       } catch (err) {
-        console.error("Failed to fetch pending count", err);
+        console.error("Failed to fetch counts", err);
       }
     }
 
-    fetchPendingCount();
+    fetchCounts();
 
-    window.addEventListener("invitation-count-change", fetchPendingCount);
+    window.addEventListener("invitation-count-change", fetchCounts);
 
     return () => {
-      window.removeEventListener("invitation-count-change", fetchPendingCount);
+      window.removeEventListener("invitation-count-change", fetchCounts);
     };
   }, [token, refreshTrigger]);
 
@@ -136,7 +141,12 @@ export default function MatchingLayout() {
               onClick={() => setActiveTab("groups")}
               className={`${styles.tabButton} ${activeTab === "groups" ? styles.tabButtonActive : ""}`}
             >
-              👥 Nhóm chơi bóng
+              <span>👥 Nhóm chơi bóng</span>
+              {unreadChatCount > 0 && (
+                <span className={styles.badge} style={{ backgroundColor: "#ef4444" }}>
+                  {unreadChatCount > 9 ? "9+" : unreadChatCount}
+                </span>
+              )}
             </button>
             <button
               onClick={() => setActiveTab("opponents")}

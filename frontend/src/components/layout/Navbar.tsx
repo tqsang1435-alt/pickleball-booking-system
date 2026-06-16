@@ -11,7 +11,7 @@ import {
 } from "@/utils/authStorage";
 
 import type { AuthUser } from "@/types/auth";
-import { getPendingInvitationCount } from "@/services/matchingApi";
+import { getPendingInvitationCount, getUnreadGroupChatCounts } from "@/services/matchingApi";
 import { getMyNotifications, getUnreadNotificationCount, markNotificationAsRead } from "@/services/notificationApi";
 import type { NotificationItem } from "@/types/operationTypes";
 
@@ -36,7 +36,7 @@ export default function Navbar() {
    * user đang login
    */
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [pendingCount, setPendingCount] = useState(0);
+  const [totalMatchingBadge, setTotalMatchingBadge] = useState(0);
 
   // Notifications
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
@@ -51,22 +51,24 @@ export default function Navbar() {
       setUser(getUser());
     }
 
-    async function fetchPendingCount() {
+    async function fetchMatchingBadgeCount() {
       const token = getToken();
       const currentUser = getUser();
       const role = String(currentUser?.RoleName || currentUser?.role || currentUser?.roles?.[0] || "").toLowerCase();
       
       // Chỉ Player mới có chức năng tìm người chơi (matching)
       if (!token || !role.includes("player")) {
-        setPendingCount(0);
+        setTotalMatchingBadge(0);
         return;
       }
       try {
-        const res = await getPendingInvitationCount(token);
-        setPendingCount(res?.count || 0);
+        const [pendingRes, unreadRes] = await Promise.all([
+          getPendingInvitationCount(token).catch(() => ({ count: 0 })),
+          getUnreadGroupChatCounts(token).catch(() => ({ totalUnread: 0, groups: [] }))
+        ]);
+        setTotalMatchingBadge((pendingRes?.count || 0) + (unreadRes?.totalUnread || 0));
       } catch (err) {
-        // console.warn("Failed to fetch pending count", err);
-        setPendingCount(0);
+        setTotalMatchingBadge(0);
       }
     }
 
@@ -86,28 +88,28 @@ export default function Navbar() {
     }
 
     syncUser();
-    fetchPendingCount();
+    fetchMatchingBadgeCount();
     fetchNotifs();
 
     window.addEventListener("storage", syncUser);
-    window.addEventListener("storage", fetchPendingCount);
+    window.addEventListener("storage", fetchMatchingBadgeCount);
     window.addEventListener("auth-change", syncUser);
-    window.addEventListener("auth-change", fetchPendingCount);
+    window.addEventListener("auth-change", fetchMatchingBadgeCount);
     window.addEventListener("auth-change", fetchNotifs);
-    window.addEventListener("invitation-count-change", fetchPendingCount);
+    window.addEventListener("invitation-count-change", fetchMatchingBadgeCount);
 
     const interval = setInterval(() => {
-      fetchPendingCount();
+      fetchMatchingBadgeCount();
       fetchNotifs();
     }, 15000);
 
     return () => {
       window.removeEventListener("storage", syncUser);
-      window.removeEventListener("storage", fetchPendingCount);
+      window.removeEventListener("storage", fetchMatchingBadgeCount);
       window.removeEventListener("auth-change", syncUser);
-      window.removeEventListener("auth-change", fetchPendingCount);
+      window.removeEventListener("auth-change", fetchMatchingBadgeCount);
       window.removeEventListener("auth-change", fetchNotifs);
-      window.removeEventListener("invitation-count-change", fetchPendingCount);
+      window.removeEventListener("invitation-count-change", fetchMatchingBadgeCount);
       clearInterval(interval);
     };
   }, [pathname]);
@@ -119,7 +121,7 @@ export default function Navbar() {
     clearAuth();
 
     setUser(null);
-    setPendingCount(0);
+    setTotalMatchingBadge(0);
     setUnreadNotifCount(0);
 
     window.dispatchEvent(new Event("auth-change"));
@@ -222,9 +224,9 @@ export default function Navbar() {
                 className={active ? styles.active : ""}
               >
                 {item.label}
-                {item.href === "/matching" && pendingCount > 0 && (
+                {item.href === "/matching" && totalMatchingBadge > 0 && (
                   <span className={styles.badge}>
-                    {pendingCount > 9 ? "9+" : pendingCount}
+                    {totalMatchingBadge > 9 ? "9+" : totalMatchingBadge}
                   </span>
                 )}
               </Link>

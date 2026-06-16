@@ -111,3 +111,52 @@ export async function updatePlayGroupController(req: NextRequest, groupId: numbe
     return handleError(error);
   }
 }
+
+export async function getGroupMessagesController(req: NextRequest, groupId: number) {
+  try {
+    const auth = requireAuth(req);
+    if (auth instanceof Response) return auth;
+
+    const messages = await service.getGroupMessages(groupId, auth.userId);
+    return successResponse(messages, "Lấy danh sách tin nhắn thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+export async function sendGroupMessageController(req: NextRequest, groupId: number) {
+  try {
+    const auth = requireAuth(req);
+    if (auth instanceof Response) return auth;
+
+    const body = await req.json();
+    const message = await service.sendGroupMessage(groupId, auth.userId, body.content);
+    return successResponse(message, "Gửi tin nhắn thành công", 201);
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+export async function getUnreadCountsController(req: NextRequest) {
+  try {
+    const auth = requireAuth(req);
+    if (auth instanceof Response) return auth;
+
+    const counts = await service.getUnreadCounts(auth.userId);
+    return successResponse(counts, "Lấy số lượng tin nhắn chưa đọc thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+export async function markMessagesAsReadController(req: NextRequest, groupId: number) {
+  try {
+    const auth = requireAuth(req);
+    if (auth instanceof Response) return auth;
+
+    await service.markMessagesAsRead(auth.userId, groupId);
+    return successResponse(null, "Đánh dấu đã đọc thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}

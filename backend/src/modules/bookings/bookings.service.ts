@@ -6,6 +6,7 @@ import { findUserById, getOrCreateWalkInGuestUser, findCourtByIdForBooking, find
 import { calculateHours, validateBookingDate, validateHoldingLimit, validateCoachFeePerHour } from "./bookings.validation";
 import { isScheduleExpired } from "../coaches/coaches.validation";
 import { sendBookingCreatedEmail, sendPaymentSuccessEmail, sendCoachAssignedEmail, sendNoShowEmail, sendPaymentExpiredEmail } from "@/utils/mail";
+import { countActiveGroupMembers } from "../playgroups/playgroups.repository";
 
 // ---- Create Bookings ----
 
@@ -886,40 +887,19 @@ export async function createTeamBooking(input: {
   if (!court) throw new Error("San khong ton tai");
   if (court.Status !== "Available") throw new Error("San hien khong kha dung");
 
-  // ===================================================
-  // TODO: Validate PlayGroup status (cho module Matching)
-  // Uncomment khi PlayGroups module da implement:
-  //
-  // const group = await playgroupsRepo.findGroupById(input.groupId);
-  // if (!group) throw new Error("Nhom choi khong ton tai (UC-36)");
-  // if (group.Status !== 'Matched') {
-  //   throw new Error("Nhom chua duoc ghep thanh cong, khong the dat san (UC-36)");
-  // }
-  // if (group.LeaderID !== input.userId) {
-  //   throw new Error("Chi leader nhom moi co quyen dat san cho ca nhom (UC-36)");
-  // }
-  // ===================================================
-
-  const hours = calculateHours(input.startTime, input.endTime);
-  const courtFee = Number(court.PricePerHour) * hours;
-
-  const slot = await findAvailableCourtSlot(
-    input.courtId,
-    input.bookingDate,
-    input.startTime,
-    input.endTime
-  );
-  if (!slot) throw new Error("Khung gio san da bi dat hoac khong co slot phu hop");
+  // Validate group member count for team booking
+  const activeCount = await countActiveGroupMembers(input.groupId);
+  if (activeCount < 2) {
+    throw new Error("Nhóm của bạn cần có ít nhất 2 thành viên đang hoạt động để đặt sân nhóm. (Lưu ý: Để kiểm tra nhóm đối thủ, hệ thống cần bổ sung payload ở phase sau).");
+  }
 
   // Tao booking voi type = 'Team' va ghi nhan groupId
   return repoCreateTeamBooking({
     userId: input.userId,
     groupId: input.groupId,
     courtId: input.courtId,
-    slotId: slot.SlotID,
     bookingDate: input.bookingDate,
     startTime: input.startTime,
     endTime: input.endTime,
-    courtFee,
   });
 }
