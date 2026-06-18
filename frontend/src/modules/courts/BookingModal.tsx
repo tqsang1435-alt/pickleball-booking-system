@@ -71,8 +71,8 @@ export default function BookingModal({
     }
   }
 
-  // Khi PaymentModal đóng (user hủy hoặc sau khi redirect trở về),
-  // đóng BookingModal luôn vì booking đã được tạo.
+  // Đóng toàn bộ modal – booking đã ở PendingPayment,
+  // user có thể thanh toán lại từ /bookings
   function handlePaymentModalClose() {
     // Đóng toàn bộ modal – booking đã ở PendingPayment,
     // user có thể thanh toán lại từ /bookings
@@ -191,7 +191,7 @@ export default function BookingModal({
             </div>
 
             <div className={styles.notice}>
-              <span>📌</span>
+              <span>📋</span>
               <p>Vui lòng đến sân trước giờ chơi <strong>30 phút</strong> để check-in.</p>
             </div>
 

@@ -83,9 +83,16 @@ export async function getDashboardStatsController(
       return roleCheck;
     }
 
-    const result =
-      await reportService
-        .getDashboardStats();
+    const { searchParams } = new URL(req.url);
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
+
+    let result;
+    if (startDate && endDate) {
+      result = await reportService.getSaaSDashboardStats(startDate, endDate);
+    } else {
+      result = await reportService.getDashboardStats();
+    }
 
     return successResponse(
       result,

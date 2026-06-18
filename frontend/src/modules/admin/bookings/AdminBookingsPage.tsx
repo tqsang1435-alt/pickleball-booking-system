@@ -122,7 +122,7 @@ export default function AdminBookingsPage() {
 
   // Phan loai de hien thi summary
   const total = bookings.length;
-  const waitingCheckInCount = bookings.filter(b => b.Status === "Confirmed").length;
+  const waitingCheckInCount = bookings.filter(b => ["Confirmed", "Paid"].includes(b.Status)).length;
   const checkedInCount = bookings.filter(b => b.Status === "CheckedIn").length;
   const completedCount = bookings.filter(b => b.Status === "Completed").length;
   const cancelledCount = bookings.filter(b => ["Cancelled", "Refunded", "NoShow"].includes(b.Status)).length;
@@ -243,7 +243,7 @@ export default function AdminBookingsPage() {
                   <tbody>
                     {courtBookings.map((b) => {
                       const isActioning = actioningId === b.BookingID;
-                      const canCheckIn = b.Status === "Confirmed";
+                      const canCheckIn = ["Confirmed", "Paid"].includes(b.Status);
                       const canCancel = ["PendingPayment", "Confirmed", "Paid"].includes(b.Status);
 
                       return (

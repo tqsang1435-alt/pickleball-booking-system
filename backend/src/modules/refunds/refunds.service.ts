@@ -230,6 +230,96 @@ export async function requestRefund(
   };
 }
 
+// ── API: Coach Cancel Refund (BR-54) ───────────────────
+
+/**
+ * BR-54: Hoàn tiền 100% khi Coach chủ động hủy booking Confirmed.
+ * Khác requestRefund:
+ *   - Không check ownership (coach cancel thay mặt player).
+ *   - Không tính theo thời gian — luôn hoàn 100% tổng tiền đã trả.
+ *   - Không throw nếu < 2h trước giờ chơi.
+ * Gọi nội bộ từ bookings.service.cancelBookingByCoach.
+ */
+export async function requestCoachCancelRefund(
+  bookingId: number,
+  bookingOwnerId: number,
+  reason: string
+): Promise<RefundResult> {
+  // 1. Kiểm tra không double refund
+  const hasActive = await refundRepo.hasActiveRefund(bookingId);
+  if (hasActive) {
+    throw Object.assign(
+      new Error("Booking này đang có yêu cầu hoàn tiền đang xử lý."),
+      { statusCode: 409 }
+    );
+  }
+
+  // 2. Tìm payment Paid
+  const payment = await refundRepo.findPaidPaymentByBookingId(bookingId);
+  if (!payment) {
+    throw Object.assign(
+      new Error("Chưa có payment thành công (Paid) cho booking này."),
+      { statusCode: 400 }
+    );
+  }
+
+  // 3. BR-54: Luôn hoàn 100% — không phụ thuộc vào thời gian
+  const refundAmount = Math.round(Number(payment.Amount));
+  const percent = 100;
+
+  // 4. Xác định method theo PaymentMethod gốc (BR-36)
+  const refundMethod: RefundMethod =
+    payment.PaymentMethod === "Momo" ? "Momo" : "PayOSManual";
+
+  // 5. Sinh RefundCode
+  const refundCode = generateRefundCode(bookingId);
+
+  // 6. Tạo Refund record — createdBy = bookingOwnerId (chủ booking được hoàn tiền)
+  const refundId = await refundRepo.createRefundRecord({
+    bookingId,
+    paymentId: payment.PaymentID,
+    refundCode,
+    refundAmount,
+    refundMethod,
+    reason,
+    createdBy: bookingOwnerId,
+  });
+
+  // 7. Cancel booking VÀ giải phóng slot/schedule (PHẢI sau khi tạo refund record)
+  await refundRepo.cancelBookingForRefund(
+    bookingId,
+    `[Coach Cancel BR-54] ${reason.slice(0, 100)}`
+  );
+
+  // 8. Cập nhật trạng thái refund → PendingManual (chờ admin chuyển khoản)
+  //    MoMo có thể thử auto-refund, nhưng để đơn giản và an toàn, dùng PendingManual cho cả hai
+  await refundRepo.updateRefundStatus({
+    refundId,
+    status: "PendingManual",
+  });
+
+  // 9. AuditLog (BR-76)
+  void refundRepo.createAuditLog(
+    null,
+    "REFUND_COACH_CANCEL_BR54",
+    "Refunds",
+    refundId,
+    `Coach cancel BR-54: hoàn 100% (${refundAmount} VND) cho booking ${bookingId}. RefundCode: ${refundCode}`
+  );
+
+  return {
+    refundId,
+    refundCode,
+    bookingId,
+    paymentId: payment.PaymentID,
+    refundAmount,
+    refundPercent: percent,
+    refundMethod,
+    status: "PendingManual" as any,
+    message: `Yêu cầu hoàn tiền 100% (${refundAmount.toLocaleString("vi-VN")} VND) đã được ghi nhận (BR-54). Admin sẽ xử lý trong 24 giờ.`,
+  };
+}
+
 // ── Internal: MoMo auto-refund ─────────────────────────
 
 /**

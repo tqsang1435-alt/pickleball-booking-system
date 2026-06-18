@@ -116,17 +116,15 @@ export async function createPayment(
     );
   }
 
-  // 6. Tạo PaymentCode và ExpiredAt
+  // 6. Tạo PaymentCode
   const paymentCode = generatePaymentCode(input.bookingId);
-  const expiredAt = new Date(Date.now() + 10 * 60 * 1000); // +10 phút (BR-67)
 
   // 7. Insert Payments với Status = 'Pending'
-  const paymentId = await createPendingPayment({
+  const { paymentId, expiredAt } = await createPendingPayment({
     bookingId: input.bookingId,
     paymentMethod: input.paymentMethod,
     amount,
     paymentCode,
-    expiredAt,
   });
 
   // 8. Gọi Gateway SDK để tạo payment link

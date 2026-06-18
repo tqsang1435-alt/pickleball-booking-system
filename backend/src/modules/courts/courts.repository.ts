@@ -328,6 +328,30 @@ export async function updateCourtSlotStatus(slotId: number, status: string) {
   return result.recordset[0] ?? null;
 }
 
+export async function updateCourtSlotPrice(slotId: number, price: number) {
+  const pool = await getPool();
+  const result = await pool
+    .request()
+    .input("SlotID", sql.Int, slotId)
+    .input("Price", sql.Decimal(18, 2), price)
+    .query(`
+      UPDATE CourtSlots
+      SET Price = @Price,
+          UpdatedAt = GETDATE()
+      OUTPUT
+        INSERTED.SlotID,
+        INSERTED.CourtID,
+        INSERTED.SlotDate,
+        CONVERT(VARCHAR(5), INSERTED.StartTime, 108) AS StartTime,
+        CONVERT(VARCHAR(5), INSERTED.EndTime, 108) AS EndTime,
+        INSERTED.Price,
+        INSERTED.Status
+      WHERE SlotID = @SlotID
+    `);
+  return result.recordset[0] ?? null;
+}
+
+
 /**
  * @deprecated Không dùng trực tiếp — sử dụng softDeleteCourtSlot để tránh lỗi foreign key
  */

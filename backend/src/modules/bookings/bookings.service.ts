@@ -1,4 +1,4 @@
-import { requestRefund } from "@/modules/refunds/refunds.service";
+import { requestRefund, requestCoachCancelRefund } from "@/modules/refunds/refunds.service";
 import { createNotification } from "@/modules/notifications/notifications.service";
 import { createSystemLog } from "@/modules/systemlogs/systemlogs.service";
 import { CreateCourtBookingInput, CreateWalkInCourtBookingInput, CreateCoachBookingInput, CreateComboBookingInput, CancelBookingInput, CancelBookingResult, CheckInInput, CheckInResult } from "./bookings.type";
@@ -478,12 +478,14 @@ export async function cancelBookingByCoach(
   const cancelReason =
     "HLV chu dong huy - hoan 100% trong 24 gio (BR-54)";
 
-  await repoCancelBookingById(bookingId, cancelReason);
-
   const totalAmount = Number(booking.TotalAmount);
 
-  // BR-54: Hoan 100%
-  const refundRecord = await requestRefund(bookingId, totalAmount, cancelReason);
+  // BR-54: Hoàn 100% bất kể thời gian.
+  // Dùng requestCoachCancelRefund thay vì requestRefund vì:
+  //   - requestRefund tính hoàn theo thời gian (có thể < 100% hoặc throw nếu < 2h)
+  //   - requestCoachCancelRefund luôn hoàn 100% và tự cancel booking đúng thứ tự
+  // KHÔNG gọi repoCancelBookingById trước — requestCoachCancelRefund xử lý cancel nội bộ
+  const refundRecord = await requestCoachCancelRefund(bookingId, booking.UserID, cancelReason);
 
   // BR-54: Gui notification cho Player ngay lap tuc
   void createNotification({
@@ -534,9 +536,9 @@ export async function checkInBooking(
   }
 
   // BR-29
-  if (booking.Status !== "Confirmed") {
+  if (!["Confirmed", "Paid"].includes(booking.Status)) {
     throw new Error(
-      `Chi check-in duoc khi booking o trang thai Confirmed (hien tai: ${booking.Status}) (BR-29)`
+      `Chi check-in duoc khi booking o trang thai Confirmed/Paid (hien tai: ${booking.Status}) (BR-29)`
     );
   }
 
@@ -647,16 +649,17 @@ export async function mockPayBooking(
       .query(`
         SELECT b.BookingCode, b.BookingType, 
                CONVERT(VARCHAR(10), b.BookingDate, 103) AS BookingDate, 
-               CONVERT(VARCHAR(5), b.StartTime, 108) AS StartTime, 
-               CONVERT(VARCHAR(5), b.EndTime, 108) AS EndTime,
+               CONVERT(VARCHAR(5), bd.StartTime, 108) AS StartTime, 
+               CONVERT(VARCHAR(5), bd.EndTime, 108) AS EndTime,
                b.DiscountAmount,
                u.UserID, u.Email, u.FullName,
                c.CourtName,
                co.UserID AS CoachUserID
         FROM Bookings b
         JOIN Users u ON b.UserID = u.UserID
-        LEFT JOIN Courts c ON b.CourtID = c.CourtID
-        LEFT JOIN Coaches co ON b.CoachID = co.CoachID
+        LEFT JOIN BookingDetails bd ON bd.BookingID = b.BookingID
+        LEFT JOIN Courts c ON bd.CourtID = c.CourtID
+        LEFT JOIN Coaches co ON bd.CoachID = co.CoachID
         WHERE b.BookingID = @BookingID
       `);
 

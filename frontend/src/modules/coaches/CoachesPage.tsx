@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { getCoaches } from "@/services/coachApi";
-import { getImageUrl } from "@/utils/image";
+import { getCoachImageUrl } from "@/utils/image";
 import type { Coach } from "@/types/coach";
 import { formatCurrency } from "@/utils/formatCurrency";
 import StateBox from "@/components/common/StateBox";
@@ -226,7 +226,16 @@ export default function CoachesPage() {
 
                       <div className={styles.favorite}>♡</div>
 
-                      <img src={getImageUrl(coach.AvatarURL)} alt={coach.FullName} />
+                      <img 
+                        src={getCoachImageUrl(coach.AvatarURL)} 
+                        alt={coach.FullName} 
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          if (!target.src.includes('hlv1.png')) {
+                            target.src = "/images/coaches/hlv1.png";
+                          }
+                        }}
+                      />
 
                       <div className={styles.featuredBody}>
                         <h3>{coach.FullName}</h3>
@@ -280,7 +289,16 @@ export default function CoachesPage() {
                     {filtered.map((coach) => (
                       <article className={styles.card} key={coach.CoachID}>
                         <div className={styles.cardImage}>
-                          <img src={getImageUrl(coach.AvatarURL)} alt={coach.FullName} />
+                          <img 
+                            src={getCoachImageUrl(coach.AvatarURL)} 
+                            alt={coach.FullName} 
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              if (!target.src.includes('hlv1.png')) {
+                                target.src = "/images/coaches/hlv1.png";
+                              }
+                            }}
+                          />
                           <button type="button">♡</button>
                         </div>
 

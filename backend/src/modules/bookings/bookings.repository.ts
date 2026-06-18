@@ -399,7 +399,7 @@ export async function repoCreateCourtBooking(data: {
             ConfirmedByStaffID, Note
           )
           VALUES (
-            @NewBookingID, @PaymentMethod, @TotalAmount, @TransactionCode, @TransactionCode, 'Paid', GETDATE(), GETDATE(),
+            @NewBookingID, @PaymentMethod, @TotalAmount, 'PAY-' + CAST(@NewBookingID AS VARCHAR) + '-' + REPLACE(REPLACE(REPLACE(CONVERT(VARCHAR(19), GETDATE(), 120), '-', ''), ':', ''), ' ', ''), @TransactionCode, 'Paid', GETDATE(), GETDATE(),
             @BookedByStaffID, @WalkInNote
           );
 
@@ -708,7 +708,7 @@ export async function repoCheckInBookingById(bookingId: number): Promise<void> {
           CheckInTime = GETDATE(),
           UpdatedAt = GETDATE()
       WHERE BookingID = @BookingID
-        AND Status = 'Confirmed'
+        AND Status IN ('Confirmed', 'Paid')
     `);
 }
 
@@ -737,7 +737,7 @@ export async function repoMockPayBooking(
         SELECT @TotalAmount = TotalAmount FROM Bookings WHERE BookingID = @BookingID;
 
         INSERT INTO Payments (BookingID, PaymentMethod, Amount, PaymentCode, TransactionCode, Status, PaidAt, CreatedAt)
-        VALUES (@BookingID, @PaymentMethod, @TotalAmount, @TransactionCode, @TransactionCode, 'Paid', GETDATE(), GETDATE());
+        VALUES (@BookingID, @PaymentMethod, @TotalAmount, 'PAY-' + CAST(@BookingID AS VARCHAR) + '-' + REPLACE(REPLACE(REPLACE(CONVERT(VARCHAR(19), GETDATE(), 120), '-', ''), ':', ''), ' ', ''), @TransactionCode, 'Paid', GETDATE(), GETDATE());
 
         UPDATE Bookings
         SET Status = 'Confirmed', UpdatedAt = GETDATE()
@@ -864,7 +864,7 @@ export async function repoAutoCheckInExpired(): Promise<number> {
     SELECT b.BookingID
     FROM Bookings b
     JOIN BookingDetails bd ON bd.BookingID = b.BookingID
-    WHERE b.Status = 'Confirmed'
+    WHERE b.Status IN ('Confirmed', 'Paid')
       AND b.CheckInTime IS NULL
       -- Da het gio choi (EndTime da qua)
       AND CAST(CONCAT(CAST(b.BookingDate AS VARCHAR), ' ', CONVERT(VARCHAR(5), bd.EndTime, 108)) AS DATETIME)

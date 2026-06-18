@@ -73,10 +73,10 @@ INSERT INTO Users
 )
 VALUES
 (
-'Nguyen Minh Anh',
-'nguyen.minhanh@gmail.com',
+'System Administrator',
+'admin@pickleclub.com',
 '0905123001',
-'$2b$12$8wJwYQ8B7w3H5QmA8mP5u.6v3M2vNf5D1l0G5R8L2uK9vYzD2xF8W',
+'$2b$10$rqS1aQMr6fa8OHKrleiTt.MFVbq6zOUAF5TUDrA60gaUUXBSqo4hi',
 '/images/users/user1.jpg',
 'Male',
 '1998-05-12',
@@ -305,19 +305,19 @@ WHERE CourtID = 1
   
   
   
-  -- Admin: nguyen.minhanh@gmail.com
+  -- Admin: admin@pickleclub.com
 UPDATE Users
-SET PasswordHash = '$2b$12$FBiGSbka7rclxw.D7Ot50OeQ1Kmi4en/RECQut9Y.EtfkS3Z9bXEe'
-WHERE Email = 'nguyen.minhanh@gmail.com';
+SET PasswordHash = '$2b$10$rqS1aQMr6fa8OHKrleiTt.MFVbq6zOUAF5TUDrA60gaUUXBSqo4hi'
+WHERE Email = 'admin@pickleclub.com';
 
 -- Staff: hoang.thilinh@gmail.com
 UPDATE Users
-SET PasswordHash = '$2b$12$TRZ68aTO.4gdChQQ68pHAOJQBPwFBxiNUvxmh07sL/DkeMHP0DZre'
+SET PasswordHash = '$2b$10$ji9fWXOGhBGjcfM/tI6VgelYdoS8UMQ3dZzRSmrGx75cob3Jahsb6'
 WHERE Email = 'hoang.thilinh@gmail.com';
 
 -- Coach: le.quochuy@gmail.com và dang.mytien@gmail.com
 UPDATE Users
-SET PasswordHash = '$2b$12$KyQEE3HyFw1Ixp5WJjM2tullJCDcFNDhFbRkyvncDIWClo1fl/juu'
+SET PasswordHash = '$2b$10$uPhIyl5ANsdLm7lfPnH4VuwlrY4zbtnZSslPLjnU8S58/YpdhCjfS'
 WHERE Email IN ('le.quochuy@gmail.com', 'dang.mytien@gmail.com');
 
 -- =====================================

@@ -308,7 +308,24 @@ export async function onPaymentSuccess(bookingId: number) {
 // ── Admin APIs ────────────────────────────────────────────────────────────
 
 export async function getAllPromotions() {
-  return repo.findAllPromotions();
+  const promos = await repo.findAllPromotions();
+  return promos.map((p) => ({
+    promotionId: p.PromotionID,
+    promotionCode: p.PromotionCode,
+    promotionName: p.PromotionName,
+    description: p.Description,
+    discountType: p.DiscountType,
+    discountValue: p.DiscountValue,
+    maxDiscountAmount: p.MaxDiscountAmount,
+    minBookingAmount: p.MinOrderAmount,
+    startDate: p.StartDate,
+    endDate: p.EndDate,
+    applyScope: p.ApplyScope,
+    status: p.Status,
+    usageLimit: p.UsageLimit,
+    usedCount: p.UsedCount,
+    perUserLimit: p.PerUserLimit,
+  }));
 }
 
 export async function adminGetPromotions(filters: {

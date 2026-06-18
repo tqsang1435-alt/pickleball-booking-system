@@ -169,7 +169,7 @@ export async function repoGetExpiredConfirmedBookings(targetDate: string): Promi
         WHERE inner_bd.BookingID = b.BookingID
           AND inner_bd.CoachID IS NOT NULL
     ) coachDetail
-    WHERE b.BookingDate = @TargetDate AND b.Status = 'Confirmed'
+    WHERE b.BookingDate = @TargetDate AND b.Status IN ('Confirmed', 'Paid')
     GROUP BY
       b.BookingID,
       b.BookingCode,

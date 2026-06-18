@@ -298,7 +298,7 @@ export default function OperationsPage() {
             <tbody>
               {sorted.map(b => {
                 const isActioning = actioningId === b.bookingId;
-                const isConfirmed  = b.status === "Confirmed";
+                const isConfirmed  = b.status === "Confirmed" || b.status === "Paid";
                 const isCheckedIn  = b.status === "CheckedIn";
 
                 return (
