@@ -482,7 +482,7 @@ export async function getUnreadCounts(userId: number) {
         FROM UserGroups ug
         LEFT JOIN GroupMessages gm ON ug.GroupID = gm.GroupID
           AND gm.IsDeleted = 0
-          AND gm.SenderID <> @UserID
+          AND gm.SenderID != @UserID
         LEFT JOIN GroupMessageReads gmr ON ug.GroupID = gmr.GroupID AND gmr.UserID = @UserID
         WHERE gm.MessageID IS NOT NULL
           AND (gmr.LastReadAt IS NULL OR gm.CreatedAt > gmr.LastReadAt)

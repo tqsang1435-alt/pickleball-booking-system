@@ -107,6 +107,7 @@ export async function getTodayOperations(dateParam?: string | null): Promise<Tod
   bookings.forEach(b => {
     switch(b.status) {
       case 'Confirmed':
+      case 'Paid':
         summary.waitingCheckIn++;
         break;
       case 'CheckedIn':
@@ -136,8 +137,8 @@ export async function checkInOperation(bookingId: number, note?: string, actorId
   const booking = await repoGetBookingStatus(bookingId);
   if (!booking) throw new Error("Booking not found");
   
-  if (booking.Status !== 'Confirmed') {
-    throw new Error("Chỉ có thể check-in booking ở trạng thái Đã xác nhận.");
+  if (!['Confirmed', 'Paid'].includes(booking.Status)) {
+    throw new Error("Chỉ có thể check-in booking ở trạng thái Đã xác nhận hoặc Đã thanh toán.");
   }
 
   // Update status to CheckedIn and set CheckInTime
@@ -241,8 +242,8 @@ export async function noShowOperation(bookingId: number, note?: string, actorId?
   const booking = await repoGetBookingStatus(bookingId);
   if (!booking) throw new Error("Booking not found");
   
-  if (booking.Status !== 'Confirmed') {
-    throw new Error("Chỉ có thể đánh dấu No-show booking ở trạng thái Đã xác nhận.");
+  if (!['Confirmed', 'Paid'].includes(booking.Status)) {
+    throw new Error("Chỉ có thể đánh dấu No-show booking ở trạng thái Đã xác nhận hoặc Đã thanh toán.");
   }
 
   // Update status to NoShow

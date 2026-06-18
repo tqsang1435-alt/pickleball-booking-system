@@ -7,18 +7,18 @@ import { getAdminUsers } from "@/services/admin-users.service";
 import { getAdminPromotions } from "@/services/promotionApi";
 
 export type DashboardStats = {
-  todayRevenue: number;
-  todayBookingsCount: number;
-  activeCourts: number;
   totalCourts: number;
+  activeCourts: number;
+  todayBookingsCount: number;
   activeCoaches: number;
   activeStaff: number;
   activeCombos: number;
-  activePromotions?: number;
+  activePromotions: number;
+  todayRevenue: number;
   latestBookings: {
     BookingCode: string;
     PlayerName: string;
-    PlayerEmail: string | null;
+    PlayerEmail: string;
     PlayerPhone: string | null;
     ServiceType: string;
     CourtName: string | null;
@@ -30,8 +30,74 @@ export type DashboardStats = {
   }[];
 };
 
-export async function getDashboardStats(token: string): Promise<DashboardStats> {
-  const res = await apiClient<ApiResponse<DashboardStats>>("/api/admin/dashboard", {
+export type SaaSDashboardStats = {
+  revenue: number;
+  prevRevenue: number;
+  bookingsCount: number;
+  prevBookingsCount: number;
+  totalCourts: number;
+  activeCourts: number;
+  activeCoaches: number;
+  activeStaff: number;
+  activeCombos: number;
+  dailyRevenueTrend: {
+    date: string;
+    revenue: number;
+    bookingsCount: number;
+  }[];
+  hourlyBookingTrend: {
+    hour: number;
+    bookingsCount: number;
+  }[];
+  bookingStatusBreakdown: {
+    status: string;
+    count: number;
+  }[];
+  topCourts: {
+    courtId: number;
+    courtName: string;
+    bookingsCount: number;
+    totalRevenue: number;
+  }[];
+  topCoaches: {
+    coachId: number;
+    coachName: string;
+    bookingsCount: number;
+    totalRevenue: number;
+  }[];
+  topCombos: {
+    promotionId: number;
+    promotionCode: string;
+    promotionName: string;
+    usageCount: number;
+  }[];
+  paymentMethodAnalytics: {
+    paymentMethod: string;
+    count: number;
+    totalAmount: number;
+  }[];
+  newUsersCount: number;
+  activeUsersCount: number;
+  returningUsersCount: number;
+  recentActivities: {
+    activityType: string;
+    createdAt: string;
+    actorName: string;
+    eventCode: string;
+    description: string;
+    amountValue: number | null;
+  }[];
+};
+
+export async function getDashboardStats(
+  token: string,
+  startDate?: string,
+  endDate?: string
+): Promise<DashboardStats | SaaSDashboardStats> {
+  const url = startDate && endDate
+    ? `/api/admin/dashboard?startDate=${startDate}&endDate=${endDate}`
+    : "/api/admin/dashboard";
+  const res = await apiClient<ApiResponse<DashboardStats | SaaSDashboardStats>>(url, {
     token,
   });
   return res.data;
@@ -41,6 +107,7 @@ export type DashboardSnapshot = {
   stats: DashboardStats;
   dailyBookings: DailyBooking[];
   source: "api" | "collected" | "demo";
+  saaSDats?: SaaSDashboardStats;
 };
 
 function todayStr() {
@@ -175,6 +242,105 @@ const demoDailyBookings: DailyBooking[] = [
   },
 ];
 
+export function getDemoSaaSDashboardStats(): SaaSDashboardStats {
+  return {
+    revenue: 87560000,
+    prevRevenue: 73800000,
+    bookingsCount: 156,
+    prevBookingsCount: 142,
+    totalCourts: 10,
+    activeCourts: 10,
+    activeCoaches: 6,
+    activeStaff: 1,
+    activeCombos: 5,
+    dailyRevenueTrend: [
+      { date: "01/05", revenue: 11200000, bookingsCount: 18 },
+      { date: "02/05", revenue: 14500000, bookingsCount: 22 },
+      { date: "03/05", revenue: 12100000, bookingsCount: 19 },
+      { date: "04/05", revenue: 17400000, bookingsCount: 28 },
+      { date: "05/05", revenue: 13900000, bookingsCount: 20 },
+      { date: "06/05", revenue: 16200000, bookingsCount: 25 },
+      { date: "07/05", revenue: 12660000, bookingsCount: 24 }
+    ],
+    hourlyBookingTrend: [
+      { hour: 0, bookingsCount: 0 },
+      { hour: 2, bookingsCount: 1 },
+      { hour: 4, bookingsCount: 2 },
+      { hour: 6, bookingsCount: 4 },
+      { hour: 8, bookingsCount: 7 },
+      { hour: 10, bookingsCount: 11 },
+      { hour: 12, bookingsCount: 16 },
+      { hour: 14, bookingsCount: 13 },
+      { hour: 16, bookingsCount: 9 },
+      { hour: 18, bookingsCount: 8 },
+      { hour: 20, bookingsCount: 12 },
+      { hour: 22, bookingsCount: 7 }
+    ],
+    bookingStatusBreakdown: [
+      { status: "Completed", count: 112 },
+      { status: "Cancelled", count: 26 },
+      { status: "PendingPayment", count: 18 }
+    ],
+    topCourts: [
+      { courtId: 1, courtName: "Sunrise Court", bookingsCount: 45, totalRevenue: 9000000 },
+      { courtId: 2, courtName: "Galaxy Arena", bookingsCount: 32, totalRevenue: 6400000 },
+      { courtId: 3, courtName: "PickleStar Center", bookingsCount: 28, totalRevenue: 5600000 },
+      { courtId: 4, courtName: "Champion Court", bookingsCount: 24, totalRevenue: 4800000 },
+      { courtId: 5, courtName: "Victory Pickleball", bookingsCount: 18, totalRevenue: 3600000 }
+    ],
+    topCoaches: [
+      { coachId: 1, coachName: "Coach Huy", bookingsCount: 20, totalRevenue: 5000000 },
+      { coachId: 2, coachName: "Coach Linh", bookingsCount: 15, totalRevenue: 3750000 },
+      { coachId: 3, coachName: "Coach Nam", bookingsCount: 12, totalRevenue: 3000000 }
+    ],
+    topCombos: [
+      { promotionId: 1, promotionCode: "HELLO5", promotionName: "Khuyến mãi chào mừng", usageCount: 25 },
+      { promotionId: 2, promotionCode: "SUMMER20", promotionName: "Ưu đãi mùa hè", usageCount: 18 }
+    ],
+    paymentMethodAnalytics: [
+      { paymentMethod: "VietQR", count: 132, totalAmount: 73900640 },
+      { paymentMethod: "Tiền mặt (Khách vãng lai)", count: 24, totalAmount: 13659360 }
+    ],
+    newUsersCount: 35,
+    activeUsersCount: 120,
+    returningUsersCount: 85,
+    recentActivities: [
+      {
+        activityType: "Booking",
+        createdAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+        actorName: "Sunrise Court",
+        eventCode: "BK02567",
+        description: "Booking #BK02567 đã được xác nhận",
+        amountValue: 350000
+      },
+      {
+        activityType: "Refund",
+        createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+        actorName: "Nguyen Van A",
+        eventCode: "RF0123",
+        description: "Hoàn tiền #RF0123 thành công",
+        amountValue: 1250000
+      },
+      {
+        activityType: "Promotion",
+        createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+        actorName: "Admin",
+        eventCode: "HELLO5",
+        description: 'Combo "HELLO5" được sử dụng - Giảm 5%',
+        amountValue: null
+      },
+      {
+        activityType: "User",
+        createdAt: new Date(Date.now() - 120 * 60 * 1000).toISOString(),
+        actorName: "Nguyen Van A",
+        eventCode: "nguyenvana@example.com",
+        description: "Người chơi mới đăng ký",
+        amountValue: null
+      }
+    ]
+  };
+}
+
 function getDemoSnapshot(): DashboardSnapshot {
   const todayRevenue = demoDailyBookings
     .filter((booking) => ["Paid", "Confirmed", "CheckedIn", "Completed"].includes(booking.Status))
@@ -194,6 +360,7 @@ function getDemoSnapshot(): DashboardSnapshot {
       todayRevenue,
       latestBookings: demoDailyBookings.map(toLatestBooking),
     },
+    saaSDats: getDemoSaaSDashboardStats(),
   };
 }
 
@@ -201,7 +368,39 @@ export function getDemoDashboardSnapshot(): DashboardSnapshot {
   return getDemoSnapshot();
 }
 
-export async function getDashboardSnapshot(token: string): Promise<DashboardSnapshot> {
+export async function getDashboardSnapshot(
+  token: string,
+  startDate?: string,
+  endDate?: string
+): Promise<DashboardSnapshot> {
+  if (startDate && endDate) {
+    try {
+      const stats = await getDashboardStats(token, startDate, endDate) as SaaSDashboardStats;
+      return {
+        source: "api",
+        dailyBookings: [],
+        stats: {
+          totalCourts: stats.totalCourts,
+          activeCourts: stats.activeCourts,
+          todayBookingsCount: stats.bookingsCount,
+          activeCoaches: stats.activeCoaches,
+          activeStaff: stats.activeStaff,
+          activeCombos: stats.activeCombos,
+          activePromotions: 0,
+          todayRevenue: stats.revenue,
+          latestBookings: [],
+        },
+        saaSDats: stats,
+      };
+    } catch (err) {
+      console.error("Lỗi tải SaaS stats từ API, chuyển sang demo:", err);
+      return {
+        ...getDemoSnapshot(),
+        source: "demo",
+      };
+    }
+  }
+
   const [statsResult, dailyResult] = await Promise.allSettled([
     getDashboardStats(token),
     getDailyBookings(token, todayStr()),
@@ -209,7 +408,7 @@ export async function getDashboardSnapshot(token: string): Promise<DashboardSnap
 
   const baseStats =
     statsResult.status === "fulfilled"
-      ? statsResult.value
+      ? statsResult.value as DashboardStats
       : getEmptyStats();
   const dailyBookings = dailyResult.status === "fulfilled" ? dailyResult.value : [];
 
@@ -250,5 +449,6 @@ export async function getDashboardSnapshot(token: string): Promise<DashboardSnap
     source: isEmptyStats(baseStats) ? "collected" : "api",
     stats: collectedStats,
     dailyBookings,
+    saaSDats: getDemoSaaSDashboardStats(), // fallback/default
   };
 }

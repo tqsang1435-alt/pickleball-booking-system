@@ -19,6 +19,30 @@ export async function getDashboardStats() {
   return stats;
 }
 
+export async function getSaaSDashboardStats(startDate: string, endDate: string) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const diffTime = Math.abs(end.getTime() - start.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+  const prevStart = new Date(start);
+  prevStart.setDate(start.getDate() - diffDays);
+  const prevEnd = new Date(start);
+  prevEnd.setDate(start.getDate() - 1);
+
+  const prevStartDate = prevStart.toISOString().substring(0, 10);
+  const prevEndDate = prevEnd.toISOString().substring(0, 10);
+
+  const stats = await reportRepo.getSaaSDashboardStatsFromDB(
+    startDate,
+    endDate,
+    prevStartDate,
+    prevEndDate
+  );
+
+  return stats;
+}
+
 interface ReportColumn {
   key: string;
   label: string;

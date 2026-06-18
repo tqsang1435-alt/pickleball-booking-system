@@ -124,7 +124,7 @@ export async function expireOldPendingPayments(
  */
 export async function createPendingPayment(
   data: CreatePendingPaymentData
-): Promise<number> {
+): Promise<{ paymentId: number; expiredAt: Date }> {
   const pool = await getPool();
 
   const result = await pool
@@ -133,20 +133,22 @@ export async function createPendingPayment(
     .input("PaymentMethod", sql.NVarChar(50), data.paymentMethod)
     .input("Amount", sql.Decimal(18, 2), data.amount)
     .input("PaymentCode", sql.NVarChar(100), data.paymentCode)
-    .input("ExpiredAt", sql.DateTime, data.expiredAt)
     .query(`
       INSERT INTO Payments (
         BookingID, PaymentMethod, Amount, PaymentCode,
         Status, ExpiredAt, CreatedAt
       )
-      OUTPUT INSERTED.PaymentID
+      OUTPUT INSERTED.PaymentID, INSERTED.ExpiredAt
       VALUES (
         @BookingID, @PaymentMethod, @Amount, @PaymentCode,
-        'Pending', @ExpiredAt, GETDATE()
+        'Pending', DATEADD(MINUTE, 10, GETDATE()), GETDATE()
       )
     `);
 
-  return result.recordset[0].PaymentID as number;
+  return {
+    paymentId: result.recordset[0].PaymentID as number,
+    expiredAt: result.recordset[0].ExpiredAt as Date,
+  };
 }
 
 // ── Update gateway info after redirect/IPN ────────────
@@ -351,8 +353,8 @@ export async function markPaymentPaid(data: MarkPaymentPaidData): Promise<void> 
       return;
     }
 
-    // Không cho phép chuyển từ Failed/Expired/Refunded sang Paid
-    if (["Failed", "Expired", "Refunded"].includes(currentStatus)) {
+    // Không cho phép chuyển từ Refunded sang Paid (Failed/Expired được phép để xử lý webhook trễ)
+    if (["Refunded"].includes(currentStatus)) {
       await transaction.rollback();
       throw Object.assign(
         new Error(`Không thể chuyển payment từ ${currentStatus} sang Paid`),

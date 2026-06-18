@@ -54,11 +54,9 @@ export default function AdminLayout({
     { href: "/admin", label: "Tổng quan", icon: <DashboardIcon />, hideForStaff: true },
     { href: "/admin/courts", label: "Sân", icon: <CourtIcon />, hideForStaff: true },
     { href: "/admin/bookings", label: "Quản lý Booking", icon: <CalendarIcon /> },
-    { href: "/admin/refunds", label: "Quản lý Hoàn tiền", icon: <RevenueIcon /> },
-    { href: "/staff/operations", label: "Vận hành", icon: <OperationsIcon /> },
-
+    { href: "/admin/refunds", label: "Quản lý Hoàn tiền", icon: <RevenueIcon />, hideForStaff: true },
+    { href: "/staff/operations", label: "Vận hành hôm nay", icon: <OperationsIcon /> },
     { href: "/staff/bookings/walk-in", label: "Đặt sân trực tiếp", icon: <CalendarIcon />, staffOnly: true },
-
     { href: "/admin/combos", label: "Combo", icon: <ComboIcon />, hideForStaff: true },
     { href: "/admin/players", label: "Người chơi", icon: <PlayerIcon />, hideForStaff: true },
     { href: "/admin/coaches", label: "Coach", icon: <CoachIcon />, hideForStaff: true },
@@ -76,8 +74,12 @@ export default function AdminLayout({
       <aside className={styles.sidebar}>
         <div className={styles.logo}>
           <div className={styles.logoIcon}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="12" r="10" fill="currentColor" />
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M7 9a5 5 0 0 1 5-5h0a5 5 0 0 1 5 5v3a5 5 0 0 1-5 5h0a5 5 0 0 1-5-5V9z" fill="currentColor" opacity="0.2" />
+              <path d="M7 9a5 5 0 0 1 5-5h0a5 5 0 0 1 5 5v3a5 5 0 0 1-5 5h0a5 5 0 0 1-5-5V9z" />
+              <path d="M12 17v5" strokeWidth="3.5" />
+              <path d="M10 22h4" />
+              <circle cx="18" cy="6" r="2.5" fill="currentColor" stroke="none" />
             </svg>
           </div>
           <Link href="/" style={{ color: "inherit", textDecoration: "none" }}>

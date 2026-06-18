@@ -70,7 +70,6 @@ export type CreatePendingPaymentData = {
   paymentMethod: PaymentMethod;
   amount: number;
   paymentCode: string;
-  expiredAt: Date;
 };
 
 export type MarkPaymentPaidData = {

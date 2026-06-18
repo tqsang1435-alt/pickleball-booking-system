@@ -33,8 +33,12 @@ export function clearAuth() {
 export function getDashboardPath(role?: string): string {
   const normalizedRole = String(role || "").toLowerCase();
 
-  if (normalizedRole.includes("admin") || normalizedRole.includes("manager") || normalizedRole.includes("staff")) {
+  if (normalizedRole.includes("admin") || normalizedRole.includes("manager")) {
     return "/admin";
+  }
+
+  if (normalizedRole.includes("staff")) {
+    return "/staff/operations";
   }
 
   if (normalizedRole.includes("coach")) {

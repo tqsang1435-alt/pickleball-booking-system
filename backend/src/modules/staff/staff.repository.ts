@@ -11,7 +11,7 @@ export async function repoGetStaffDashboardStats(today: string): Promise<StaffDa
       SELECT COUNT(*) AS TotalBookings
       FROM Bookings
       WHERE BookingDate = @Today
-        AND Status IN ('Confirmed', 'CheckedIn', 'Completed')
+        AND Status IN ('Confirmed', 'Paid', 'CheckedIn', 'Completed')
     `);
 
   // Check-ins today
@@ -32,7 +32,7 @@ export async function repoGetStaffDashboardStats(today: string): Promise<StaffDa
       SELECT ISNULL(SUM(TotalAmount), 0) AS TodayRevenue
       FROM Bookings
       WHERE BookingDate = @Today
-        AND Status IN ('Confirmed', 'CheckedIn', 'Completed')
+        AND Status IN ('Confirmed', 'Paid', 'CheckedIn', 'Completed')
     `);
 
   // Upcoming bookings (next 2 hours) - Confirmed status
@@ -52,7 +52,7 @@ export async function repoGetStaffDashboardStats(today: string): Promise<StaffDa
       LEFT JOIN Courts c ON c.CourtID = bd.CourtID
       LEFT JOIN Users u ON u.UserID = b.UserID
       WHERE b.BookingDate = @Today
-        AND b.Status = 'Confirmed'
+        AND b.Status IN ('Confirmed', 'Paid')
         AND CAST(CONCAT(CAST(b.BookingDate AS VARCHAR(10)), ' ', CONVERT(VARCHAR(5), bd.StartTime, 108)) AS DATETIME)
             BETWEEN GETDATE() AND DATEADD(HOUR, 2, GETDATE())
       ORDER BY bd.StartTime ASC
@@ -75,7 +75,7 @@ export async function repoGetStaffDashboardStats(today: string): Promise<StaffDa
       LEFT JOIN Courts c ON c.CourtID = bd.CourtID
       LEFT JOIN Users u ON u.UserID = b.UserID
       WHERE b.BookingDate = @Today
-        AND b.Status = 'Confirmed'
+        AND b.Status IN ('Confirmed', 'Paid')
         AND ABS(DATEDIFF(MINUTE,
             CAST(CONCAT(CAST(b.BookingDate AS VARCHAR(10)), ' ', CONVERT(VARCHAR(5), bd.StartTime, 108)) AS DATETIME),
             GETDATE()
@@ -141,8 +141,8 @@ export async function repoMarkBookingNoShow(bookingId: number, staffId: number):
   }
 
   const booking = result.recordset[0];
-  if (booking.Status !== 'Confirmed') {
-    throw Object.assign(new Error("Chỉ có thể đánh dấu vắng mặt cho booking đang ở trạng thái Confirmed"), { statusCode: 400 });
+  if (!['Confirmed', 'Paid'].includes(booking.Status)) {
+    throw Object.assign(new Error("Chỉ có thể đánh dấu vắng mặt cho booking đang ở trạng thái Confirmed hoặc Paid"), { statusCode: 400 });
   }
 
   // Check that check-in window has fully passed (more than 15 min after start)
@@ -164,7 +164,7 @@ export async function repoMarkBookingNoShow(bookingId: number, staffId: number):
       SET Status = 'NoShow',
           UpdatedAt = GETDATE()
       WHERE BookingID = @BookingID
-        AND Status = 'Confirmed'
+        AND Status IN ('Confirmed', 'Paid')
     `);
 }
 
@@ -227,7 +227,7 @@ export async function repoGetCourtStatusBoard(today: string): Promise<CourtStatu
       JOIN BookingDetails bd ON bd.BookingID = b.BookingID
       LEFT JOIN Users u ON u.UserID = b.UserID
       WHERE b.BookingDate = @Today
-        AND b.Status IN ('CheckedIn', 'Confirmed')
+        AND b.Status IN ('CheckedIn', 'Confirmed', 'Paid')
         AND bd.CourtID IS NOT NULL
         AND CAST(CONCAT(CAST(b.BookingDate AS VARCHAR(10)), ' ', CONVERT(VARCHAR(5), bd.StartTime, 108)) AS DATETIME) <= DATEADD(MINUTE, 30, GETDATE())
         AND CAST(CONCAT(CAST(b.BookingDate AS VARCHAR(10)), ' ', CONVERT(VARCHAR(5), bd.EndTime, 108)) AS DATETIME) > GETDATE()
@@ -245,7 +245,7 @@ export async function repoGetCourtStatusBoard(today: string): Promise<CourtStatu
   return courtsResult.recordset.map((court: any) => {
     const bookings = bookingsByCourtId.get(court.CourtID) || [];
     const activeBooking = bookings.find((b: any) => b.Status === 'CheckedIn');
-    const upcomingBooking = bookings.find((b: any) => b.Status === 'Confirmed');
+    const upcomingBooking = bookings.find((b: any) => b.Status === 'Confirmed' || b.Status === 'Paid');
 
     let currentStatus: 'Available' | 'InUse' | 'Upcoming' | 'Empty' = 'Empty';
     if (activeBooking) currentStatus = 'InUse';

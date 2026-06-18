@@ -22,7 +22,8 @@ export async function getDashboardStatsFromDB() {
     -- Today Bookings Count
     SELECT COUNT(*) AS TodayBookingsCount
     FROM Bookings
-    WHERE BookingDate = @TargetDate;
+    WHERE BookingDate = @TargetDate
+      AND Status != 'PendingPayment';
 
     -- Active Courts
     SELECT COUNT(*) AS ActiveCourts FROM Courts WHERE Status = 'Available';
@@ -783,4 +784,304 @@ function parseReportFilters(
   } catch {
     return {};
   }
+}
+
+export async function getSaaSDashboardStatsFromDB(
+  startDate: string,
+  endDate: string,
+  prevStartDate: string,
+  prevEndDate: string
+) {
+  const pool = await getPool();
+
+  const query = `
+    -- 1. Current Revenue
+    SELECT ISNULL(SUM(TotalAmount), 0) AS Revenue
+    FROM Bookings
+    WHERE BookingDate BETWEEN @StartDate AND @EndDate
+      AND Status IN ('Confirmed', 'Completed', 'CheckedIn', 'Paid');
+
+    -- 2. Previous Revenue
+    SELECT ISNULL(SUM(TotalAmount), 0) AS PrevRevenue
+    FROM Bookings
+    WHERE BookingDate BETWEEN @PrevStartDate AND @PrevEndDate
+      AND Status IN ('Confirmed', 'Completed', 'CheckedIn', 'Paid');
+
+    -- 3. Current Bookings
+    SELECT COUNT(*) AS BookingsCount
+    FROM Bookings
+    WHERE BookingDate BETWEEN @StartDate AND @EndDate
+      AND Status != 'PendingPayment';
+
+    -- 4. Previous Bookings
+    SELECT COUNT(*) AS PrevBookingsCount
+    FROM Bookings
+    WHERE BookingDate BETWEEN @PrevStartDate AND @PrevEndDate
+      AND Status != 'PendingPayment';
+
+    -- 5. System Stats
+    SELECT COUNT(*) AS TotalCourts FROM Courts;
+    SELECT COUNT(*) AS ActiveCourts FROM Courts WHERE Status = 'Available';
+    
+    SELECT COUNT(*) AS ActiveCoaches 
+    FROM Coaches c
+    JOIN Users u ON c.UserID = u.UserID
+    WHERE c.Status = 'Approved' AND u.Status = 'Active';
+
+    SELECT COUNT(DISTINCT u.UserID) AS ActiveStaff 
+    FROM Users u
+    JOIN UserRoles ur ON u.UserID = ur.UserID
+    JOIN Roles r ON ur.RoleID = r.RoleID
+    WHERE r.RoleName = 'Staff' AND u.Status = 'Active';
+
+    SELECT COUNT(*) AS ActiveCombos 
+    FROM Promotions 
+    WHERE Status = 'Active';
+
+    -- 6. Daily Revenue Trend
+    SELECT 
+      CONVERT(VARCHAR(10), BookingDate, 23) AS DateStr,
+      ISNULL(SUM(TotalAmount), 0) AS Revenue,
+      COUNT(*) AS BookingsCount
+    FROM Bookings
+    WHERE BookingDate BETWEEN @StartDate AND @EndDate
+      AND Status IN ('Confirmed', 'Completed', 'CheckedIn', 'Paid')
+    GROUP BY BookingDate
+    ORDER BY BookingDate ASC;
+
+    -- 7. Hourly Booking Trend
+    SELECT 
+      DATEPART(HOUR, bd.StartTime) AS HourOfDay,
+      COUNT(DISTINCT b.BookingID) AS BookingsCount
+    FROM Bookings b
+    JOIN BookingDetails bd ON b.BookingID = bd.BookingID
+    WHERE b.BookingDate BETWEEN @StartDate AND @EndDate
+      AND b.Status != 'PendingPayment'
+    GROUP BY DATEPART(HOUR, bd.StartTime)
+    ORDER BY HourOfDay ASC;
+
+    -- 8. Booking Status Breakdown
+    SELECT Status, COUNT(*) AS Count
+    FROM Bookings
+    WHERE BookingDate BETWEEN @StartDate AND @EndDate
+      AND Status != 'PendingPayment'
+    GROUP BY Status;
+
+    -- 9. Top Courts
+    SELECT TOP 5
+      c.CourtID,
+      c.CourtName,
+      COUNT(DISTINCT b.BookingID) AS BookingsCount,
+      ISNULL(SUM(b.TotalAmount), 0) AS TotalRevenue
+    FROM Bookings b
+    JOIN BookingDetails bd ON b.BookingID = bd.BookingID
+    JOIN Courts c ON bd.CourtID = c.CourtID
+    WHERE b.BookingDate BETWEEN @StartDate AND @EndDate
+      AND b.Status IN ('Confirmed', 'Completed', 'CheckedIn', 'Paid')
+    GROUP BY c.CourtID, c.CourtName
+    ORDER BY BookingsCount DESC, TotalRevenue DESC;
+
+    -- 10. Top Coaches
+    SELECT TOP 5
+      co.CoachID,
+      u.FullName AS CoachName,
+      COUNT(DISTINCT b.BookingID) AS BookingsCount,
+      ISNULL(SUM(b.TotalAmount), 0) AS TotalRevenue
+    FROM Bookings b
+    JOIN BookingDetails bd ON b.BookingID = bd.BookingID
+    JOIN Coaches co ON bd.CoachID = co.CoachID
+    JOIN Users u ON co.UserID = u.UserID
+    WHERE b.BookingDate BETWEEN @StartDate AND @EndDate
+      AND b.Status IN ('Confirmed', 'Completed', 'CheckedIn', 'Paid')
+    GROUP BY co.CoachID, u.FullName
+    ORDER BY BookingsCount DESC, TotalRevenue DESC;
+
+    -- 11. Top Combos
+    SELECT TOP 5
+      p.PromotionID,
+      p.PromotionCode,
+      p.PromotionName,
+      COUNT(b.BookingID) AS UsageCount
+    FROM Bookings b
+    JOIN Promotions p ON b.PromotionID = p.PromotionID
+    WHERE b.BookingDate BETWEEN @StartDate AND @EndDate
+      AND b.Status IN ('Confirmed', 'Completed', 'CheckedIn', 'Paid')
+    GROUP BY p.PromotionID, p.PromotionCode, p.PromotionName
+    ORDER BY UsageCount DESC;
+
+    -- 12. Payment Method Analytics
+    SELECT 
+      CASE 
+        WHEN PaymentMethod IN ('Cash', 'Tiền mặt') THEN N'Tiền mặt (Khách vãng lai)'
+        ELSE N'VietQR'
+      END AS PaymentMethod,
+      COUNT(*) AS Count,
+      ISNULL(SUM(Amount), 0) AS TotalAmount
+    FROM Payments
+    WHERE CreatedAt BETWEEN CAST(@StartDate AS DATETIME) AND DATEADD(DAY, 1, CAST(@EndDate AS DATETIME))
+      AND Status = 'Paid'
+    GROUP BY 
+      CASE 
+        WHEN PaymentMethod IN ('Cash', 'Tiền mặt') THEN N'Tiền mặt (Khách vãng lai)'
+        ELSE N'VietQR'
+      END;
+
+    -- 13. New Users
+    SELECT COUNT(*) AS NewUsersCount
+    FROM Users
+    WHERE CreatedAt BETWEEN CAST(@StartDate AS DATETIME) AND DATEADD(DAY, 1, CAST(@EndDate AS DATETIME));
+
+    -- 14. Active Users
+    SELECT COUNT(DISTINCT UserID) AS ActiveUsersCount
+    FROM Bookings
+    WHERE BookingDate BETWEEN @StartDate AND @EndDate;
+
+    -- 15. Returning Users
+    SELECT COUNT(*) AS ReturningUsersCount
+    FROM (
+      SELECT UserID
+      FROM Bookings
+      GROUP BY UserID
+      HAVING COUNT(BookingID) >= 2
+    ) AS Sub;
+
+    -- 16. Recent Activities
+    SELECT TOP 10 * FROM (
+      SELECT 
+        'Booking' AS ActivityType,
+        b.CreatedAt,
+        u.FullName AS ActorName,
+        b.BookingCode AS EventCode,
+        N'Đơn hàng mới ' + b.BookingCode + N' (' + b.BookingType + N')' AS Description,
+        b.TotalAmount AS AmountValue
+      FROM Bookings b
+      JOIN Users u ON b.UserID = u.UserID
+      WHERE b.CreatedAt BETWEEN CAST(@StartDate AS DATETIME) AND DATEADD(DAY, 1, CAST(@EndDate AS DATETIME))
+
+      UNION ALL
+
+      SELECT 
+        'Payment' AS ActivityType,
+        p.CreatedAt,
+        u.FullName AS ActorName,
+        p.TransactionCode AS EventCode,
+        N'Thanh toán qua ' + p.PaymentMethod,
+        p.Amount AS AmountValue
+      FROM Payments p
+      JOIN Bookings b ON p.BookingID = b.BookingID
+      JOIN Users u ON b.UserID = u.UserID
+      WHERE p.Status = 'Paid'
+        AND p.CreatedAt BETWEEN CAST(@StartDate AS DATETIME) AND DATEADD(DAY, 1, CAST(@EndDate AS DATETIME))
+
+      UNION ALL
+
+      SELECT 
+        'Refund' AS ActivityType,
+        r.RequestedAt AS CreatedAt,
+        u.FullName AS ActorName,
+        b.BookingCode AS EventCode,
+        N'Hoàn tiền: ' + r.Reason AS Description,
+        r.RefundAmount AS AmountValue
+      FROM Refunds r
+      JOIN Bookings b ON r.BookingID = b.BookingID
+      JOIN Users u ON b.UserID = u.UserID
+      WHERE r.RequestedAt BETWEEN CAST(@StartDate AS DATETIME) AND DATEADD(DAY, 1, CAST(@EndDate AS DATETIME))
+
+      UNION ALL
+
+      SELECT 
+        'User' AS ActivityType,
+        u.CreatedAt,
+        u.FullName AS ActorName,
+        u.Email AS EventCode,
+        N'Người chơi đăng ký tài khoản mới' AS Description,
+        NULL AS AmountValue
+      FROM Users u
+      JOIN UserRoles ur ON u.UserID = ur.UserID
+      JOIN Roles r ON ur.RoleID = r.RoleID
+      WHERE r.RoleName = 'Player'
+        AND u.CreatedAt BETWEEN CAST(@StartDate AS DATETIME) AND DATEADD(DAY, 1, CAST(@EndDate AS DATETIME))
+
+      UNION ALL
+
+      SELECT 
+        'Promotion' AS ActivityType,
+        p.CreatedAt,
+        N'Admin' AS ActorName,
+        p.PromotionCode AS EventCode,
+        N'Tạo chương trình khuyến mãi: ' + p.PromotionName AS Description,
+        NULL AS AmountValue
+      FROM Promotions p
+      WHERE p.CreatedAt BETWEEN CAST(@StartDate AS DATETIME) AND DATEADD(DAY, 1, CAST(@EndDate AS DATETIME))
+    ) AS Activities
+    ORDER BY CreatedAt DESC;
+  `;
+
+  const result = await pool.request()
+    .input("StartDate", sql.Date, startDate)
+    .input("EndDate", sql.Date, endDate)
+    .input("PrevStartDate", sql.Date, prevStartDate)
+    .input("PrevEndDate", sql.Date, prevEndDate)
+    .query(query);
+
+  const rs = result.recordsets as any[][];
+
+  return {
+    revenue: Number(rs[0][0]?.Revenue || 0),
+    prevRevenue: Number(rs[1][0]?.PrevRevenue || 0),
+    bookingsCount: Number(rs[2][0]?.BookingsCount || 0),
+    prevBookingsCount: Number(rs[3][0]?.PrevBookingsCount || 0),
+    totalCourts: Number(rs[4][0]?.TotalCourts || 0),
+    activeCourts: Number(rs[5][0]?.ActiveCourts || 0),
+    activeCoaches: Number(rs[6][0]?.ActiveCoaches || 0),
+    activeStaff: Number(rs[7][0]?.ActiveStaff || 0),
+    activeCombos: Number(rs[8][0]?.ActiveCombos || 0),
+    dailyRevenueTrend: rs[9].map((row) => ({
+      date: row.DateStr,
+      revenue: Number(row.Revenue),
+      bookingsCount: Number(row.BookingsCount),
+    })),
+    hourlyBookingTrend: rs[10].map((row) => ({
+      hour: Number(row.HourOfDay),
+      bookingsCount: Number(row.BookingsCount),
+    })),
+    bookingStatusBreakdown: rs[11].map((row) => ({
+      status: row.Status,
+      count: Number(row.Count),
+    })),
+    topCourts: rs[12].map((row) => ({
+      courtId: Number(row.CourtID),
+      courtName: row.CourtName,
+      bookingsCount: Number(row.BookingsCount),
+      totalRevenue: Number(row.TotalRevenue),
+    })),
+    topCoaches: rs[13].map((row) => ({
+      coachId: Number(row.CoachID),
+      coachName: row.CoachName,
+      bookingsCount: Number(row.BookingsCount),
+      totalRevenue: Number(row.TotalRevenue),
+    })),
+    topCombos: rs[14].map((row) => ({
+      promotionId: Number(row.PromotionID),
+      promotionCode: row.PromotionCode,
+      promotionName: row.PromotionName,
+      usageCount: Number(row.UsageCount),
+    })),
+    paymentMethodAnalytics: rs[15].map((row) => ({
+      paymentMethod: row.PaymentMethod,
+      count: Number(row.Count),
+      totalAmount: Number(row.TotalAmount),
+    })),
+    newUsersCount: Number(rs[16][0]?.NewUsersCount || 0),
+    activeUsersCount: Number(rs[17][0]?.ActiveUsersCount || 0),
+    returningUsersCount: Number(rs[18][0]?.ReturningUsersCount || 0),
+    recentActivities: rs[19].map((row) => ({
+      activityType: row.ActivityType,
+      createdAt: row.CreatedAt ? row.CreatedAt.toISOString() : null,
+      actorName: row.ActorName,
+      eventCode: row.EventCode,
+      description: row.Description,
+      amountValue: row.AmountValue ? Number(row.AmountValue) : null,
+    })),
+  };
 }

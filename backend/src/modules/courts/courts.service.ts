@@ -223,6 +223,29 @@ export async function createCourtSlot(input: CreateCourtSlotInput) {
   // 4. Kiểm tra giá slot hợp lệ
   validatePrice(input.price, "Giá slot");
 
+  // Kiểm tra trùng slot (UNIQUE KEY UQ_CourtSlot) để cập nhật giá thay vì tạo mới
+  const existingSlots = await courtRepo.findCourtSlots(input.courtId, input.slotDate);
+  const duplicate = existingSlots.find((s) => {
+    if (s.Status === "Cancelled") return false;
+    const sStart = s.StartTime.substring(0, 5);
+    const sEnd = s.EndTime.substring(0, 5);
+    const inputStart = input.startTime.substring(0, 5);
+    const inputEnd = input.endTime.substring(0, 5);
+    return sStart === inputStart && sEnd === inputEnd;
+  });
+
+  if (duplicate) {
+    if (duplicate.Status === "Booked" || duplicate.Status === "Holding") {
+      throw new Error("Khung giờ này đã có người đặt hoặc giữ chỗ, không thể đổi giá");
+    }
+    // Cập nhật giá thay vì tạo mới
+    const updated = await courtRepo.updateCourtSlotPrice(duplicate.SlotID, input.price);
+    if (!updated) {
+      throw new Error("Không thể cập nhật giá cho slot đã tồn tại");
+    }
+    return updated;
+  }
+
   return courtRepo.createCourtSlot({
     courtId: input.courtId,
     slotDate: input.slotDate,

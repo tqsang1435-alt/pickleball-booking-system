@@ -307,7 +307,7 @@ export default function StaffDashboard() {
             <div className={styles.bookingList}>
               {allTodayBookings.slice(0, 10).map(b => {
                 const isActioning = actioningId === b.bookingId;
-                const isConfirmed = b.status === "Confirmed";
+                const isConfirmed = b.status === "Confirmed" || b.status === "Paid";
                 const isCheckedIn = b.status === "CheckedIn";
                 return (
                   <div

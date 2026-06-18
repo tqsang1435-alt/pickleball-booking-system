@@ -10,9 +10,7 @@ type Props = {
   error: string;
 };
 
-function getCoachImage(coach: Coach) {
-  return coach.AvatarURL || "/images/home/avatar-placeholder.jpg";
-}
+import { getCoachImageUrl } from "@/utils/image";
 
 export default function FeaturedCoaches({ coaches, loading, error }: Props) {
   return (
@@ -41,7 +39,16 @@ export default function FeaturedCoaches({ coaches, loading, error }: Props) {
           {coaches.map((coach) => (
             <article className={styles.coachCard} key={coach.CoachID}>
               <div className={styles.coachImage}>
-                <img src={getCoachImage(coach)} alt={coach.FullName} />
+                <img 
+                  src={getCoachImageUrl(coach.AvatarURL)} 
+                  alt={coach.FullName}
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (!target.src.includes('hlv1.png')) {
+                      target.src = "/images/coaches/hlv1.png";
+                    }
+                  }}
+                />
 
                 <button type="button">♡</button>
               </div>

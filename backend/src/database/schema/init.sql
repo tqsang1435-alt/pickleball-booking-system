@@ -331,7 +331,7 @@ CREATE TABLE Payments (
         CHECK (PaymentMethod IN ('PayOS', 'VNPay', 'Momo', 'Cash', 'BankTransfer')),
     Amount DECIMAL(18,2) NOT NULL CHECK (Amount >= 0),
 
-    TransactionCode NVARCHAR(100) UNIQUE,
+    TransactionCode NVARCHAR(100),
     GatewayResponse NVARCHAR(MAX),
 
     Status NVARCHAR(30) NOT NULL DEFAULT 'Pending'
@@ -674,3 +674,6 @@ VALUES
 ('Staff', N'Nhân viên', 'Active'),
 ('Coach', N'Huấn luyện viên', 'Active'),
 ('Player', N'Người chơi', 'Active');
+
+CREATE UNIQUE NONCLUSTERED INDEX UX_Payments_TransactionCode ON Payments(TransactionCode) 
+WHERE TransactionCode IS NOT NULL;
