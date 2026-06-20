@@ -74,6 +74,11 @@ const REPORT_COLUMNS: Record<
       width: 15,
     },
     {
+      key: "CourtName",
+      label: "Sân",
+      width: 22,
+    },
+    {
       key: "BookingCount",
       label: "Số lượt đặt",
       width: 18,
@@ -82,6 +87,21 @@ const REPORT_COLUMNS: Record<
       key: "TotalRevenue",
       label: "Tổng doanh thu",
       width: 22,
+    },
+    {
+      key: "DailyTotalRevenue",
+      label: "Tổng doanh thu cả ngày",
+      width: 24,
+    },
+    {
+      key: "AvgRevenuePerBooking",
+      label: "Doanh thu TB/lượt",
+      width: 22,
+    },
+    {
+      key: "RevenueSharePercent",
+      label: "Tỷ lệ doanh thu (%)",
+      width: 20,
     },
   ],
 
@@ -479,6 +499,22 @@ async function generateExcelReport(
     }
   );
 
+  applyReportNumberFormats(
+    worksheet,
+    columns
+  );
+
+  if (
+    input.reportType ===
+    "revenue"
+  ) {
+    addRevenueSummarySheet(
+      workbook,
+      input,
+      rows
+    );
+  }
+
   const infoSheet =
     workbook.addWorksheet(
       "Thông tin"
@@ -543,6 +579,227 @@ async function generateExcelReport(
     rowCount:
       rows.length,
   };
+}
+
+function applyReportNumberFormats(
+  worksheet: ExcelJS.Worksheet,
+  columns: ReportColumn[]
+) {
+  for (const column of columns) {
+    const excelColumn =
+      worksheet.getColumn(
+        column.key
+      );
+
+    if (
+      [
+        "TotalRevenue",
+        "DailyTotalRevenue",
+        "TotalAmount",
+        "TotalIncome",
+        "AvgRevenuePerBooking",
+      ].includes(column.key)
+    ) {
+      excelColumn.numFmt =
+        "#,##0";
+    }
+
+    if (
+      column.key ===
+      "RevenueSharePercent"
+    ) {
+      excelColumn.numFmt =
+        '0.00"%"';
+    }
+  }
+}
+
+function addRevenueSummarySheet(
+  workbook: ExcelJS.Workbook,
+  input: ExportReportDto,
+  rows: ReportDatabaseRow[]
+) {
+  const worksheet =
+    workbook.addWorksheet(
+      "Tổng quan"
+    );
+
+  const totalRevenue =
+    rows.reduce(
+      (sum, row) =>
+        sum +
+        Number(
+          row.TotalRevenue ?? 0
+        ),
+      0
+    );
+
+  const totalBookings =
+    rows.reduce(
+      (sum, row) =>
+        sum +
+        Number(
+          row.BookingCount ?? 0
+        ),
+      0
+    );
+
+  const averageRevenue =
+    totalBookings > 0
+      ? totalRevenue /
+        totalBookings
+      : 0;
+
+  const topCourt =
+    getTopRevenueItem(
+      groupRevenueRows(
+        rows,
+        "CourtName"
+      )
+    );
+
+  const topDate =
+    getTopRevenueItem(
+      groupRevenueRows(
+        rows,
+        "ReportDate"
+      )
+    );
+
+  worksheet.addRows([
+    [
+      "Báo cáo doanh thu",
+    ],
+    [],
+    [
+      "Từ ngày",
+      input.startDate,
+    ],
+    [
+      "Đến ngày",
+      input.endDate,
+    ],
+    [
+      "Trạng thái",
+      input.status ??
+        "Tất cả",
+    ],
+    [
+      "Tổng doanh thu",
+      totalRevenue,
+    ],
+    [
+      "Tổng lượt đặt",
+      totalBookings,
+    ],
+    [
+      "Doanh thu TB/lượt",
+      averageRevenue,
+    ],
+    [
+      "Sân doanh thu cao nhất",
+      topCourt?.name ?? "",
+      topCourt?.revenue ?? 0,
+      topCourt?.bookingCount ?? 0,
+    ],
+    [
+      "Ngày doanh thu cao nhất",
+      topDate?.name ?? "",
+      topDate?.revenue ?? 0,
+      topDate?.bookingCount ?? 0,
+    ],
+  ]);
+
+  worksheet.getCell("A1").font = {
+    bold: true,
+    size: 16,
+    color: {
+      argb: "FF111827",
+    },
+  };
+
+  worksheet.getColumn(1).width = 28;
+  worksheet.getColumn(2).width = 24;
+  worksheet.getColumn(3).width = 18;
+  worksheet.getColumn(4).width = 18;
+
+  worksheet.getColumn(1).font = {
+    bold: true,
+  };
+
+  [
+    "B6",
+    "B7",
+    "B8",
+    "C9",
+    "D9",
+    "C10",
+    "D10",
+  ].forEach((cell) => {
+    worksheet.getCell(cell).numFmt =
+      "#,##0";
+  });
+}
+
+function groupRevenueRows(
+  rows: ReportDatabaseRow[],
+  key: string
+) {
+  const result = new Map<
+    string,
+    {
+      name: string;
+      revenue: number;
+      bookingCount: number;
+    }
+  >();
+
+  for (const row of rows) {
+    const name =
+      String(
+        row[key] ?? ""
+      );
+
+    const current =
+      result.get(name) ?? {
+        name,
+        revenue: 0,
+        bookingCount: 0,
+      };
+
+    current.revenue +=
+      Number(
+        row.TotalRevenue ?? 0
+      );
+
+    current.bookingCount +=
+      Number(
+        row.BookingCount ?? 0
+      );
+
+    result.set(
+      name,
+      current
+    );
+  }
+
+  return Array.from(
+    result.values()
+  );
+}
+
+function getTopRevenueItem(
+  rows: Array<{
+    name: string;
+    revenue: number;
+    bookingCount: number;
+  }>
+) {
+  return rows.sort(
+    (a, b) =>
+      b.revenue -
+      a.revenue
+  )[0];
 }
 
 function getReportName(

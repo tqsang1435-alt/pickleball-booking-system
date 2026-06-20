@@ -4,15 +4,28 @@ import { useReports } from "./hooks/useReports";
 import ReportFilter from "./components/ReportFilter";
 import ReportHistoryTable from "./components/ReportHistoryTable";
 import styles from "./ReportsManagement.module.css";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 export default function ReportsManagement() {
   const {
     history,
     error,
+    revenueStats,
+    revenueRange,
     isExporting,
     isLoadingHistory,
+    isLoadingRevenueStats,
     exportReport,
     loadHistory,
+    loadRevenueStats,
   } = useReports();
 
   const successCount = history.filter((item) => item.status === "SUCCESS").length;
@@ -21,6 +34,31 @@ export default function ReportsManagement() {
     .filter((item) => item.status === "SUCCESS")
     .reduce((sum, item) => sum + (item.rowCount || 0), 0);
   const successRate = history.length > 0 ? Math.round((successCount / history.length) * 100) : 0;
+  const totalCourtRevenue =
+    revenueStats?.topCourts.reduce(
+      (sum, court) => sum + court.totalRevenue,
+      0
+    ) || 0;
+  const topCourts =
+    revenueStats?.topCourts ?? [];
+  const dailyRevenue =
+    revenueStats?.dailyRevenueTrend ?? [];
+
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+      maximumFractionDigits: 0,
+    }).format(value);
+
+  const formatDate = (value: string) => {
+    if (!value) return "";
+    const parts = value.split("-");
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}`;
+    }
+    return value;
+  };
 
   return (
     <main className={styles.page}>
@@ -84,6 +122,119 @@ export default function ReportsManagement() {
           <p className={styles.statCardLabel}>Tổng số dòng</p>
           <h2 className={styles.statCardValue}>{totalRows.toLocaleString()}</h2>
           <p className={styles.statCardDescription}>Dữ liệu đã xuất</p>
+        </div>
+      </section>
+
+      {/* Revenue Overview */}
+      <section className={styles.revenueSection}>
+        <div className={styles.revenueSectionHeader}>
+          <div>
+            <p className={styles.sectionEyebrow}>Báo cáo doanh thu</p>
+            <h2>Thống kê doanh thu 7 ngày gần nhất</h2>
+            <span>
+              {revenueRange.startDate} - {revenueRange.endDate}
+            </span>
+          </div>
+          <button
+            type="button"
+            disabled={isLoadingRevenueStats}
+            onClick={() => void loadRevenueStats()}
+            className={styles.secondaryRefreshBtn}
+          >
+            <RefreshIcon spinning={isLoadingRevenueStats} />
+            {isLoadingRevenueStats ? "Đang tải..." : "Làm mới"}
+          </button>
+        </div>
+
+        <div className={styles.revenueKpiGrid}>
+          <div className={styles.revenueKpiCard}>
+            <p>Tổng doanh thu</p>
+            <strong>{formatCurrency(revenueStats?.revenue ?? 0)}</strong>
+            <span>Doanh thu từ các booking đã thanh toán/xác nhận</span>
+          </div>
+          <div className={styles.revenueKpiCard}>
+            <p>Tổng lượt đặt</p>
+            <strong>{(revenueStats?.bookingsCount ?? 0).toLocaleString("vi-VN")}</strong>
+            <span>Số booking trong khoảng thời gian thống kê</span>
+          </div>
+        </div>
+
+        <div className={styles.revenueDetailGrid}>
+          <div className={styles.revenuePanel}>
+            <div className={styles.revenuePanelHeader}>
+              <h3>Doanh thu theo ngày</h3>
+              <span>{dailyRevenue.length} ngày có dữ liệu</span>
+            </div>
+            <div className={styles.chartBox}>
+              {dailyRevenue.length === 0 ? (
+                <p className={styles.emptyText}>Chưa có dữ liệu doanh thu theo ngày.</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={dailyRevenue} margin={{ top: 12, right: 12, left: -18, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                    <XAxis
+                      dataKey="date"
+                      tickFormatter={formatDate}
+                      tickLine={false}
+                      axisLine={false}
+                      stroke="#6B7280"
+                      fontSize={12}
+                    />
+                    <YAxis
+                      tickFormatter={(value) => `${Number(value) / 1000000}M`}
+                      tickLine={false}
+                      axisLine={false}
+                      stroke="#6B7280"
+                      fontSize={12}
+                    />
+                    <Tooltip
+                      formatter={(value) => [formatCurrency(Number(value ?? 0)), "Doanh thu"]}
+                      labelFormatter={(label) => `Ngày ${formatDate(String(label))}`}
+                    />
+                    <Bar dataKey="revenue" fill="#10B981" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
+          <div className={styles.revenuePanel}>
+            <div className={styles.revenuePanelHeader}>
+              <h3>Doanh thu theo sân</h3>
+              <span>Top sân có doanh thu cao</span>
+            </div>
+            <div className={styles.courtRevenueList}>
+              {topCourts.length === 0 ? (
+                <p className={styles.emptyText}>Chưa có dữ liệu doanh thu theo sân.</p>
+              ) : (
+                topCourts.map((court, index) => {
+                  const percent =
+                    totalCourtRevenue > 0
+                      ? Math.round((court.totalRevenue / totalCourtRevenue) * 100)
+                      : 0;
+
+                  return (
+                    <div key={court.courtId} className={styles.courtRevenueItem}>
+                      <div className={styles.courtRevenueTop}>
+                        <div>
+                          <span className={styles.courtRank}>#{index + 1}</span>
+                          <strong>{court.courtName}</strong>
+                        </div>
+                        <span>{formatCurrency(court.totalRevenue)}</span>
+                      </div>
+                      <div className={styles.courtRevenueMeta}>
+                        <span>{court.bookingsCount} lượt đặt</span>
+                        <span>{percent}% doanh thu sân</span>
+                      </div>
+                      <div className={styles.courtProgress}>
+                        <div style={{ width: `${percent}%` }} />
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
         </div>
       </section>
 

@@ -195,43 +195,109 @@ async function getRevenueReportRows(
 
   const result =
     await request.query(`
-      SELECT
-        CONVERT(
-          VARCHAR(10),
+      WITH RevenueByCourt AS (
+        SELECT DISTINCT
+          b.BookingID,
           b.BookingDate,
-          23
-        ) AS ReportDate,
+          c.CourtID,
+          c.CourtName,
+          bd.CourtFee
+        FROM Bookings b
+        INNER JOIN BookingDetails bd
+          ON b.BookingID =
+            bd.BookingID
+        INNER JOIN Courts c
+          ON bd.CourtID =
+            c.CourtID
+        WHERE
+          b.BookingDate >= @StartDate
 
-        COUNT(*) AS BookingCount,
+          AND b.BookingDate <= @EndDate
+
+          ${statusCondition}
+      ),
+
+      RevenueSummary AS (
+        SELECT
+          CONVERT(
+            VARCHAR(10),
+            BookingDate,
+            23
+          ) AS ReportDate,
+
+          CourtName,
+
+          COUNT(DISTINCT BookingID) AS BookingCount,
+
+          CAST(
+            ISNULL(
+              SUM(CourtFee),
+              0
+            )
+            AS DECIMAL(18, 2)
+          ) AS TotalRevenue
+
+        FROM RevenueByCourt
+
+        GROUP BY
+          BookingDate,
+          CourtID,
+          CourtName
+      ),
+
+      RevenueWithTotal AS (
+        SELECT
+          *,
+          SUM(TotalRevenue) OVER (
+            PARTITION BY ReportDate
+          ) AS DailyTotalRevenue,
+          SUM(TotalRevenue) OVER () AS GrandTotalRevenue
+        FROM RevenueSummary
+      )
+
+      SELECT
+        ReportDate,
+
+        CourtName,
+
+        BookingCount,
+
+        TotalRevenue,
+
+        DailyTotalRevenue,
 
         CAST(
-          ISNULL(
-            SUM(b.TotalAmount),
-            0
-          )
+          CASE
+            WHEN BookingCount > 0
+              THEN TotalRevenue / BookingCount
+            ELSE 0
+          END
           AS DECIMAL(18, 2)
-        ) AS TotalRevenue
+        ) AS AvgRevenuePerBooking,
 
-      FROM Bookings b
+        CAST(
+          CASE
+            WHEN GrandTotalRevenue > 0
+              THEN TotalRevenue * 100.0 / GrandTotalRevenue
+            ELSE 0
+          END
+          AS DECIMAL(9, 2)
+        ) AS RevenueSharePercent
 
-      WHERE
-        b.BookingDate >= @StartDate
-
-        AND b.BookingDate <= @EndDate
-
-        ${statusCondition}
-
-      GROUP BY
-        b.BookingDate
+      FROM RevenueWithTotal
 
       ORDER BY
-        b.BookingDate ASC;
+        ReportDate ASC,
+        CourtName ASC;
     `);
 
   return result.recordset.map(
     (row: any) => ({
       ReportDate:
         row.ReportDate ?? "",
+
+      CourtName:
+        row.CourtName ?? "",
 
       BookingCount:
         Number(
@@ -241,6 +307,21 @@ async function getRevenueReportRows(
       TotalRevenue:
         Number(
           row.TotalRevenue ?? 0
+        ),
+
+      DailyTotalRevenue:
+        Number(
+          row.DailyTotalRevenue ?? 0
+        ),
+
+      AvgRevenuePerBooking:
+        Number(
+          row.AvgRevenuePerBooking ?? 0
+        ),
+
+      RevenueSharePercent:
+        Number(
+          row.RevenueSharePercent ?? 0
         ),
     })
   );
