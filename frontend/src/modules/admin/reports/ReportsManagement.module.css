@@ -124,6 +124,238 @@
   margin: 8px 0 0 0;
 }
 
+/* Revenue Overview */
+.revenueSection {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.revenueSectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.sectionEyebrow {
+  color: #059669;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin: 0 0 6px 0;
+  text-transform: uppercase;
+}
+
+.revenueSectionHeader h2 {
+  color: #111827;
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0 0 6px 0;
+}
+
+.revenueSectionHeader span {
+  color: #6B7280;
+  font-size: 14px;
+}
+
+.secondaryRefreshBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #D1D5DB;
+  border-radius: 12px;
+  background: #FFFFFF;
+  color: #374151;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 14px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.secondaryRefreshBtn:hover {
+  border-color: #10B981;
+  color: #059669;
+}
+
+.secondaryRefreshBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.secondaryRefreshBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.revenueKpiGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.revenueKpiCard {
+  background: linear-gradient(135deg, #F0FDF4 0%, #ECFDF5 100%);
+  border: 1px solid #BBF7D0;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.revenueKpiCard p {
+  color: #047857;
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+  text-transform: uppercase;
+}
+
+.revenueKpiCard strong {
+  color: #064E3B;
+  display: block;
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.revenueKpiCard span {
+  color: #6B7280;
+  display: block;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.revenueDetailGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
+  gap: 20px;
+}
+
+.revenuePanel {
+  border: 1px solid #E5E7EB;
+  border-radius: 18px;
+  padding: 20px;
+  min-width: 0;
+}
+
+.revenuePanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.revenuePanelHeader h3 {
+  color: #111827;
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.revenuePanelHeader span {
+  color: #6B7280;
+  font-size: 13px;
+}
+
+.chartBox {
+  min-height: 260px;
+}
+
+.courtRevenueList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.courtRevenueItem {
+  border-bottom: 1px solid #F3F4F6;
+  padding-bottom: 14px;
+}
+
+.courtRevenueItem:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.courtRevenueTop,
+.courtRevenueMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.courtRevenueTop div {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.courtRevenueTop strong {
+  color: #111827;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.courtRevenueTop span:last-child {
+  color: #047857;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.courtRank {
+  background: #D1FAE5;
+  border-radius: 999px;
+  color: #047857;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 3px 8px;
+}
+
+.courtRevenueMeta {
+  color: #6B7280;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.courtProgress {
+  background: #E5E7EB;
+  border-radius: 999px;
+  height: 8px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.courtProgress div {
+  background: linear-gradient(90deg, #10B981 0%, #059669 100%);
+  border-radius: inherit;
+  height: 100%;
+}
+
+.emptyText {
+  align-items: center;
+  color: #6B7280;
+  display: flex;
+  font-size: 14px;
+  justify-content: center;
+  min-height: 180px;
+  text-align: center;
+}
+
 /* Panel */
 .panel {
   background: #FFFFFF;
@@ -170,7 +402,7 @@
 /* Error Alert */
 .error {
   display: flex;
-  align-items: start;
+  align-items: flex-start;
   gap: 16px;
   padding: 20px;
   background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%);
@@ -315,6 +547,25 @@
   .panel,
   .historySection {
     padding: 20px;
+  }
+
+  .revenueSection {
+    padding: 20px;
+  }
+
+  .revenueSectionHeader,
+  .revenuePanelHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .revenueKpiGrid,
+  .revenueDetailGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .revenueKpiCard strong {
+    font-size: 26px;
   }
 
   .headerTitle {

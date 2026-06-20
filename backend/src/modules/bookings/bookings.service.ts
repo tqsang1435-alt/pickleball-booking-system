@@ -41,6 +41,10 @@ export async function createCourtBooking(input: CreateCourtBookingInput) {
         throw new Error("Vui long nhap ten va so dien thoai khach vang lai");
       }
 
+      if (!/^\d{10}$/.test(input.guestPhone.trim())) {
+        throw new Error("So dien thoai khach vang lai phai gom dung 10 chu so");
+      }
+
       const guestUser = await getOrCreateWalkInGuestUser();
       if (!guestUser) throw new Error("Khong the tao tai khoan khach vang lai");
       bookingUserId = Number(guestUser.UserID);

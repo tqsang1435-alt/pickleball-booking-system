@@ -11,10 +11,36 @@ import {
   getAdminReportHistory,
 } from "@/services/admin-reports.service";
 
+import {
+  getDashboardStats,
+  getDemoSaaSDashboardStats,
+  type SaaSDashboardStats,
+} from "@/services/adminApi";
+
+import {
+  getToken,
+} from "@/utils/authStorage";
+
 import type {
   ReportFilterValue,
   ReportHistoryItem,
 } from "../types";
+
+function getDefaultRevenueRange() {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - 6);
+
+  const toYmd = (date: Date) =>
+    date.toLocaleDateString("sv-SE", {
+      timeZone: "Asia/Ho_Chi_Minh",
+    });
+
+  return {
+    startDate: toYmd(start),
+    endDate: toYmd(end),
+  };
+}
 
 export function useReports() {
   const [
@@ -40,6 +66,76 @@ export function useReports() {
   ] = useState<
     string | null
   >(null);
+
+  const [
+    revenueStats,
+    setRevenueStats,
+  ] = useState<
+    SaaSDashboardStats | null
+  >(null);
+
+  const [
+    isLoadingRevenueStats,
+    setIsLoadingRevenueStats,
+  ] = useState(false);
+
+  const [
+    revenueRange,
+  ] = useState(
+    getDefaultRevenueRange
+  );
+
+  const loadRevenueStats =
+    useCallback(
+      async () => {
+        try {
+          setIsLoadingRevenueStats(
+            true
+          );
+
+          const token =
+            getToken();
+
+          if (!token) {
+            setRevenueStats(
+              getDemoSaaSDashboardStats()
+            );
+            return;
+          }
+
+          const result =
+            await getDashboardStats(
+              token,
+              revenueRange.startDate,
+              revenueRange.endDate
+            );
+
+          if (
+            "dailyRevenueTrend" in result
+          ) {
+            setRevenueStats(
+              result
+            );
+          } else {
+            setRevenueStats(
+              getDemoSaaSDashboardStats()
+            );
+          }
+        } catch {
+          setRevenueStats(
+            getDemoSaaSDashboardStats()
+          );
+        } finally {
+          setIsLoadingRevenueStats(
+            false
+          );
+        }
+      },
+      [
+        revenueRange.endDate,
+        revenueRange.startDate,
+      ]
+    );
 
   const loadHistory =
     useCallback(
@@ -123,14 +219,19 @@ export function useReports() {
 
   useEffect(() => {
     void loadHistory();
-  }, [loadHistory]);
+    void loadRevenueStats();
+  }, [loadHistory, loadRevenueStats]);
 
   return {
     history,
     error,
+    revenueStats,
+    revenueRange,
     isExporting,
     isLoadingHistory,
+    isLoadingRevenueStats,
     exportReport,
     loadHistory,
+    loadRevenueStats,
   };
 }

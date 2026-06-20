@@ -10,6 +10,7 @@ import type { Court } from "@/types/court";
 import type { ApiResponse } from "@/types/api";
 import { getToken, getUser } from "@/utils/authStorage";
 import { formatCurrency } from "@/utils/formatCurrency";
+import { isValidPhone } from "@/utils/validators";
 import styles from "./WalkInBooking.module.css";
 
 type PaymentMethod = "Cash" | "BankTransfer";
@@ -30,6 +31,14 @@ function formatTime(time: string) {
   if (!time) return "";
   if (time.includes("T")) return time.split("T")[1].slice(0, 5);
   return time.slice(0, 5);
+}
+
+function getPaymentMethodLabel(method: PaymentMethod) {
+  return method === "Cash" ? "tiền mặt" : "chuyển khoản trực tiếp";
+}
+
+function normalizePhoneInput(value: string) {
+  return value.replace(/\D/g, "").slice(0, 10);
 }
 
 export default function WalkInBookingPage() {
@@ -56,6 +65,7 @@ export default function WalkInBookingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [lastBookedTotal, setLastBookedTotal] = useState<number | null>(null);
 
   useEffect(() => {
     const t = getToken();
@@ -91,6 +101,7 @@ export default function WalkInBookingPage() {
       if (!courtId || !bookingDate) {
         setSlots([]);
         setSlotId("");
+        setLastBookedTotal(null);
         return;
       }
 
@@ -99,6 +110,7 @@ export default function WalkInBookingPage() {
         const result = await getCourtSlots(Number(courtId), bookingDate);
         setSlots(result.filter((slot) => slot.Status === "Available"));
         setSlotId("");
+        setLastBookedTotal(null);
       } catch (err) {
         setSlots([]);
         setError(err instanceof Error ? err.message : "Không thể tải khung giờ.");
@@ -148,6 +160,11 @@ export default function WalkInBookingPage() {
     }
 
     try {
+      if (customerMode === "guest" && !isValidPhone(guestPhone.trim())) {
+        setError("Số điện thoại khách vãng lai phải gồm đúng 10 chữ số.");
+        return;
+      }
+
       setSubmitting(true);
       const booking = await createWalkInBooking(token, {
         courtId: Number(courtId),
@@ -160,7 +177,10 @@ export default function WalkInBookingPage() {
         paymentMethod,
       });
 
-      setSuccess(`Đã tạo booking ${booking.BookingCode} và ghi nhận ${paymentMethod}.`);
+      setSuccess(
+        `Đã đặt lịch thành công. Mã booking: ${booking.BookingCode}. Đã ghi nhận thanh toán bằng ${getPaymentMethodLabel(paymentMethod)}.`
+      );
+      setLastBookedTotal(Number(selectedSlot.Price));
       setSlotId("");
       setGuestName("");
       setGuestPhone("");
@@ -209,7 +229,14 @@ export default function WalkInBookingPage() {
             </label>
             <label className={styles.full}>
               Khung giờ còn trống
-              <select value={slotId} onChange={(e) => setSlotId(e.target.value ? Number(e.target.value) : "")} disabled={!courtId || loading}>
+              <select
+                value={slotId}
+                onChange={(e) => {
+                  setSlotId(e.target.value ? Number(e.target.value) : "");
+                  setLastBookedTotal(null);
+                }}
+                disabled={!courtId || loading}
+              >
                 <option value="">Chọn khung giờ</option>
                 {slots.map((slot) => (
                   <option key={slot.SlotID} value={slot.SlotID}>
@@ -240,7 +267,14 @@ export default function WalkInBookingPage() {
               </label>
               <label>
                 Số điện thoại
-                <input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="0901234567" />
+                <input
+                  value={guestPhone}
+                  onChange={(e) => setGuestPhone(normalizePhoneInput(e.target.value))}
+                  placeholder="0901234567"
+                  inputMode="numeric"
+                  pattern="[0-9]{10}"
+                  maxLength={10}
+                />
               </label>
             </div>
           ) : (
@@ -278,7 +312,13 @@ export default function WalkInBookingPage() {
 
           <div className={styles.totalBox}>
             <span>Tổng tiền</span>
-            <strong>{selectedSlot ? formatCurrency(Number(selectedSlot.Price)) : "Chưa chọn giờ"}</strong>
+            <strong>
+              {selectedSlot
+                ? formatCurrency(Number(selectedSlot.Price))
+                : lastBookedTotal !== null
+                  ? formatCurrency(lastBookedTotal)
+                  : "Chưa chọn giờ"}
+            </strong>
           </div>
 
           {error && <div className={styles.error}>{error}</div>}
