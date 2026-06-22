@@ -1,0 +1,78 @@
+{
+  "version": "1.0",
+  "booking_policy": {
+    "court_booking_flow": [
+      "Player chọn sân và khung giờ.",
+      "Hệ thống kiểm tra slot realtime.",
+      "Slot được giữ tối đa 10 phút.",
+      "Player thanh toán online.",
+      "Payment Gateway gửi webhook.",
+      "Webhook hợp lệ thì booking chuyển Paid/Confirmed và slot chuyển Booked.",
+      "Hệ thống gửi thông báo/email xác nhận."
+    ],
+    "combo_booking_flow": [
+      "Player chọn sân và Coach đồng thời.",
+      "Hệ thống kiểm tra sân còn trống, Coach còn rảnh và Coach hỗ trợ khung giờ đó.",
+      "Hold đồng thời sân và Coach tối đa 10 phút.",
+      "Player thanh toán online.",
+      "Booking confirmed, slot Booked, CoachSchedule chuyển Busy.",
+      "Gửi thông báo cho Player và Coach."
+    ],
+    "slot_status_flow": [
+      "Available",
+      "Holding",
+      "Booked",
+      "Completed",
+      "Cancelled",
+      "No-show"
+    ],
+    "booking_status_flow": [
+      "Pending Payment",
+      "Paid",
+      "Confirmed",
+      "Completed",
+      "Cancelled",
+      "Refunded",
+      "No-show"
+    ]
+  },
+  "cancellation_policy": [
+    {
+      "condition": "Hủy trước giờ chơi >= 12 giờ",
+      "refund": "100%",
+      "note": "Refund về tài khoản ban đầu, tối đa 7 ngày làm việc."
+    },
+    {
+      "condition": "Hủy trước giờ chơi < 12 giờ",
+      "refund": "70%",
+      "note": "Trừ 30%, áp dụng cho Court Booking và Combo."
+    },
+    {
+      "condition": "Hủy trước giờ chơi < 2 giờ",
+      "refund": "0%",
+      "note": "Không hoàn tiền."
+    },
+    {
+      "condition": "Coach chủ động hủy",
+      "refund": "100%",
+      "note": "Coach bị ghi nhận vi phạm, refund xử lý trong 24 giờ."
+    }
+  ],
+  "review_policy": {
+    "allow_review_when": "Chỉ sau khi booking Completed.",
+    "max_review_per_booking": 1,
+    "rating_range": "1-5"
+  },
+  "matching_policy": {
+    "invitation_expire_hours": 48,
+    "max_members_per_group": 4,
+    "max_active_groups_per_player": 3,
+    "matching_factors": [
+      "trình độ",
+      "vị trí thi đấu",
+      "kinh nghiệm",
+      "lịch rảnh",
+      "mô tả chơi"
+    ]
+  }
+}

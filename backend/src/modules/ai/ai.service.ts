@@ -239,7 +239,11 @@ export async function handleChatbotMessage(
   session.lastIntent = intent;
   session.lastUpdated = Date.now();
 
-  try {
+  if (analysis.canAnswerDirectly && analysis.replyHint) {
+    replyMessage = analysis.replyHint;
+    actionType = "TEXT";
+  } else {
+    try {
     switch (intent) {
       case "GREETING":
         replyMessage = "Xin chào! Mình là Trợ lý ảo Pickle Club. Hôm nay mình có thể giúp bạn tìm/đặt sân hoặc tìm huấn luyện viên dạy Pickleball đấy!";
@@ -927,6 +931,7 @@ export async function handleChatbotMessage(
     console.error(`[Chatbot Error] Handler crashed:`, error);
     replyMessage = `Đã xảy ra lỗi khi xử lý yêu cầu: ${error.message}`;
     actionType = "ERROR";
+  }
   }
 
   // Save session state to the manager

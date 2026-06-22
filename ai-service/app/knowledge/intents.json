@@ -1,0 +1,381 @@
+{
+  "version": "1.0",
+  "intents": [
+    {
+      "category": "court_search",
+      "intent": "find_available_court",
+      "examples": [
+        "sân nào còn trống",
+        "còn sân lúc 7h tối không",
+        "tìm sân trống hôm nay",
+        "ngày mai còn sân không",
+        "sân nào rảnh cuối tuần",
+        "có sân trống từ 18h đến 20h không"
+      ],
+      "action": "get_available_courts",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "court_search",
+      "intent": "find_busy_court",
+      "examples": [
+        "sân nào đang bận",
+        "sân nào đã kín lịch",
+        "sân nào không còn slot",
+        "sân nào đang có người đặt"
+      ],
+      "action": "get_busy_courts",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "court_search",
+      "intent": "find_best_court",
+      "examples": [
+        "sân nào đẹp nhất",
+        "sân nào tốt nhất",
+        "sân nào xịn nhất",
+        "sân nào đáng chơi nhất",
+        "sân nào được đánh giá cao nhất"
+      ],
+      "action": "get_top_rated_courts",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "court_search",
+      "intent": "find_cheap_court",
+      "examples": [
+        "sân nào rẻ nhất",
+        "tìm sân giá thấp",
+        "sân nào tiết kiệm",
+        "sân nào dưới ngân sách của tôi"
+      ],
+      "action": "get_available_courts",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "court_search",
+      "intent": "find_court_for_beginner",
+      "examples": [
+        "sân nào phù hợp người mới",
+        "người mới chơi nên đặt sân nào",
+        "sân nào dễ chơi"
+      ],
+      "action": "get_available_courts",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "court_search",
+      "intent": "find_competition_court",
+      "examples": [
+        "sân nào phù hợp thi đấu",
+        "sân nào chuẩn đấu",
+        "sân nào mặt sân tốt để thi đấu"
+      ],
+      "action": "get_top_rated_courts",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "court_search",
+      "intent": "find_maintenance_court",
+      "examples": [
+        "sân nào đang bảo trì",
+        "sân nào hôm nay không hoạt động",
+        "sân nào bị khóa",
+        "sân nào blocked"
+      ],
+      "action": "get_maintenance_courts",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "court_search",
+      "intent": "court_detail",
+      "examples": [
+        "sân này có gì",
+        "chi tiết sân này",
+        "giá sân này bao nhiêu",
+        "sân này mở cửa mấy giờ",
+        "sân này đóng cửa mấy giờ"
+      ],
+      "action": "get_court_details",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "coach_search",
+      "intent": "find_available_coach",
+      "examples": [
+        "coach nào đang rảnh",
+        "hlv nào rảnh tối nay",
+        "coach còn lịch không",
+        "coach nào rảnh cuối tuần",
+        "tìm coach rảnh ngày mai"
+      ],
+      "action": "get_available_coaches",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "coach_search",
+      "intent": "find_busy_coach",
+      "examples": [
+        "coach nào đang bận",
+        "hlv nào đang dạy",
+        "coach nào kín lịch",
+        "coach nào không rảnh"
+      ],
+      "action": "get_busy_coaches",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "coach_search",
+      "intent": "find_best_coach",
+      "examples": [
+        "coach nào tốt nhất",
+        "coach nào rating cao nhất",
+        "coach nào nhiều học viên nhất",
+        "hlv nào giỏi nhất"
+      ],
+      "action": "get_top_coaches",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "coach_search",
+      "intent": "find_cheap_coach",
+      "examples": [
+        "coach nào rẻ nhất",
+        "hlv nào giá thấp",
+        "coach dưới ngân sách của tôi",
+        "coach nào tiết kiệm"
+      ],
+      "action": "get_available_coaches",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "coach_search",
+      "intent": "find_beginner_coach",
+      "examples": [
+        "tôi mới chơi nên học coach nào",
+        "coach nào phù hợp người mới",
+        "hlv nào dạy cơ bản tốt"
+      ],
+      "action": "recommend_coach",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "coach_search",
+      "intent": "find_advanced_coach",
+      "examples": [
+        "coach nào dạy nâng cao",
+        "coach nào dạy thi đấu",
+        "coach nào chuyên chiến thuật"
+      ],
+      "action": "recommend_coach",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "coach_search",
+      "intent": "coach_detail",
+      "examples": [
+        "hồ sơ coach này",
+        "coach này kinh nghiệm bao lâu",
+        "coach này dạy giá bao nhiêu",
+        "coach này chuyên gì"
+      ],
+      "action": "get_top_coaches",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "booking",
+      "intent": "book_court",
+      "examples": [
+        "đặt sân",
+        "tôi muốn book sân",
+        "giữ sân cho tôi",
+        "đặt sân lúc 7h"
+      ],
+      "action": "create_booking",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "booking",
+      "intent": "book_coach",
+      "examples": [
+        "đặt coach",
+        "book huấn luyện viên",
+        "tôi muốn học với coach",
+        "đặt lịch học"
+      ],
+      "action": "create_booking",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "booking",
+      "intent": "book_combo",
+      "examples": [
+        "đặt combo sân và coach",
+        "book cả sân cả coach",
+        "tôi muốn thuê sân kèm hlv"
+      ],
+      "action": "check_combo_availability",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "booking",
+      "intent": "my_booking",
+      "examples": [
+        "tôi có booking nào không",
+        "lịch đặt của tôi",
+        "booking gần nhất của tôi",
+        "tôi đã đặt sân nào"
+      ],
+      "action": "get_my_bookings",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "booking",
+      "intent": "cancel_booking",
+      "examples": [
+        "hủy booking",
+        "hủy sân",
+        "hủy lịch học",
+        "tôi muốn hủy đặt sân"
+      ],
+      "action": "cancel_booking",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "booking",
+      "intent": "refund_question",
+      "examples": [
+        "tôi được hoàn bao nhiêu",
+        "hủy có mất tiền không",
+        "chính sách hoàn tiền",
+        "refund bao lâu"
+      ],
+      "action": "get_refund_estimate",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "booking",
+      "intent": "check_payment",
+      "examples": [
+        "tôi đã thanh toán chưa",
+        "booking này thanh toán chưa",
+        "tiền đã vào chưa",
+        "trạng thái thanh toán"
+      ],
+      "action": "get_my_bookings",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "matching",
+      "intent": "find_teammate",
+      "examples": [
+        "tìm đồng đội",
+        "tìm người đánh cặp",
+        "ai chơi hợp với tôi",
+        "tìm partner"
+      ],
+      "action": "player_matching",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "matching",
+      "intent": "find_opponent",
+      "examples": [
+        "tìm đối thủ",
+        "tìm cặp đối thủ",
+        "tìm đội đối thủ cùng trình",
+        "muốn đánh giao lưu"
+      ],
+      "action": "player_matching",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "matching",
+      "intent": "find_group",
+      "examples": [
+        "tìm nhóm chơi",
+        "có nhóm nào thiếu người không",
+        "tham gia nhóm chơi",
+        "nhóm nào phù hợp với tôi"
+      ],
+      "action": "player_matching",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "matching",
+      "intent": "invite_player",
+      "examples": [
+        "gửi lời mời chơi",
+        "mời người này đánh cùng",
+        "rủ người chơi"
+      ],
+      "action": "player_matching",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "staff_admin",
+      "intent": "staff_checkin",
+      "examples": [
+        "xác nhận check-in",
+        "khách đã đến sân",
+        "coach đã đến chưa",
+        "check-in coach"
+      ],
+      "action": "staff_checkin",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "staff_admin",
+      "intent": "admin_revenue",
+      "examples": [
+        "doanh thu hôm nay",
+        "doanh thu tháng này",
+        "sân nào doanh thu cao nhất",
+        "coach nào tạo doanh thu cao"
+      ],
+      "action": "get_revenue_dashboard",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    },
+    {
+      "category": "staff_admin",
+      "intent": "admin_stats",
+      "examples": [
+        "giờ nào đông nhất",
+        "ngày nào đông khách nhất",
+        "tỷ lệ lấp đầy sân",
+        "thống kê booking"
+      ],
+      "action": "get_revenue_dashboard",
+      "requires_api": true,
+      "response_instruction": "Gọi action tương ứng để lấy dữ liệu thật, sau đó trả lời ngắn gọn và nêu lý do nếu là gợi ý."
+    }
+  ]
+}

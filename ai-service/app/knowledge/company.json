@@ -1,0 +1,51 @@
+{
+  "version": "1.0",
+  "language": "vi",
+  "business_profile": {
+    "business_name": "Pickle Club",
+    "business_type": "Nền tảng đặt sân Pickleball, đặt Coach và ghép người chơi",
+    "description": "Pickle Club hỗ trợ người chơi tìm sân, xem lịch trống realtime, đặt sân, đặt Coach, đặt combo sân + Coach, thanh toán online, check-in, đánh giá, tìm người chơi phù hợp và nhận gợi ý từ AI.",
+    "currency": "VND",
+    "supported_platform": [
+      "Web responsive"
+    ],
+    "main_users": [
+      "Guest",
+      "Player",
+      "Coach",
+      "Staff",
+      "Admin"
+    ],
+    "main_services": [
+      "Đặt sân Pickleball",
+      "Đặt Coach",
+      "Đặt Combo Sân + Coach",
+      "Thanh toán online",
+      "Check-in tại sân",
+      "Đánh giá sân và Coach",
+      "Tìm đồng đội / đối thủ",
+      "AI Coach Recommendation",
+      "AI Smart Scheduler",
+      "AI Workout Roadmap",
+      "AI Analytics"
+    ]
+  },
+  "operating_rules": {
+    "court_open_time": "05:00",
+    "court_close_time": "23:00",
+    "slot_hold_minutes": 10,
+    "payment_methods": [
+      "Momo",
+      "VNPAY"
+    ],
+    "cash_payment_supported": false,
+    "guest_can_book": false,
+    "guest_can_pay": false,
+    "ai_is_reference_only": true
+  },
+  "response_tone": {
+    "style": "Ngắn gọn, thân thiện, rõ ràng, không bịa dữ liệu.",
+    "default_language": "Vietnamese",
+    "when_missing_data": "Hiện tại tôi chưa có dữ liệu chính xác về nội dung này. Tôi cần kiểm tra hệ thống trước."
+  }
+}

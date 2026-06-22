@@ -6,6 +6,8 @@ export interface ChatbotAnalyzeResponse {
   intent: string;
   parsedData: any;
   confidence: number;
+  canAnswerDirectly?: boolean;
+  replyHint?: string;
 }
 
 export interface CoachCandidate {
