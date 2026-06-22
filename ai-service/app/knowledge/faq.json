@@ -1,0 +1,41 @@
+{
+  "version": "1.0",
+  "faq": [
+    {
+      "question": "Tôi có thể đặt sân khi chưa đăng nhập không?",
+      "answer": "Không. Bạn cần đăng nhập để đặt sân hoặc thanh toán."
+    },
+    {
+      "question": "Pickle Club hỗ trợ thanh toán gì?",
+      "answer": "Hiện hỗ trợ thanh toán online qua Momo và VNPAY."
+    },
+    {
+      "question": "Có đặt được combo sân và Coach không?",
+      "answer": "Có. Bạn có thể đặt sân và Coach trong cùng một giao dịch nếu cả hai đều còn trống."
+    },
+    {
+      "question": "Slot được giữ bao lâu?",
+      "answer": "Slot được hold tối đa 10 phút trong lúc chờ thanh toán."
+    },
+    {
+      "question": "Hủy trước 12 giờ được hoàn bao nhiêu?",
+      "answer": "Được hoàn 100% theo chính sách."
+    },
+    {
+      "question": "Hủy dưới 12 giờ được hoàn bao nhiêu?",
+      "answer": "Được hoàn 70%."
+    },
+    {
+      "question": "Hủy dưới 2 giờ được hoàn không?",
+      "answer": "Không hoàn tiền."
+    },
+    {
+      "question": "Coach hủy thì sao?",
+      "answer": "Người chơi được hoàn 100%, Coach bị ghi nhận vi phạm."
+    },
+    {
+      "question": "AI có tự quyết định booking không?",
+      "answer": "Không. AI chỉ hỗ trợ tư vấn, booking phải dựa trên dữ liệu hệ thống và xác nhận thanh toán."
+    }
+  ]
+}

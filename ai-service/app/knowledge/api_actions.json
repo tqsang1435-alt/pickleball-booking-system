@@ -1,0 +1,249 @@
+{
+  "version": "1.0",
+  "actions": {
+    "get_available_courts": {
+      "method": "GET",
+      "endpoint": "/api/courts/available",
+      "required_params": [
+        "date",
+        "startTime",
+        "endTime"
+      ],
+      "optional_params": [
+        "courtType",
+        "location",
+        "minRating",
+        "maxPrice"
+      ],
+      "used_for": [
+        "sân nào còn trống",
+        "đặt sân",
+        "sân trống tối nay",
+        "sân rảnh ngày mai"
+      ]
+    },
+    "get_court_details": {
+      "method": "GET",
+      "endpoint": "/api/courts/{courtId}",
+      "required_params": [
+        "courtId"
+      ],
+      "used_for": [
+        "chi tiết sân",
+        "sân này có gì",
+        "giá sân này"
+      ]
+    },
+    "get_top_rated_courts": {
+      "method": "GET",
+      "endpoint": "/api/courts/top-rated",
+      "required_params": [],
+      "optional_params": [
+        "limit",
+        "location"
+      ],
+      "used_for": [
+        "sân nào đẹp",
+        "sân nào tốt nhất",
+        "sân rating cao"
+      ]
+    },
+    "get_busy_courts": {
+      "method": "GET",
+      "endpoint": "/api/courts/busy",
+      "required_params": [
+        "date",
+        "startTime",
+        "endTime"
+      ],
+      "used_for": [
+        "sân nào đang bận",
+        "sân nào đã kín lịch"
+      ]
+    },
+    "get_maintenance_courts": {
+      "method": "GET",
+      "endpoint": "/api/courts/maintenance",
+      "required_params": [
+        "date"
+      ],
+      "used_for": [
+        "sân nào bảo trì",
+        "sân nào không hoạt động"
+      ]
+    },
+    "get_available_coaches": {
+      "method": "GET",
+      "endpoint": "/api/coaches/available",
+      "required_params": [
+        "date",
+        "startTime",
+        "endTime"
+      ],
+      "optional_params": [
+        "skillLevel",
+        "specialization",
+        "maxHourlyRate",
+        "minRating"
+      ],
+      "used_for": [
+        "coach nào rảnh",
+        "huấn luyện viên nào còn lịch",
+        "coach trống tối nay"
+      ]
+    },
+    "get_busy_coaches": {
+      "method": "GET",
+      "endpoint": "/api/coaches/busy",
+      "required_params": [
+        "date",
+        "startTime",
+        "endTime"
+      ],
+      "used_for": [
+        "coach nào bận",
+        "hlv nào đang dạy"
+      ]
+    },
+    "get_top_coaches": {
+      "method": "GET",
+      "endpoint": "/api/coaches/top-rated",
+      "required_params": [],
+      "optional_params": [
+        "limit",
+        "specialization",
+        "skillLevel"
+      ],
+      "used_for": [
+        "coach nào tốt",
+        "coach rating cao",
+        "coach nhiều học viên"
+      ]
+    },
+    "recommend_coach": {
+      "method": "POST",
+      "endpoint": "/api/ai/coaches/recommend",
+      "required_params": [
+        "playerProfile",
+        "goal"
+      ],
+      "optional_params": [
+        "budget",
+        "preferredTime",
+        "skillLevel"
+      ],
+      "used_for": [
+        "gợi ý coach",
+        "coach phù hợp với tôi",
+        "tôi mới chơi nên học ai"
+      ]
+    },
+    "check_combo_availability": {
+      "method": "GET",
+      "endpoint": "/api/combo/available",
+      "required_params": [
+        "date",
+        "startTime",
+        "endTime",
+        "courtId",
+        "coachId"
+      ],
+      "used_for": [
+        "đặt combo",
+        "sân và coach có rảnh không"
+      ]
+    },
+    "create_booking": {
+      "method": "POST",
+      "endpoint": "/api/bookings",
+      "required_params": [
+        "bookingType",
+        "date",
+        "startTime",
+        "endTime"
+      ],
+      "optional_params": [
+        "courtId",
+        "coachId",
+        "promotionCode"
+      ],
+      "used_for": [
+        "đặt sân",
+        "đặt coach",
+        "đặt combo"
+      ]
+    },
+    "get_my_bookings": {
+      "method": "GET",
+      "endpoint": "/api/me/bookings",
+      "required_params": [
+        "authUserId"
+      ],
+      "optional_params": [
+        "status",
+        "fromDate",
+        "toDate"
+      ],
+      "used_for": [
+        "booking của tôi",
+        "lịch sắp tới",
+        "tôi đã đặt gì"
+      ]
+    },
+    "cancel_booking": {
+      "method": "POST",
+      "endpoint": "/api/bookings/{bookingId}/cancel",
+      "required_params": [
+        "bookingId"
+      ],
+      "used_for": [
+        "hủy booking",
+        "hủy sân",
+        "hủy lịch học"
+      ]
+    },
+    "get_refund_estimate": {
+      "method": "GET",
+      "endpoint": "/api/bookings/{bookingId}/refund-estimate",
+      "required_params": [
+        "bookingId"
+      ],
+      "used_for": [
+        "tôi được hoàn bao nhiêu",
+        "hủy có mất tiền không"
+      ]
+    },
+    "player_matching": {
+      "method": "POST",
+      "endpoint": "/api/ai/players/match",
+      "required_params": [
+        "playerProfile"
+      ],
+      "optional_params": [
+        "mode",
+        "goal",
+        "playStyle"
+      ],
+      "used_for": [
+        "tìm đồng đội",
+        "tìm người chơi hợp",
+        "tìm đối thủ"
+      ]
+    },
+    "get_revenue_dashboard": {
+      "method": "GET",
+      "endpoint": "/api/admin/revenue",
+      "required_params": [
+        "adminAuth"
+      ],
+      "optional_params": [
+        "fromDate",
+        "toDate"
+      ],
+      "used_for": [
+        "doanh thu",
+        "thống kê doanh thu"
+      ]
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "terms": {
+    "Court": "Sân Pickleball",
+    "Coach": "Huấn luyện viên",
+    "Combo": "Gói đặt sân kèm Coach",
+    "Slot": "Khung giờ đặt sân",
+    "Holding": "Trạng thái giữ chỗ tạm thời",
+    "Booked": "Đã được đặt",
+    "Completed": "Đã hoàn thành",
+    "No-show": "Không đến sân/check-in",
+    "Refund": "Hoàn tiền",
+    "Player Matching": "Ghép người chơi phù hợp",
+    "Smart Scheduler": "AI gợi ý lịch phù hợp",
+    "Workout Roadmap": "Lộ trình tập luyện"
+  }
+}

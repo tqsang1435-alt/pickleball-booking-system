@@ -1,4 +1,8 @@
 import os
+import sys
+if hasattr(sys, 'set_int_max_str_digits'):
+    sys.set_int_max_str_digits(100000)
+
 import google.generativeai as genai
 import json
 import datetime
@@ -25,12 +29,13 @@ except Exception as e:
     print(f"Error initializing Gemini model: {e}")
 
 
-SYSTEM_PROMPT = """Bạn là một trợ lý AI thông minh cho Pickle Club - một hệ thống đặt lịch sân Pickleball và đặt lịch huấn luyện viên (coach).
+# Cấu trúc prompt mẫu cho việc phân tích intent
+BASE_SYSTEM_PROMPT = """Bạn là một trợ lý AI thông minh cho Pickle Club - một hệ thống đặt lịch sân Pickleball và đặt lịch huấn luyện viên (coach).
 Nhiệm vụ của bạn là phân tích tin nhắn của người dùng và trả về một JSON có cấu trúc chứa ý định (intent), dữ liệu trích xuất (parsedData), độ tự tin (confidence), các trường thông tin còn thiếu (missingFields), cờ check DB (needDatabaseCheck), canAnswerDirectly, và câu gợi ý trả lời trực tiếp (replyHint) nếu có.
 
 Hãy tuyệt đối tuân thủ các quy tắc sau:
 1. Bạn KHÔNG được tự bịa ra thông tin. Nếu người dùng hỏi một thông tin động (như sân trống lúc mấy giờ, coach nào đang rảnh, giá sân cụ thể bao nhiêu, lịch sử đặt sân, hủy đặt sân), bạn phải đặt intent phù hợp, set needDatabaseCheck = true, canAnswerDirectly = false, và để backend xử lý truy vấn DB thật. Bạn KHÔNG được tự sinh ra danh sách sân trống hay coach trống giả lập!
-2. Đối với các câu hỏi tĩnh có thể tự trả lời dựa trên tri thức có sẵn (ví dụ: chào hỏi, hỏi luật chơi Pickleball chung, cách hoạt động của câu lạc bộ, chính sách chung), bạn có thể trả lời trực tiếp bằng cách set canAnswerDirectly = true, needDatabaseCheck = false, và điền câu trả lời vào replyHint.
+2. Đối với các câu hỏi tĩnh có thể tự trả lời dựa trên tri thức có sẵn trong KNOWLEDGE BASE dưới đây (ví dụ: chào hỏi, hỏi luật chơi Pickleball chung, cách hoạt động của câu lạc bộ, chính sách chung, bảng giá chung, chính sách hoàn tiền/hủy sân, tính toán giá cơ bản), bạn hãy trả lời trực tiếp một cách tự nhiên, ngắn gọn và thân thiện nhất bằng tiếng Việt. Khi tự trả lời trực tiếp, hãy set canAnswerDirectly = true, needDatabaseCheck = false, và điền câu trả lời vào replyHint.
 3. Trích xuất chính xác các thông tin sau từ tin nhắn người dùng vào parsedData:
    - dateText: Từ miêu tả ngày thô (ví dụ: "ngày mai", "ngày 21", "thứ 7 tuần này").
    - date: Ngày chuẩn hóa định dạng YYYY-MM-DD (sử dụng Context được cung cấp bên dưới để quy đổi chính xác các mốc thời gian tương đối như 'hôm nay', 'ngày mai', 'ngày kia', 'thứ hai', 'chủ nhật').
@@ -45,6 +50,17 @@ Hãy tuyệt đối tuân thủ các quy tắc sau:
    - budget: Ngân sách học/thuê tối đa.
    - needCourtTogether: Set là True nếu người dùng muốn đặt lịch học với coach nhưng muốn hệ thống kiểm tra cả sân trống tương ứng cùng giờ đó (luồng combo Sân + Coach).
    - originalMessage: Lưu tin nhắn gốc của người dùng.
+4. Khi phân loại ý định của người dùng, hãy đối chiếu các ý định chi tiết được mô tả trong intents.json (thuộc KNOWLEDGE BASE) với danh sách Intent được hỗ trợ thực tế của IntentEnum dưới đây để trả về giá trị `intent` chính xác nhất:
+   - find_available_court, find_busy_court, find_best_court, find_cheap_court, find_court_for_beginner, find_competition_court, find_maintenance_court, court_detail -> CHECK_COURT_AVAILABILITY hoặc ASK_PRICE
+   - find_available_coach, find_busy_coach, find_best_coach, find_cheap_coach, find_beginner_coach, find_advanced_coach, coach_detail -> CHECK_COACH_AVAILABILITY hoặc ASK_COACH_PRICE hoặc ASK_COACH_INFO
+   - book_court -> BOOK_COURT
+   - book_coach -> BOOK_COACH
+   - book_combo -> BOOK_COACH (set needCourtTogether = True trong parsedData)
+   - my_booking -> ASK_BOOKING_HISTORY
+   - cancel_booking -> CANCEL_BOOKING_HELP
+   - refund_question -> ASK_POLICY hoặc CANCEL_BOOKING_HELP
+   - check_payment -> ASK_PAYMENT
+   - find_teammate, find_opponent, find_group, invite_player -> FIND_PLAYER hoặc FIND_OPPONENT_PAIR
 
 Danh sách Intent:
 - GREETING: Chào hỏi, chào mừng.
@@ -71,6 +87,44 @@ Danh sách Intent:
 - ASK_COACH_BOOKING_HISTORY: Hỏi lịch sử đặt học với coach của học viên.
 - UNKNOWN: Ý định không rõ ràng hoặc không hỗ trợ.
 """
+
+def load_knowledge_base():
+    base_dir = Path(__file__).resolve().parent.parent / 'knowledge'
+    kb_str = "\n=== KNOWLEDGE BASE (THÔNG TIN CHI TIẾT VỀ DOANH NGHIỆP & CHÍNH SÁCH) ===\n"
+    
+    files_to_load = [
+        ('company.json', 'Thông tin câu lạc bộ & Giờ mở cửa'),
+        ('policies.json', 'Chính sách đặt chỗ & Chính sách hủy/hoàn tiền'),
+        ('faq.json', 'Các câu hỏi thường gặp (FAQ)'),
+        ('glossary.json', 'Thuật ngữ (Glossary)'),
+        ('response_rules.json', 'Quy tắc ứng xử và quy định trả lời'),
+        ('api_actions.json', 'Danh sách các API Actions hệ thống hỗ trợ'),
+        ('intents.json', 'Danh sách ý định chi tiết (Intents)')
+    ]
+    
+    # Đọc thêm system_prompt.txt nếu có
+    sys_txt_path = base_dir / 'system_prompt.txt'
+    if sys_txt_path.exists():
+        try:
+            with open(sys_txt_path, 'r', encoding='utf-8') as f:
+                kb_str += f"\n[Quy định bắt buộc]:\n{f.read()}\n"
+        except Exception as e:
+            print(f"Error loading system_prompt.txt: {e}")
+            
+    for filename, title in files_to_load:
+        file_path = base_dir / filename
+        if file_path.exists():
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    kb_str += f"\n[{title}]:\n{json.dumps(data, ensure_ascii=False, indent=2)}\n"
+            except Exception as e:
+                print(f"Error loading {filename}: {e}")
+                
+    kb_str += "\n============================================\n"
+    return kb_str
+
+SYSTEM_PROMPT = BASE_SYSTEM_PROMPT + load_knowledge_base()
 
 def pydantic_to_gemini_schema(model_class):
     schema_dict = model_class.model_json_schema()
@@ -141,6 +195,8 @@ def pydantic_to_gemini_schema(model_class):
     cleaned_schema = clean_schema(schema_dict)
     return cleaned_schema
 
+CHATBOT_SCHEMA = pydantic_to_gemini_schema(ChatbotIntentResponse)
+
 def analyze_user_intent(message: str) -> ChatbotIntentResponse:
     if not API_KEY or not model:
         # Fallback if key missing
@@ -179,12 +235,11 @@ def analyze_user_intent(message: str) -> ChatbotIntentResponse:
 
     # Sử dụng response_schema được làm sạch để ép Gemini trả về đúng format
     try:
-        custom_schema = pydantic_to_gemini_schema(ChatbotIntentResponse)
         response = model.generate_content(
             f"{SYSTEM_PROMPT}\n\nContext: {context}\n\nCâu của người dùng: '{message}'",
             generation_config=genai.GenerationConfig(
                 response_mime_type="application/json",
-                response_schema=custom_schema
+                response_schema=CHATBOT_SCHEMA
             )
         )
         
