@@ -256,3 +256,49 @@ export async function findAcceptedMatchBetweenPlayers(player1Id: number, player2
     `);
   return result.recordset.length > 0;
 }
+
+export async function findUserTeammate(userId: number): Promise<number | null> {
+  const pool = await getPool();
+  const result = await pool
+    .request()
+    .input("UserID", sql.Int, userId)
+    .query(`
+      SELECT TOP 1
+        CASE 
+          WHEN Player1ID = @UserID THEN Player2ID
+          ELSE Player1ID
+        END AS TeammateID
+      FROM PlayerMatches
+      WHERE (Player1ID = @UserID OR Player2ID = @UserID)
+        AND MatchStatus = 'Accepted'
+        AND MatchType = 'Teammate'
+    `);
+  if (result.recordset.length > 0) {
+    return result.recordset[0].TeammateID;
+  }
+  return null;
+}
+
+export async function getRecentActivityCount(userId: number): Promise<number> {
+  const pool = await getPool();
+  const bookingsRes = await pool
+    .request()
+    .input("UserID", sql.Int, userId)
+    .query(`
+      SELECT COUNT(*) AS cnt
+      FROM Bookings
+      WHERE UserID = @UserID
+        AND BookingDate >= DATEADD(day, -30, GETDATE())
+    `);
+  const matchesRes = await pool
+    .request()
+    .input("UserID", sql.Int, userId)
+    .query(`
+      SELECT COUNT(*) AS cnt
+      FROM PlayerMatches
+      WHERE (Player1ID = @UserID OR Player2ID = @UserID)
+        AND MatchedAt >= DATEADD(day, -30, GETDATE())
+    `);
+  return (bookingsRes.recordset[0]?.cnt || 0) + (matchesRes.recordset[0]?.cnt || 0);
+}
+

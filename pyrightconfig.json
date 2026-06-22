@@ -1,0 +1,13 @@
+{
+  "venvPath": "ai-service",
+  "venv": "venv",
+  "extraPaths": [
+    "ai-service",
+    "ai-service/venv/Lib/site-packages",
+    ".venv/Lib/site-packages"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__"
+  ]
+}

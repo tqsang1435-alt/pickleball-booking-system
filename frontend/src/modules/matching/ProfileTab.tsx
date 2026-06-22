@@ -3,12 +3,20 @@
 import React, { useState, useEffect } from "react";
 import * as api from "@/services/matchingApi";
 import styles from "./MatchingLayout.module.css";
+import CustomTimePicker from "./components/CustomTimePicker";
 
 interface ProfileTabProps {
   token: string;
   onProfileUpdated: (profile: api.PlayerProfile) => void;
   showToast: (msg: string, type?: "success" | "error") => void;
 }
+
+const timeOptions = Array.from({ length: (23 - 5) * 4 + 1 }, (_, i) => {
+  const totalMinutes = 5 * 60 + i * 15;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+});
 
 export default function ProfileTab({ token, onProfileUpdated, showToast }: ProfileTabProps) {
   const [loading, setLoading] = useState(false);
@@ -174,22 +182,18 @@ export default function ProfileTab({ token, onProfileUpdated, showToast }: Profi
         <div className={styles.formRow}>
           <div className={styles.formGroup}>
             <label className={styles.label}>Thời gian rảnh bắt đầu <span style={{ color: "#ef4444" }}>*</span></label>
-            <input
-              type="time"
+            <CustomTimePicker
               value={profileForm.AvailableStartTime || ""}
-              onChange={(e) => setProfileForm({ ...profileForm, AvailableStartTime: e.target.value })}
-              className={styles.input}
+              onChange={(val) => setProfileForm({ ...profileForm, AvailableStartTime: val })}
               required
             />
           </div>
 
           <div className={styles.formGroup}>
             <label className={styles.label}>Thời gian rảnh kết thúc <span style={{ color: "#ef4444" }}>*</span></label>
-            <input
-              type="time"
+            <CustomTimePicker
               value={profileForm.AvailableEndTime || ""}
-              onChange={(e) => setProfileForm({ ...profileForm, AvailableEndTime: e.target.value })}
-              className={styles.input}
+              onChange={(val) => setProfileForm({ ...profileForm, AvailableEndTime: val })}
               required
             />
           </div>

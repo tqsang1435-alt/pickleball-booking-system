@@ -274,3 +274,60 @@ export async function markGroupMessagesAsRead(token: string, groupId: number): P
     token,
   });
 }
+
+export interface AITeammateResult {
+  player: PlayerProfile;
+  score: number | null;
+  reasons: string[];
+}
+
+export interface AITeammateResponse {
+  success: boolean;
+  mode: "teammate";
+  fallback: boolean;
+  fallbackReason?: string;
+  results: AITeammateResult[];
+}
+
+export interface AIOpponentResult {
+  opponentTeam: {
+    players: PlayerProfile[];
+    groupId?: number | null;
+    creatorId?: number | null;
+  };
+  opponentTeamId: string;
+  teamPower: number;
+  score: number | null;
+  reasons: string[];
+}
+
+export interface AIOpponentResponse {
+  success: boolean;
+  mode: "opponent_team";
+  fallback: boolean;
+  fallbackReason?: string;
+  myTeam: {
+    players: PlayerProfile[];
+    teamPower: number;
+  };
+  results: AIOpponentResult[];
+}
+
+export async function matchTeammatesByAI(token: string): Promise<AITeammateResponse> {
+  const response = await apiClient<any>("/api/ai/players/match-teammates", {
+    method: "POST",
+    token,
+  });
+  const data = response?.data || response;
+  return data || { success: true, mode: "teammate", fallback: true, results: [] };
+}
+
+export async function matchOpponentsByAI(token: string, teammateId?: string): Promise<AIOpponentResponse> {
+  const response = await apiClient<any>("/api/ai/players/match-opponents", {
+    method: "POST",
+    token,
+    body: teammateId ? { teammateId } : undefined,
+  });
+  const data = response?.data || response;
+  return data || { success: true, mode: "opponent_team", fallback: true, results: [] };
+}
