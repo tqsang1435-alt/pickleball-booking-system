@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import AIChatbot from "@/components/layout/AIChatbot";
 import { Suspense } from "react";
 import "./globals.css";
 import GoogleProvider from "@/providers/GoogleProvider";
@@ -26,8 +27,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </Suspense>
           {children}
           <Footer />
+          <AIChatbot />
         </GoogleProvider>
       </body>
     </html>
   );
-}
+}
