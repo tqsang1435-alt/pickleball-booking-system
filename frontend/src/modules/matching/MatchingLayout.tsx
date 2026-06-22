@@ -197,6 +197,7 @@ export default function MatchingLayout() {
           {activeTab === "opponents" && (
             <OpponentsTab
               token={token}
+              userProfile={userProfile}
               showToast={showToast}
             />
           )}

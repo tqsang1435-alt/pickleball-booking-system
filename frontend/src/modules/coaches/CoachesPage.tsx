@@ -8,6 +8,8 @@ import type { Coach } from "@/types/coach";
 import { formatCurrency } from "@/utils/formatCurrency";
 import StateBox from "@/components/common/StateBox";
 import styles from "./CoachesPage.module.css";
+import AICoachForm, { AICoachPayload } from "./components/AICoachForm";
+import AICoachCard, { CoachScoreResult } from "./components/AICoachCard";
 
 const SKILL_OPTIONS = [
   { value: "all", label: "Tất cả" },
@@ -24,6 +26,12 @@ export default function CoachesPage() {
   const [sortBy, setSortBy] = useState("rating");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // AI State
+  const [showAiForm, setShowAiForm] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiResults, setAiResults] = useState<CoachScoreResult[]>([]);
+  const [aiFallback, setAiFallback] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -71,12 +79,6 @@ export default function CoachesPage() {
     return (total / coaches.length).toFixed(1);
   }, [coaches]);
 
-  const featuredCoach = useMemo(() => {
-    return [...coaches].sort(
-      (a, b) => Number(b.AverageRating || 0) - Number(a.AverageRating || 0)
-    )[0];
-  }, [coaches]);
-
   const featuredCoaches = useMemo(() => {
     return [...coaches]
       .sort((a, b) => Number(b.AverageRating || 0) - Number(a.AverageRating || 0))
@@ -115,6 +117,47 @@ export default function CoachesPage() {
     }
   }, [coaches, keyword, skill, sortBy]);
 
+  const handleAiSubmit = async (data: AICoachPayload) => {
+    setIsAiLoading(true);
+    setAiResults([]);
+    try {
+      const budgetStr = data.budget.split("-").pop() || data.budget;
+      const parsedBudget = parseFloat(budgetStr.replace(/[^\d]/g, "")) || 500000;
+
+      const mappedPayload = {
+        level: data.level,
+        budget: parsedBudget,
+        preferredTime: data.availableTime,
+        goals: data.goal ? [data.goal] : [],
+        styleText: data.description
+      };
+
+      const { apiClient } = await import("@/services/apiClient");
+      const result = await apiClient<any>("/api/ai/coaches/recommend", {
+        method: "POST",
+        body: mappedPayload
+      });
+      
+      setAiFallback(result.fallback || false);
+      
+      const mergedResults: CoachScoreResult[] = (result.results || []).map((r: any) => {
+        const coachOrigin = coaches.find(c => c.CoachID === r.coachId);
+        return {
+          coach: coachOrigin as Coach,
+          score: r.score || 80,
+          reasons: r.reasons || []
+        };
+      }).filter((r: CoachScoreResult) => r.coach !== undefined);
+      
+      setAiResults(mergedResults);
+    } catch (err) {
+      console.error(err);
+      alert("Hệ thống AI đang bận. Vui lòng thử lại sau.");
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
   return (
     <main className={styles.page}>
       <section className={styles.hero}>
@@ -133,13 +176,26 @@ export default function CoachesPage() {
                 chinh phục Pickleball.
               </p>
 
-              <div className={styles.search}>
-                <input
-                  value={keyword}
-                  onChange={(event) => setKeyword(event.target.value)}
-                  placeholder="Tìm theo tên Coach, kỹ năng, chuyên môn..."
-                />
-                <button type="button">🔍</button>
+              <div className={styles.searchActions}>
+                <div className={styles.search}>
+                  <input
+                    value={keyword}
+                    onChange={(event) => setKeyword(event.target.value)}
+                    placeholder="Tìm theo tên Coach, kỹ năng..."
+                  />
+                  <button type="button" className={styles.searchBtn}>🔍</button>
+                </div>
+                
+                <div className={styles.aiButtonWrapper}>
+                  <button 
+                    type="button" 
+                    className={`${styles.aiToggleBtn} ${showAiForm ? styles.active : ""}`}
+                    onClick={() => setShowAiForm(!showAiForm)}
+                  >
+                    ✨ Tìm Coach bằng AI
+                  </button>
+                  <span className={styles.aiSubtext}>AI sẽ phân tích và gợi ý Coach phù hợp nhất cho bạn</span>
+                </div>
               </div>
 
               <div className={styles.quickFilter}>
@@ -153,8 +209,6 @@ export default function CoachesPage() {
                     {option.label}
                   </button>
                 ))}
-
-                <button type="button">☰ Lọc nâng cao</button>
               </div>
             </div>
 
@@ -165,6 +219,12 @@ export default function CoachesPage() {
           </div>
         </div>
       </section>
+
+      {showAiForm && (
+        <div className={`container ${styles.aiFormFullWidth}`}>
+          <AICoachForm onSubmit={handleAiSubmit} isLoading={isAiLoading} />
+        </div>
+      )}
 
       <section className={styles.stats}>
         <div className={`container ${styles.statsGrid}`}>
@@ -204,6 +264,30 @@ export default function CoachesPage() {
         ) : (
           <div className={styles.layout}>
             <main className={styles.mainList}>
+              {aiResults.length > 0 && (
+                <section className={styles.aiResultsSection}>
+                  <div className={styles.sectionHeader}>
+                    <div>
+                      <h2>✨ Kết quả gợi ý từ AI</h2>
+                      {aiFallback && (
+                        <p style={{ color: "#b45309", fontSize: "0.85rem", marginTop: "4px" }}>
+                          ⚠ Đang sử dụng thuật toán cơ bản do hệ thống AI bận.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className={styles.aiGrid}>
+                    {aiResults.map((result, index) => (
+                      <AICoachCard 
+                        key={result.coach.CoachID} 
+                        coachResult={result} 
+                        isBestMatch={index === 0} 
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+
               <section className={styles.featuredSection}>
                 <div className={styles.sectionHeader}>
                   <div>
@@ -280,6 +364,15 @@ export default function CoachesPage() {
                     <h2>Tất cả Coach</h2>
                     <p>Hiển thị {filtered.length} Coach</p>
                   </div>
+                  <div className={styles.sortControl}>
+                    <label>Sắp xếp:</label>
+                    <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+                      <option value="rating">Đánh giá cao nhất</option>
+                      <option value="priceAsc">Giá thấp đến cao</option>
+                      <option value="priceDesc">Giá cao đến thấp</option>
+                      <option value="experience">Kinh nghiệm nhiều nhất</option>
+                    </select>
+                  </div>
                 </div>
 
                 {filtered.length === 0 ? (
@@ -344,95 +437,61 @@ export default function CoachesPage() {
                 )}
               </section>
 
-              <section className={styles.bottomReviews}>
-                <div className={styles.quoteIcon}>“</div>
-
-                <div className={styles.reviewCard}>
-                  <p>Dữ liệu đánh giá được tổng hợp từ hệ thống booking.</p>
-                  <span>⭐ {averageRating}/5</span>
+              <section className={styles.reviewSection}>
+                <div className={styles.reviewHeader}>
+                  <div className={styles.reviewScoreWrap}>
+                    <div className={styles.reviewScoreBig}>{averageRating}</div>
+                    <div className={styles.reviewScoreDetails}>
+                      <div className={styles.reviewStars}>★★★★★</div>
+                      <span>Dựa trên {totalStudents}+ học viên đã trải nghiệm</span>
+                    </div>
+                  </div>
+                  
+                  <div className={styles.reviewAction}>
+                    <button type="button">Xem tất cả đánh giá</button>
+                  </div>
                 </div>
 
-                <div className={styles.reviewCard}>
-                  <p>Có {coaches.length} Coach đang hoạt động trên hệ thống.</p>
-                  <span>{coaches.length}+ Coach</span>
-                </div>
+                <div className={styles.reviewGrid}>
+                  <div className={styles.reviewCommentCard}>
+                    <div className={styles.quoteIcon}>“</div>
+                    <p>Hệ thống gợi ý HLV bằng AI siêu chuẩn! Mình tìm được người hướng dẫn kiên nhẫn và đúng chuyên môn dink bóng chỉ sau 1 phút.</p>
+                    <div className={styles.commentAuthor}>
+                      <div className={styles.authorAvatar}>V</div>
+                      <div>
+                        <strong>Văn Anh</strong>
+                        <span>Học viên Beginner</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className={styles.reviewCommentCard}>
+                    <div className={styles.quoteIcon}>“</div>
+                    <p>Hồ sơ Coach rất minh bạch và chi tiết. Mình thích nhất là có thể xem lịch trống của Coach trước khi quyết định booking.</p>
+                    <div className={styles.commentAuthor}>
+                      <div className={styles.authorAvatar}>M</div>
+                      <div>
+                        <strong>Minh Khang</strong>
+                        <span>Học viên Intermediate</span>
+                      </div>
+                    </div>
+                  </div>
 
-                <div className={styles.reviewCard}>
-                  <p>Tổng cộng {totalStudents}+ học viên đã tham gia.</p>
-                  <span>{totalStudents}+ học viên</span>
+                  <div className={styles.reviewCommentCard}>
+                    <div className={styles.quoteIcon}>“</div>
+                    <p>Các khóa học và Coach trên nền tảng cực kỳ chất lượng. Chuyên môn cao và thái độ giảng dạy rất nhiệt tình!</p>
+                    <div className={styles.commentAuthor}>
+                      <div className={styles.authorAvatar}>T</div>
+                      <div>
+                        <strong>Thanh Tùng</strong>
+                        <span>Học viên Advanced</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </section>
             </main>
 
-            <aside className={styles.sidebar}>
-              <div className={styles.filterBox}>
-                <div className={styles.filterTop}>
-                  <h3>Bộ lọc tìm kiếm</h3>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setKeyword("");
-                      setSkill("all");
-                      setSortBy("rating");
-                    }}
-                  >
-                    Xóa lọc
-                  </button>
-                </div>
-
-                <label>Kỹ năng</label>
-                <div className={styles.skillList}>
-                  {SKILL_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      className={skill === option.value ? styles.activeChip : ""}
-                      onClick={() => setSkill(option.value)}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-
-                <label>Từ khóa</label>
-                <input
-                  value={keyword}
-                  onChange={(event) => setKeyword(event.target.value)}
-                  placeholder="Nhập tên hoặc chuyên môn"
-                />
-
-                <label>Sắp xếp</label>
-                <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
-                  <option value="rating">Đánh giá cao nhất</option>
-                  <option value="priceAsc">Giá thấp đến cao</option>
-                  <option value="priceDesc">Giá cao đến thấp</option>
-                  <option value="experience">Kinh nghiệm nhiều nhất</option>
-                </select>
-              </div>
-
-              <div className={styles.reviewBox}>
-                <div className={styles.reviewTitle}>
-                  <h3>Đánh giá từ học viên</h3>
-                  <span>Xem tất cả</span>
-                </div>
-
-                <div className={styles.reviewScore}>
-                  <strong>{averageRating}</strong>
-                  <span>/5</span>
-                </div>
-
-                <div className={styles.reviewStars}>★★★★★</div>
-
-                <p>
-                  Tổng hợp từ {coaches.length} Coach và {totalStudents}+ học viên
-                  trong hệ thống.
-                </p>
-
-                <div className={styles.reviewEmpty}>
-                  Chưa có bình luận chi tiết từ database.
-                </div>
-              </div>
-            </aside>
           </div>
         )}
       </section>

@@ -533,3 +533,7 @@ export async function getMyIncome(userId: number) {
     sessions
   };
 }
+
+export async function getCoachSchedules(coachId: number) {
+  return coachRepo.findCoachSchedules(coachId);
+}

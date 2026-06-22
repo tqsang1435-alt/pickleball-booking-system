@@ -1,0 +1,130 @@
+.aiFormCard {
+  background: white;
+  border-radius: 20px;
+  border: 1px solid #e2f0e6;
+  padding: 24px;
+  box-shadow: 0 8px 30px rgba(15, 138, 34, 0.08);
+  margin-top: 24px;
+}
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.header h3 {
+  font-size: 1.25rem;
+  color: #064e1f;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.badge {
+  background: #e2f0e6;
+  color: #0f8a22;
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.desc {
+  color: #666;
+  font-size: 0.9rem;
+  margin-top: -12px;
+  margin-bottom: 20px;
+}
+.formRow {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr) auto;
+  gap: 12px;
+  align-items: flex-end;
+}
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.formGroup label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+}
+.formGroup input, .formGroup select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.2s;
+  background: white;
+  text-overflow: ellipsis;
+  height: 42px;
+}
+.formGroup input:focus, .formGroup select:focus {
+  border-color: #0f8a22;
+  box-shadow: 0 0 0 3px rgba(15, 138, 34, 0.1);
+}
+.submitGroup {
+  display: flex;
+}
+.submitBtn {
+  background: linear-gradient(135deg, #0f8a22, #064e1f);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.submitBtn:hover {
+  opacity: 0.9;
+}
+.submitBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  font-size: 0.8rem;
+  color: #666;
+}
+.footerItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.footerItem a {
+  color: #0f8a22;
+  text-decoration: none;
+}
+@media (max-width: 1024px) {
+  .formRow {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 768px) {
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+  .footer {
+    flex-direction: column;
+    gap: 8px;
+  }
+}

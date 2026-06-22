@@ -1,0 +1,206 @@
+.card {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e2f0e6;
+  padding: 16px;
+  box-shadow: 0 4px 20px rgba(15, 138, 34, 0.05);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, box-shadow 0.2s;
+  height: 100%;
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(15, 138, 34, 0.1);
+}
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+.badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.bestMatch {
+  background: #fef3c7;
+  color: #b45309;
+}
+.alternative {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+.favoriteBtn {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  color: #999;
+  cursor: pointer;
+}
+.coachInfo {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #f3ffe9;
+}
+.details {
+  flex: 1;
+  min-width: 0;
+}
+.name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 2px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.meta {
+  font-size: 0.8rem;
+  color: #666;
+  margin: 0 0 2px 0;
+}
+.specialization {
+  font-size: 0.8rem;
+  color: #444;
+  margin: 0 0 6px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tag {
+  background: #f3ffe9;
+  color: #0f8a22;
+  font-size: 0.7rem;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.middleSection {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-grow: 1;
+}
+.scoreSection {
+  margin-bottom: 0;
+}
+.scoreHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+}
+.scoreValue {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f8a22;
+  margin-bottom: 6px;
+}
+.progressBg {
+  height: 6px;
+  background: #e5e5e5;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #0f8a22, #34d399);
+  border-radius: 3px;
+}
+.reasons {
+  margin-bottom: 12px;
+  flex-grow: 1;
+}
+.reasonsTitle {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+}
+.reasonItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #555;
+  margin-bottom: 4px;
+}
+.checkIcon {
+  color: #0f8a22;
+  font-weight: bold;
+}
+.footer {
+  margin-top: auto;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.price {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f8a22;
+  line-height: 1.2;
+}
+.price span {
+  font-size: 0.75rem;
+  font-weight: normal;
+  color: #666;
+}
+.actions {
+  display: flex;
+  gap: 6px;
+}
+.btnView, .btnBook {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  transition: all 0.2s;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btnView {
+  background: white;
+  color: #064e1f;
+  border: 1px solid #064e1f;
+}
+.btnView:hover {
+  background: #f3ffe9;
+}
+.btnBook {
+  background: #0f8a22;
+  color: white;
+  border: 1px solid #0f8a22;
+}
+.btnBook:hover {
+  background: #064e1f;
+  border-color: #064e1f;
+}
