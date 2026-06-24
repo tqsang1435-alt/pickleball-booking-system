@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createTeamBooking } from "@/services/bookingApi";
 import { getAvailableCourts } from "@/services/courtApi";
@@ -29,8 +29,6 @@ export default function TeamBookingStubPage() {
   const groupId = searchParams.get("groupId");
 
   const paramDate = searchParams.get("date") || "";
-  const paramStartTime = searchParams.get("startTime") || "";
-  const paramEndTime = searchParams.get("endTime") || "";
 
   // Parse date if it's a Unix timestamp (seconds or milliseconds)
   const parseDateParam = (d: string) => {
@@ -46,40 +44,39 @@ export default function TeamBookingStubPage() {
     return d;
   };
 
-  const formatTimeParam = (t: string) => {
-    if (!t) return "";
-    if (t.includes("T")) {
-      const parts = t.split("T");
-      t = parts[1];
-    }
-    return t.substring(0, 5);
-  };
-
   const [step, setStep] = useState<"info" | "form" | "success" | "error">(
     groupId ? "form" : "info"
   );
-  const [courtId, setCourtId] = useState("");
+
+  // Selected slots state
+  const [selectedSlots, setSelectedSlots] = useState<{
+    courtId: number;
+    slotId: number;
+    startTime: string;
+    endTime: string;
+    price: number;
+    courtName: string;
+  }[]>([]);
+
   const [bookingDate, setBookingDate] = useState(() => parseDateParam(paramDate));
-  const [startTime, setStartTime] = useState(() => formatTimeParam(paramStartTime));
-  const [endTime, setEndTime] = useState(() => formatTimeParam(paramEndTime));
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [result, setResult] = useState<any>(null);
+
+  // Derived sorted slots to avoid mutating state
+  const sortedSelectedSlots = useMemo(
+    () => [...selectedSlots].sort((a, b) => a.startTime.localeCompare(b.startTime)),
+    [selectedSlots]
+  );
 
   useEffect(() => {
     if (paramDate) {
       setBookingDate(parseDateParam(paramDate));
     }
-    if (paramStartTime) {
-      setStartTime(formatTimeParam(paramStartTime));
-    }
-    if (paramEndTime) {
-      setEndTime(formatTimeParam(paramEndTime));
-    }
-  }, [paramDate, paramStartTime, paramEndTime]);
+  }, [paramDate]);
 
   // States for available courts
-  const [courts, setCourts] = useState<any[]>([]);
+  const [courtsData, setCourtsData] = useState<any[]>([]);
   const [loadingCourts, setLoadingCourts] = useState(false);
   const [courtsError, setCourtsError] = useState("");
 
@@ -88,17 +85,17 @@ export default function TeamBookingStubPage() {
 
   useEffect(() => {
     async function fetchCourts() {
-      if (!bookingDate || !startTime || !endTime) {
-        setCourts([]);
-        setCourtId("");
+      if (!bookingDate) {
+        setCourtsData([]);
+        setSelectedSlots([]);
         return;
       }
       setLoadingCourts(true);
       setCourtsError("");
-      setCourtId("");
+      setSelectedSlots([]); // Reset selection when date changes
       try {
-        const data = await getAvailableCourts(bookingDate, startTime, endTime);
-        setCourts(data || []);
+        const data = await getAvailableCourts(bookingDate); // time filters are now optional and omitted
+        setCourtsData(data || []);
       } catch (err: any) {
         console.error(err);
         setCourtsError("Không thể tải danh sách sân. Vui lòng thử lại.");
@@ -107,15 +104,121 @@ export default function TeamBookingStubPage() {
       }
     }
     fetchCourts();
-  }, [bookingDate, startTime, endTime]);
+  }, [bookingDate]);
 
-  async function handleSubmit() {
-    if (!courtId) {
-      setErrorMsg("Vui lòng chọn sân.");
+  // Group slots by CourtID
+  const groupedCourts = useMemo(() => {
+    if (!courtsData) return [];
+    const map = new Map<number, any>();
+    courtsData.forEach(court => {
+      if (!map.has(court.CourtID)) {
+        map.set(court.CourtID, { ...court, slots: [] });
+      }
+      map.get(court.CourtID).slots.push(court);
+    });
+    return Array.from(map.values());
+  }, [courtsData]);
+
+  const parseTimeToMinutes = (timeStr: string) => {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+
+  const handleSlotClick = (slot: any, courtName: string) => {
+    const slotId = slot.SlotID;
+    const isAlreadySelected = selectedSlots.some(s => s.slotId === slotId);
+
+    if (isAlreadySelected) {
+      // Bỏ chọn slot: Nếu làm đứt chuỗi, cách đơn giản nhất là reset toàn bộ selectedSlots.
+      const newSlots = selectedSlots.filter(s => s.slotId !== slotId);
+      newSlots.sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+      let isContiguous = true;
+      for (let i = 0; i < newSlots.length - 1; i++) {
+        if (newSlots[i].endTime !== newSlots[i+1].startTime) {
+          isContiguous = false;
+          break;
+        }
+      }
+
+      if (!isContiguous) {
+        setSelectedSlots([]); // Reset hoàn toàn nếu bỏ chọn làm đứt chuỗi
+        setErrorMsg("");
+      } else {
+        setSelectedSlots(newSlots);
+        setErrorMsg("");
+      }
       return;
     }
-    if (!bookingDate || !startTime || !endTime) {
-      setErrorMsg("Vui lòng điền đầy đủ thông tin.");
+
+    // Chọn thêm slot
+    if (selectedSlots.length > 0) {
+      // Phải cùng sân
+      if (selectedSlots[0].courtId !== slot.CourtID) {
+        setErrorMsg("Vui lòng chọn các khung giờ liên tiếp trên cùng một sân.");
+        return;
+      }
+
+      const newSlots = [...selectedSlots, {
+        courtId: slot.CourtID,
+        slotId: slot.SlotID,
+        startTime: slot.StartTime,
+        endTime: slot.EndTime,
+        price: slot.Price,
+        courtName: courtName
+      }];
+      newSlots.sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+      // Kiểm tra tính liên tiếp
+      let isContiguous = true;
+      for (let i = 0; i < newSlots.length - 1; i++) {
+        if (newSlots[i].endTime !== newSlots[i+1].startTime) {
+          isContiguous = false;
+          break;
+        }
+      }
+
+      if (!isContiguous) {
+        setErrorMsg("Vui lòng chọn các khung giờ liên tiếp trên cùng một sân.");
+        return;
+      }
+
+      // Kiểm tra thời lượng
+      const startMin = parseTimeToMinutes(newSlots[0].startTime);
+      const endMin = parseTimeToMinutes(newSlots[newSlots.length - 1].endTime);
+      const durationMins = endMin - startMin;
+
+      if (durationMins <= 0) {
+        setErrorMsg("Thời gian kết thúc phải sau thời gian bắt đầu.");
+        return;
+      }
+      if (durationMins > 120) {
+        setErrorMsg("Bạn chỉ có thể đặt tối đa 2 giờ liên tiếp cho một lần đặt sân nhóm.");
+        return;
+      }
+
+      setSelectedSlots(newSlots);
+      setErrorMsg("");
+    } else {
+      setSelectedSlots([{
+        courtId: slot.CourtID,
+        slotId: slot.SlotID,
+        startTime: slot.StartTime,
+        endTime: slot.EndTime,
+        price: slot.Price,
+        courtName: courtName
+      }]);
+      setErrorMsg("");
+    }
+  };
+
+  async function handleSubmit() {
+    if (selectedSlots.length === 0) {
+      setErrorMsg("Vui lòng chọn ít nhất một khung giờ sân.");
+      return;
+    }
+    if (!bookingDate) {
+      setErrorMsg("Vui lòng chọn ngày chơi.");
       return;
     }
 
@@ -131,10 +234,11 @@ export default function TeamBookingStubPage() {
     try {
       const booking = await createTeamBooking(token, {
         groupId: Number(groupId || 0),
-        courtId: Number(courtId),
+        courtId: sortedSelectedSlots[0].courtId,
         bookingDate,
-        startTime,
-        endTime,
+        startTime: sortedSelectedSlots[0].startTime,
+        endTime: sortedSelectedSlots[sortedSelectedSlots.length - 1].endTime,
+        slotIds: sortedSelectedSlots.map(s => s.slotId),
       });
       setResult(booking);
       setStep("success");
@@ -268,39 +372,6 @@ export default function TeamBookingStubPage() {
             )}
 
             <div className={styles.formGroup}>
-              <label>Chọn sân <span>*</span></label>
-              {loadingCourts ? (
-                <div style={{ color: "#22c55e", fontSize: "0.875rem", padding: "0.5rem 0" }}>
-                  ⏳ Đang tải danh sách sân khả dụng...
-                </div>
-              ) : courtsError ? (
-                <div style={{ color: "#ef4444", fontSize: "0.875rem", padding: "0.5rem 0" }}>
-                  ⚠️ {courtsError}
-                </div>
-              ) : courts.length === 0 ? (
-                <div style={{ color: "#ef4444", fontSize: "0.875rem", padding: "0.5rem 0", fontWeight: 500 }}>
-                  Hiện chưa có sân khả dụng cho khung giờ này.
-                </div>
-              ) : (
-                <select
-                  className={styles.select}
-                  value={courtId}
-                  onChange={(e) => setCourtId(e.target.value)}
-                >
-                  <option value="">-- Chọn sân pickleball --</option>
-                  {courts.map((court) => (
-                    <option key={court.CourtID} value={court.CourtID}>
-                      [{court.CourtCode || "N/A"}] {court.CourtName} - {court.Location || "Chưa rõ vị trí"} - {formatCurrency(court.Price ?? court.PricePerHour)}/giờ
-                    </option>
-                  ))}
-                </select>
-              )}
-              <p className={styles.fieldNote}>
-                💡 Hệ thống tự động lọc các sân còn trống vào khung giờ đã chọn.
-              </p>
-            </div>
-
-            <div className={styles.formGroup}>
               <label>Ngày chơi <span>*</span></label>
               <input
                 type="date"
@@ -311,26 +382,68 @@ export default function TeamBookingStubPage() {
               />
             </div>
 
-            <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label>Giờ bắt đầu <span>*</span></label>
-                <input
-                  type="time"
-                  className={styles.input}
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Giờ kết thúc <span>*</span></label>
-                <input
-                  type="time"
-                  className={styles.input}
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                />
-              </div>
+            <div className={styles.formGroup}>
+              <label>Danh sách sân khả dụng</label>
+              {loadingCourts ? (
+                <div style={{ color: "#22c55e", fontSize: "0.875rem", padding: "0.5rem 0" }}>
+                  ⏳ Đang tải danh sách sân khả dụng...
+                </div>
+              ) : courtsError ? (
+                <div style={{ color: "#ef4444", fontSize: "0.875rem", padding: "0.5rem 0" }}>
+                  ⚠️ {courtsError}
+                </div>
+              ) : groupedCourts.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <div className={styles.emptyStateIcon}>🏜️</div>
+                  <div>Không có sân trống trong ngày đã chọn.</div>
+                  <div style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}>Vui lòng chọn ngày khác.</div>
+                </div>
+              ) : (
+                <div className={styles.courtGrid}>
+                  {groupedCourts.map(court => (
+                    <div key={court.CourtID} className={styles.courtCard}>
+                      <div className={styles.courtCardHeader}>
+                        <div className={styles.courtName}>
+                          {court.CourtName}
+                          {court.CourtCode && <span style={{ color: "#9ca3af", fontWeight: "normal", fontSize: "1rem" }}>[{court.CourtCode}]</span>}
+                        </div>
+                        <div className={styles.courtLocation}>
+                          📍 {court.Location || "Chưa rõ vị trí"}
+                        </div>
+                      </div>
+                      <div className={styles.slotGrid}>
+                        {court.slots.map((slot: any) => {
+                          const isSelected = selectedSlots.some(s => s.slotId === slot.SlotID);
+                          return (
+                            <div
+                              key={slot.SlotID}
+                              className={`${styles.slotBadge} ${isSelected ? styles.selected : ""}`}
+                              onClick={() => handleSlotClick(slot, court.CourtName)}
+                            >
+                              <div className={styles.slotTime}>{slot.StartTime} - {slot.EndTime}</div>
+                              <div className={styles.slotPrice}>{formatCurrency(slot.Price)}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+
+            {sortedSelectedSlots.length > 0 && (() => {
+              const startMin = parseTimeToMinutes(sortedSelectedSlots[0].startTime);
+              const endMin = parseTimeToMinutes(sortedSelectedSlots[sortedSelectedSlots.length - 1].endTime);
+              const durationMinutes = endMin - startMin;
+              const durationText = durationMinutes % 60 === 0 ? `${durationMinutes / 60} giờ` : `${durationMinutes} phút`;
+
+              return (
+                <div className={styles.selectedInfo}>
+                  ✅ Đã chọn sân <strong>{sortedSelectedSlots[0].courtName}</strong> lúc <strong>{sortedSelectedSlots[0].startTime} - {sortedSelectedSlots[sortedSelectedSlots.length - 1].endTime}</strong> (Thời lượng: {durationText}) - <strong>{formatCurrency(sortedSelectedSlots.reduce((sum, s) => sum + s.price, 0))}</strong>
+                </div>
+              );
+            })()}
 
             {errorMsg && <div className={styles.errorBox}>{errorMsg}</div>}
 
@@ -343,7 +456,7 @@ export default function TeamBookingStubPage() {
             <button
               className={styles.btnSubmit}
               onClick={step === "info" ? () => setStep("form") : handleSubmit}
-              disabled={loading}
+              disabled={loading || (step === "form" && selectedSlots.length === 0)}
             >
               {loading ? "Đang đặt..." : "Xác nhận đặt sân nhóm →"}
             </button>
