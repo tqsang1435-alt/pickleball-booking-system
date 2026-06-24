@@ -2,7 +2,7 @@
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.5);
-  z-index: 1000;
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -13,8 +13,8 @@
   background: #fff;
   border-radius: 12px;
   padding: 24px;
-  max-width: 400px;
-  width: 100%;
+  width: 420px;
+  max-width: calc(100vw - 32px);
   box-shadow: 0 20px 40px rgba(0,0,0,0.2);
 }
 
@@ -69,5 +69,7 @@
 .warning:hover:not(:disabled) { background: #B45309; }
 .danger { background: #DC2626; }
 .danger:hover:not(:disabled) { background: #B91C1C; }
+.success { background: #10B981; }
+.success:hover:not(:disabled) { background: #059669; }
 
 .confirmBtn:disabled, .cancelBtn:disabled { opacity: 0.6; cursor: not-allowed; }

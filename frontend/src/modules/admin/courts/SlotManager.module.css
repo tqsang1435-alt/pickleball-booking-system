@@ -13,7 +13,7 @@
 .panel {
   background: #fff;
   width: 100%;
-  max-width: 560px;
+  max-width: min(680px, calc(100vw - 32px));
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -229,14 +229,48 @@
 
 /* Mỗi dòng slot */
 .slotItem {
-  display: flex;
+  display: grid;
+  grid-template-columns: 24px minmax(110px, auto) 90px 85px 1fr;
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 10px 14px;
   background: #fafef6;
   border: 1px solid #e4eed8;
   border-radius: 14px;
   transition: box-shadow 0.2s;
+}
+
+.slotItem > .slotTime {
+  grid-column: 2;
+}
+
+.slotItem > .slotPrice {
+  grid-column: 3;
+}
+
+.slotItem > .statusBadge {
+  grid-column: 4;
+}
+
+.slotItem > .slotActions,
+.slotItem > .bookedNote {
+  grid-column: 5;
+  justify-self: end;
+}
+
+@media (max-width: 600px) {
+  .slotItem {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .slotItem > .slotTime,
+  .slotItem > .slotPrice,
+  .slotItem > .statusBadge,
+  .slotItem > .slotActions,
+  .slotItem > .bookedNote {
+    grid-column: auto;
+    justify-self: auto;
+  }
 }
 
 .slotItem:hover {
@@ -287,10 +321,10 @@
 }
 
 .slotActions {
-  margin-left: auto;
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: nowrap;
 }
 
 /* Nút khóa / mở khóa */
@@ -299,11 +333,15 @@
   color: #c0392b;
   border: 1px solid #f5c6cb;
   border-radius: 8px;
-  padding: 6px 14px;
+  padding: 0 14px;
+  height: 32px;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: background 0.2s;
 }
 
@@ -321,11 +359,15 @@
   color: #3d7f1c;
   border: 1px solid #c3e6a0;
   border-radius: 8px;
-  padding: 6px 14px;
+  padding: 0 14px;
+  height: 32px;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: background 0.2s;
 }
 
@@ -343,10 +385,12 @@
   color: #c0392b;
   border: 1px solid #f5c6cb;
   border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 13px;
+  width: 34px;
+  height: 32px;
+  padding: 0;
+  font-size: 15px;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
@@ -592,10 +636,40 @@
   color: #795548;
   border: 1px solid #ffcc80;
   border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 13px;
+  width: 34px;
+  height: 32px;
+  padding: 0;
+  font-size: 15px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s;
 }
 .btnMaintenance:hover { background: #ffe0b2; }
 .btnMaintenance:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Toast */
+.toastOverlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.8);
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 9999;
+  text-align: center;
+  animation: fadeInOut 3s forwards;
+  pointer-events: none;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translate(-50%, -40%); }
+  10% { opacity: 1; transform: translate(-50%, -50%); }
+  90% { opacity: 1; transform: translate(-50%, -50%); }
+  100% { opacity: 0; transform: translate(-50%, -60%); }
+}
