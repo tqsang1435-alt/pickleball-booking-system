@@ -290,6 +290,7 @@ export async function createTeamBooking(
     bookingDate: string;
     startTime: string;
     endTime: string;
+    slotIds?: number[];
   }
 ): Promise<Booking> {
   const res = await apiClient<ApiResponse<Booking>>("/api/bookings/team", {

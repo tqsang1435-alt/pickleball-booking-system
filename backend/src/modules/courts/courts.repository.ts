@@ -61,12 +61,10 @@ export async function findAvailableCourts(
 ) {
   const pool = await getPool();
 
-  const result = await pool
-    .request()
-    .input("SlotDate", sql.Date, bookingDate)
-    .input("StartTime", sql.VarChar(5), startTime)
-    .input("EndTime", sql.VarChar(5), endTime)
-    .query(`
+  const request = pool.request();
+  request.input("SlotDate", sql.Date, bookingDate);
+
+  let query = `
       SELECT
         c.CourtID,
         c.CourtCode,
@@ -88,12 +86,22 @@ export async function findAvailableCourts(
       FROM CourtSlots cs
       INNER JOIN Courts c ON cs.CourtID = c.CourtID
       WHERE cs.SlotDate = @SlotDate
-        AND cs.StartTime = CAST(@StartTime AS TIME)
-        AND cs.EndTime = CAST(@EndTime AS TIME)
         AND cs.Status = 'Available'
         AND c.Status = 'Available'
-      ORDER BY c.CourtID ASC
-    `);
+  `;
+
+  if (startTime && endTime) {
+    request.input("StartTime", sql.VarChar(5), startTime);
+    request.input("EndTime", sql.VarChar(5), endTime);
+    query += `
+        AND cs.StartTime = CAST(@StartTime AS TIME)
+        AND cs.EndTime = CAST(@EndTime AS TIME)
+    `;
+  }
+
+  query += ` ORDER BY c.CourtID ASC, cs.StartTime ASC`;
+
+  const result = await request.query(query);
 
   return result.recordset;
 }
@@ -461,4 +469,4 @@ export async function createCourtSlotsMany(
   }
   return created;
 }
-
+
