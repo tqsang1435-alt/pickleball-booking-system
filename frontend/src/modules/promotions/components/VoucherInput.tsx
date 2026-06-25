@@ -54,8 +54,8 @@ export default function VoucherInput({
       {appliedPromotion ? (
         // Đã apply – hiển thị thông tin giảm giá
         <div style={{
-          background: "linear-gradient(135deg, #f0fdf4, #dcfce7)",
-          border: "1.5px solid #22c55e",
+          background: "var(--pcs-status-success-bg)",
+          border: "1.5px solid var(--pcs-status-success-border)",
           borderRadius: "10px",
           padding: "0.75rem 1rem",
           display: "flex",
@@ -64,10 +64,10 @@ export default function VoucherInput({
           gap: "0.5rem",
         }}>
           <div>
-            <div style={{ fontWeight: 700, color: "#16a34a", fontSize: "0.95rem" }}>
+            <div style={{ fontWeight: 700, color: "var(--pcs-status-success)", fontSize: "0.95rem" }}>
               ✅ {appliedPromotion.promotionCode}
             </div>
-            <div style={{ fontSize: "0.82rem", color: "#15803d" }}>
+            <div style={{ fontSize: "0.82rem", color: "var(--pcs-status-success)" }}>
               {appliedPromotion.promotionName} –{" "}
               Giảm{" "}
               <strong>{appliedPromotion.discountAmount.toLocaleString("vi-VN")}đ</strong>
@@ -78,9 +78,9 @@ export default function VoucherInput({
             disabled={loading}
             style={{
               background: "none",
-              border: "1px solid #dc2626",
+              border: "1px solid var(--pcs-status-error)",
               borderRadius: "6px",
-              color: "#dc2626",
+              color: "var(--pcs-status-error)",
               padding: "4px 10px",
               fontSize: "0.8rem",
               cursor: "pointer",
@@ -103,7 +103,7 @@ export default function VoucherInput({
             style={{
               flex: 1,
               padding: "0.55rem 0.75rem",
-              border: "1.5px solid #d1d5db",
+              border: "1.5px solid var(--pcs-neutral-300)",
               borderRadius: "8px",
               fontSize: "0.9rem",
               outline: "none",
@@ -116,7 +116,7 @@ export default function VoucherInput({
             disabled={applying || loading || !code.trim()}
             style={{
               padding: "0.55rem 1.1rem",
-              background: applying || !code.trim() ? "#9ca3af" : "#7c3aed",
+              background: applying || !code.trim() ? "var(--pcs-neutral-400)" : "var(--pcs-brand-primary)",
               color: "white",
               border: "none",
               borderRadius: "8px",
@@ -132,7 +132,7 @@ export default function VoucherInput({
       )}
 
       {error && (
-        <p style={{ color: "#dc2626", fontSize: "0.82rem", marginTop: "0.4rem" }}>
+        <p style={{ color: "var(--pcs-status-error)", fontSize: "0.82rem", marginTop: "0.4rem" }}>
           ⚠️ {error}
         </p>
       )}

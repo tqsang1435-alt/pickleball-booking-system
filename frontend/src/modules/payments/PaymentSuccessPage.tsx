@@ -142,10 +142,10 @@ export default function PaymentSuccessPage() {
     return (
       <div className={styles.page}>
         <div className={styles.card}>
-          <div className={styles.iconWrap} style={{ background: "linear-gradient(135deg, #fecaca, #f87171)" }}>
+          <div className={styles.iconWrap} style={{ background: "var(--pcs-brand-primary)" }}>
             <span className={styles.icon}>❌</span>
           </div>
-          <h1 className={styles.title} style={{ color: "#991b1b" }}>
+          <h1 className={styles.title} style={{ color: "var(--pcs-status-error)" }}>
             Không tải được trạng thái
           </h1>
           <p className={styles.subtitle}>{error || "Có lỗi xảy ra."}</p>
@@ -177,8 +177,8 @@ export default function PaymentSuccessPage() {
             isPaid
               ? undefined
               : isPending
-              ? { background: "linear-gradient(135deg, #fef9c3, #fde68a)" }
-              : { background: "linear-gradient(135deg, #fecaca, #f87171)" }
+              ? { background: "var(--pcs-brand-primary)" }
+              : { background: "var(--pcs-brand-primary)" }
           }
         >
           <span className={styles.icon}>
@@ -191,10 +191,10 @@ export default function PaymentSuccessPage() {
           className={styles.title}
           style={
             isPaid
-              ? { color: "#166534" }
+              ? { color: "var(--pcs-status-success)" }
               : isPending
-              ? { color: "#854d0e" }
-              : { color: "#991b1b" }
+              ? { color: "var(--pcs-status-warning)" }
+              : { color: "var(--pcs-status-error)" }
           }
         >
           {isPaid

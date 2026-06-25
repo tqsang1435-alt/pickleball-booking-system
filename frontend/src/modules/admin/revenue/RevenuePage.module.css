@@ -1,6 +1,6 @@
 .page {
-  background: #f8fafc;
-  color: #1e293b;
+  background: var(--pcs-neutral-50);
+  color: var(--pcs-neutral-900);
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -16,7 +16,7 @@
 }
 
 .eyebrow {
-  color: #059669;
+  color: var(--pcs-status-success);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.5px;
@@ -25,7 +25,7 @@
 }
 
 .title {
-  color: #0f172a;
+  color: var(--pcs-neutral-900);
   font-size: 28px;
   font-weight: 850;
   letter-spacing: -0.4px;
@@ -33,17 +33,17 @@
 }
 
 .subtitle {
-  color: #64748b;
+  color: var(--pcs-neutral-600);
   font-size: 14px;
   margin: 6px 0 0;
 }
 
 .headerBadge {
   align-items: center;
-  background: #ecfdf5;
-  border: 1px solid #bbf7d0;
+  background: var(--pcs-status-success-bg);
+  border: 1px solid var(--pcs-status-success-bg);
   border-radius: 999px;
-  color: #047857;
+  color: var(--pcs-brand-primary);
   display: inline-flex;
   font-size: 13px;
   font-weight: 800;
@@ -57,7 +57,7 @@
 .statCard,
 .tablePanel {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--pcs-neutral-200);
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
 }
 
@@ -80,7 +80,7 @@
 }
 
 .field label {
-  color: #475569;
+  color: var(--pcs-neutral-600);
   font-size: 13px;
   font-weight: 750;
 }
@@ -88,9 +88,9 @@
 .field input,
 .field select {
   background: #ffffff;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--pcs-neutral-200);
   border-radius: 10px;
-  color: #0f172a;
+  color: var(--pcs-neutral-900);
   font-size: 14px;
   height: 42px;
   outline: none;
@@ -99,13 +99,13 @@
 
 .field input:focus,
 .field select:focus {
-  border-color: #10b981;
+  border-color: var(--pcs-status-success);
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.14);
 }
 
 .filterButton {
   align-items: center;
-  background: #059669;
+  background: var(--pcs-status-success);
   border-radius: 10px;
   color: #ffffff;
   display: inline-flex;
@@ -120,7 +120,7 @@
 }
 
 .filterButton:hover {
-  background: #047857;
+  background: var(--pcs-brand-primary);
   transform: translateY(-1px);
 }
 
@@ -151,9 +151,9 @@
 
 .statIcon {
   align-items: center;
-  background: #ecfdf5;
+  background: var(--pcs-status-success-bg);
   border-radius: 10px;
-  color: #059669;
+  color: var(--pcs-status-success);
   display: flex;
   flex-shrink: 0;
   height: 36px;
@@ -162,7 +162,7 @@
 }
 
 .statLabel {
-  color: #64748b;
+  color: var(--pcs-neutral-600);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.35px;
@@ -171,7 +171,7 @@
 }
 
 .statValue {
-  color: #0f172a;
+  color: var(--pcs-neutral-900);
   font-size: 22px;
   font-weight: 850;
   line-height: 1.15;
@@ -190,14 +190,14 @@
 .loadingText,
 .emptyText {
   background: #ffffff;
-  border: 1px dashed #cbd5e1;
-  color: #64748b;
+  border: 1px dashed var(--pcs-neutral-200);
+  color: var(--pcs-neutral-600);
 }
 
 .errorText {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #dc2626;
+  background: var(--pcs-status-error-bg);
+  border: 1px solid var(--pcs-status-error-bg);
+  color: var(--pcs-status-error);
 }
 
 .analyticsGrid {
@@ -221,14 +221,14 @@
 }
 
 .panelTitle {
-  color: #0f172a;
+  color: var(--pcs-neutral-900);
   font-size: 18px;
   font-weight: 850;
   margin: 0;
 }
 
 .panelSubtitle {
-  color: #64748b;
+  color: var(--pcs-neutral-600);
   font-size: 13px;
   margin: 4px 0 0;
 }
@@ -257,33 +257,33 @@
 }
 
 .serviceName {
-  color: #0f172a;
+  color: var(--pcs-neutral-900);
   font-size: 14px;
   font-weight: 800;
 }
 
 .serviceValue {
-  color: #047857;
+  color: var(--pcs-brand-primary);
   font-size: 14px;
   font-weight: 850;
   white-space: nowrap;
 }
 
 .progressTrack {
-  background: #e2e8f0;
+  background: var(--pcs-neutral-200);
   border-radius: 999px;
   height: 9px;
   overflow: hidden;
 }
 
 .progressBar {
-  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+  background: var(--pcs-brand-primary-light) 0%, var(--pcs-status-success) 100%);
   border-radius: inherit;
   height: 100%;
 }
 
 .servicePercent {
-  color: #64748b;
+  color: var(--pcs-neutral-600);
   font-size: 12px;
 }
 
@@ -293,12 +293,12 @@
 }
 
 .tableHeader {
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--pcs-neutral-200);
   padding: 18px;
 }
 
 .tableHeader h2 {
-  color: #0f172a;
+  color: var(--pcs-neutral-900);
   font-size: 18px;
   font-weight: 850;
   margin: 0;
@@ -315,8 +315,8 @@
 }
 
 .table th {
-  background: #f8fafc;
-  color: #475569;
+  background: var(--pcs-neutral-50);
+  color: var(--pcs-neutral-600);
   font-size: 12px;
   font-weight: 850;
   letter-spacing: 0.35px;
@@ -326,20 +326,20 @@
 }
 
 .table td {
-  border-top: 1px solid #edf2f7;
-  color: #334155;
+  border-top: 1px solid var(--pcs-neutral-100);
+  color: var(--pcs-neutral-700);
   font-size: 14px;
   padding: 14px 16px;
   vertical-align: middle;
 }
 
 .customer {
-  color: #0f172a;
+  color: var(--pcs-neutral-900);
   font-weight: 800;
 }
 
 .amount {
-  color: #047857;
+  color: var(--pcs-brand-primary);
   font-weight: 850;
 }
 
@@ -352,23 +352,23 @@
 }
 
 .statusPaid {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--pcs-status-success-bg);
+  color: var(--pcs-status-success);
 }
 
 .statusRefunded {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--pcs-status-error-bg);
+  color: var(--pcs-status-error);
 }
 
 .statusPending {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--pcs-status-warning-bg);
+  color: var(--pcs-status-warning);
 }
 
 .statusFailed {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--pcs-neutral-100);
+  color: var(--pcs-neutral-600);
 }
 
 @media (max-width: 1180px) {

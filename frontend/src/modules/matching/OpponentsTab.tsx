@@ -194,7 +194,7 @@ export default function OpponentsTab({ token, userProfile, showToast }: Opponent
   return (
     <div>
       <h3 style={{ fontSize: "20px", fontWeight: "700", marginBottom: "0.5rem" }}>Tìm kiếm đối thủ</h3>
-      <p style={{ fontSize: "14px", color: "#64748b", marginBottom: "1.5rem" }}>
+      <p style={{ fontSize: "14px", color: "var(--pcs-neutral-600)", marginBottom: "1.5rem" }}>
         Lựa chọn một trong các nhóm của bạn để tìm kiếm các nhóm đối thủ có trình độ tương đương cùng giao lưu, cọ sát.
       </p>
 
@@ -228,17 +228,17 @@ export default function OpponentsTab({ token, userProfile, showToast }: Opponent
         <div>
           {/* AI Loading State */}
           {isAiLoading && (
-            <div style={{ padding: "1.5rem", textAlign: "center", border: "1px dashed #fca5a5", borderRadius: "10px", backgroundColor: "#fff5f5", marginBottom: "1.5rem" }}>
-              <div className={styles.loadingInner} style={{ fontSize: "15px", color: "#dc2626", padding: 0 }}>
+            <div style={{ padding: "1.5rem", textAlign: "center", border: "1px dashed var(--pcs-status-error-border, #fecaca)", borderRadius: "10px", backgroundColor: "var(--pcs-status-error-bg)", marginBottom: "1.5rem" }}>
+              <div className={styles.loadingInner} style={{ fontSize: "15px", color: "var(--pcs-status-error)", padding: 0 }}>
                 🤖 AI đang phân tích hồ sơ và tìm cặp đối thủ phù hợp...
               </div>
-              <p style={{ fontSize: "12px", color: "#64748b", marginTop: "0.25rem" }}>Đang đánh giá sức mạnh, lối chơi và mục tiêu của các đội đối thủ.</p>
+              <p style={{ fontSize: "12px", color: "var(--pcs-neutral-600)", marginTop: "0.25rem" }}>Đang đánh giá sức mạnh, lối chơi và mục tiêu của các đội đối thủ.</p>
             </div>
           )}
 
           {/* Light notification if opponent matching fails or teammate is missing */}
           {!isAiLoading && aiOpponentError && (
-            <div style={{ padding: "0.75rem 1rem", borderRadius: "8px", background: "#fff5f5", border: "1px solid #fecaca", color: "#dc2626", fontSize: "13px", marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <div style={{ padding: "0.75rem 1rem", borderRadius: "8px", background: "var(--pcs-status-error-bg)", border: "1px solid var(--pcs-status-error-border, #fecaca)", color: "var(--pcs-status-error)", fontSize: "13px", marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
               💡 {aiOpponentError}
             </div>
           )}
@@ -248,7 +248,7 @@ export default function OpponentsTab({ token, userProfile, showToast }: Opponent
               Nhóm đối thủ được đề xuất
             </h4>
             {!isAiLoading && aiOpponentResults.length > 0 && (
-              <span style={{ fontSize: "11px", backgroundColor: "#fee2e2", border: "1px solid #fecaca", color: "#b91c1c", padding: "0.25rem 0.5rem", borderRadius: "6px", fontWeight: "600" }}>
+              <span style={{ fontSize: "11px", backgroundColor: "var(--pcs-status-error-bg)", border: "1px solid var(--pcs-status-error-border, #fecaca)", color: "var(--pcs-status-error)", padding: "0.25rem 0.5rem", borderRadius: "6px", fontWeight: "600" }}>
                 ✨ {aiOpponentFallback ? "Gợi ý nội bộ (AI Offline)" : "AI Đã tối ưu hóa"}
               </span>
             )}
@@ -276,7 +276,7 @@ export default function OpponentsTab({ token, userProfile, showToast }: Opponent
                   <div 
                     className={styles.card} 
                     key={opponent.GroupID}
-                    style={aiResult ? { border: "1px solid #fca5a5", boxShadow: "0 4px 6px -1px rgba(239, 68, 68, 0.1)" } : undefined}
+                    style={aiResult ? { border: "1px solid var(--pcs-status-error-border, #fecaca)", boxShadow: "0 4px 6px -1px rgba(239, 68, 68, 0.1)" } : undefined}
                   >
                     <div>
                       <div className={styles.cardHeader}>
@@ -287,8 +287,8 @@ export default function OpponentsTab({ token, userProfile, showToast }: Opponent
                               <span style={{ 
                                 fontSize: "10px", 
                                 backgroundColor: "#ffe4e4", 
-                                color: "#b91c1c", 
-                                border: "1px solid #fecaca", 
+                                color: "var(--pcs-status-error)",
+                                border: "1px solid var(--pcs-status-error-border, #fecaca)",
                                 padding: "0.15rem 0.35rem", 
                                 borderRadius: "4px", 
                                 fontWeight: "600",
@@ -299,13 +299,13 @@ export default function OpponentsTab({ token, userProfile, showToast }: Opponent
                               </span>
                             )}
                           </div>
-                          <span className={styles.cardTag} style={aiResult ? { backgroundColor: "#ffe4e4", color: "#b91c1c" } : { backgroundColor: "#fee2e2", color: "#991b1b" }}>
+                          <span className={styles.cardTag} style={aiResult ? { backgroundColor: "#ffe4e4", color: "var(--pcs-status-error)" } : { backgroundColor: "var(--pcs-status-error-bg)", color: "var(--pcs-status-error)" }}>
                             Đại diện: {opponent.CreatorName || opponent.CreatorEmail || "Ẩn danh"}
                           </span>
                         </div>
                         {hasScore && (
-                          <div className={styles.scoreBadge} style={aiResult ? { backgroundColor: "#ffe4e4", borderColor: "#fca5a5", color: "#b91c1c" } : { borderColor: "#fca5a5" }}>
-                            <span className={styles.scoreVal} style={{ color: "#dc2626" }}>{scoreVal}%</span>
+                          <div className={styles.scoreBadge} style={aiResult ? { backgroundColor: "#ffe4e4", borderColor: "var(--pcs-status-error-border, #fecaca)", color: "var(--pcs-status-error)" } : { borderColor: "var(--pcs-status-error-border, #fecaca)" }}>
+                            <span className={styles.scoreVal} style={{ color: "var(--pcs-status-error)" }}>{scoreVal}%</span>
                             <span className={styles.scoreText} style={{ color: "#7f1d1d" }}>Match</span>
                           </div>
                         )}
@@ -313,8 +313,8 @@ export default function OpponentsTab({ token, userProfile, showToast }: Opponent
 
                       {/* Progress Bar for AI scores */}
                       {aiResult && scoreVal !== null && (
-                        <div style={{ width: "100%", height: "6px", backgroundColor: "#e2e8f0", borderRadius: "3px", overflow: "hidden", marginBottom: "1rem", marginTop: "-0.5rem" }}>
-                          <div style={{ width: `${scoreVal}%`, height: "100%", backgroundColor: scoreVal >= 80 ? "#10b981" : scoreVal >= 60 ? "#f59e0b" : "#ef4444" }} />
+                        <div style={{ width: "100%", height: "6px", backgroundColor: "var(--pcs-neutral-200)", borderRadius: "3px", overflow: "hidden", marginBottom: "1rem", marginTop: "-0.5rem" }}>
+                          <div style={{ width: `${scoreVal}%`, height: "100%", backgroundColor: scoreVal >= 80 ? "#10b981" : scoreVal >= 60 ? "#f59e0b" : "var(--pcs-status-error)" }} />
                         </div>
                       )}
 
@@ -334,15 +334,15 @@ export default function OpponentsTab({ token, userProfile, showToast }: Opponent
                         {opponent.Description && (
                           <div className={styles.cardMetaItem} style={{ flexDirection: "column", gap: "0.125rem", marginTop: "0.5rem" }}>
                             <strong>Giới thiệu:</strong>
-                            <span style={{ color: "#475569", fontSize: "13px" }}>{opponent.Description}</span>
+                            <span style={{ color: "var(--pcs-neutral-600)", fontSize: "13px" }}>{opponent.Description}</span>
                           </div>
                         )}
 
                         {/* AI Reasons & Explanation */}
                         {aiResult && aiResult.reasons && aiResult.reasons.length > 0 && (
-                          <div style={{ marginTop: "0.75rem", padding: "0.5rem 0.75rem", backgroundColor: "#fff5f5", borderRadius: "8px", border: "1px dashed #fecaca" }}>
-                            <strong style={{ fontSize: "12px", color: "#dc2626", display: "block", marginBottom: "0.25rem" }}>🤖 Phân tích từ AI:</strong>
-                            <ul style={{ margin: 0, paddingLeft: "1.1rem", fontSize: "12px", color: "#991b1b", lineHeight: "1.4" }}>
+                          <div style={{ marginTop: "0.75rem", padding: "0.5rem 0.75rem", backgroundColor: "var(--pcs-status-error-bg)", borderRadius: "8px", border: "1px dashed var(--pcs-status-error-border, #fecaca)" }}>
+                            <strong style={{ fontSize: "12px", color: "var(--pcs-status-error)", display: "block", marginBottom: "0.25rem" }}>🤖 Phân tích từ AI:</strong>
+                            <ul style={{ margin: 0, paddingLeft: "1.1rem", fontSize: "12px", color: "var(--pcs-status-error)", lineHeight: "1.4" }}>
                               {aiResult.reasons.map((r, idx) => (
                                 <li key={idx}>{r}</li>
                               ))}
@@ -391,7 +391,7 @@ export default function OpponentsTab({ token, userProfile, showToast }: Opponent
                   value={myGroups.find((g) => g.GroupID === Number(selectedGroupId))?.GroupName || ""}
                   disabled
                   className={styles.input}
-                  style={{ backgroundColor: "#f8fafc" }}
+                  style={{ backgroundColor: "var(--pcs-neutral-50)" }}
                 />
               </div>
 
@@ -402,7 +402,7 @@ export default function OpponentsTab({ token, userProfile, showToast }: Opponent
                   value={selectedOpponentGroup.GroupName}
                   disabled
                   className={styles.input}
-                  style={{ backgroundColor: "#f8fafc" }}
+                  style={{ backgroundColor: "var(--pcs-neutral-50)" }}
                 />
               </div>
 

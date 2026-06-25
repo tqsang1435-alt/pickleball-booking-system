@@ -38,19 +38,19 @@
   align-items: flex-start;
   justify-content: space-between;
   padding: 22px 24px 16px;
-  border-bottom: 1px solid #F3F4F6;
+  border-bottom: 1px solid var(--pcs-neutral-100);
 }
 
 .modalTitle {
   font-size: 18px;
   font-weight: 800;
-  color: #111827;
+  color: var(--pcs-neutral-900);
   margin: 0 0 4px 0;
 }
 
 .modalSub {
   font-size: 13px;
-  color: #6B7280;
+  color: var(--pcs-neutral-600);
   margin: 0;
 }
 
@@ -59,9 +59,9 @@
   height: 32px;
   border-radius: 8px;
   border: none;
-  background: #F3F4F6;
+  background: var(--pcs-neutral-100);
   font-size: 18px;
-  color: #6B7280;
+  color: var(--pcs-neutral-600);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -70,7 +70,7 @@
   transition: background 0.15s;
 }
 
-.closeBtn:hover:not(:disabled) { background: #E5E7EB; }
+.closeBtn:hover:not(:disabled) { background: var(--pcs-neutral-200); }
 .closeBtn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ── Body ── */
@@ -95,7 +95,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  border: 1.5px solid #E5E7EB;
+  border: 1.5px solid var(--pcs-neutral-200);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.15s;
@@ -103,14 +103,14 @@
 }
 
 .roleItem:hover {
-  border-color: var(--primary, #4CAF50);
-  background: #F8FCF3;
+  border-color: var(--pcs-brand-primary);
+  background: var(--pcs-status-error-bg);
 }
 
 .checkbox {
   width: 16px;
   height: 16px;
-  accent-color: var(--primary, #4CAF50);
+  accent-color: var(--pcs-brand-primary);
   cursor: pointer;
   flex-shrink: 0;
 }
@@ -118,15 +118,15 @@
 .roleLabel {
   font-size: 14px;
   font-weight: 600;
-  color: #111827;
+  color: var(--pcs-neutral-900);
   flex: 1;
 }
 
 .roleSelected {
   font-size: 12px;
   font-weight: 700;
-  color: var(--primary-dark, #2E7D32);
-  background: var(--primary-soft, #EAF7DC);
+  color: var(--pcs-brand-primary-hover);
+  background: var(--pcs-brand-primary-light);
   padding: 2px 8px;
   border-radius: 10px;
 }
@@ -141,16 +141,16 @@
 .formLabel {
   font-size: 13px;
   font-weight: 700;
-  color: #374151;
+  color: var(--pcs-neutral-600);
 }
 
 .textarea {
-  border: 1.5px solid #E5E7EB;
+  border: 1.5px solid var(--pcs-neutral-200);
   border-radius: 10px;
   padding: 10px 14px;
   font-size: 14px;
   font-family: inherit;
-  color: #111827;
+  color: var(--pcs-neutral-900);
   outline: none;
   resize: vertical;
   min-height: 100px;
@@ -158,12 +158,12 @@
 }
 
 .textarea:focus {
-  border-color: #DC2626;
+  border-color: var(--pcs-status-error);
 }
 
 .textarea:disabled {
-  background: #F9FAFB;
-  color: #9CA3AF;
+  background: var(--pcs-neutral-50);
+  color: var(--pcs-neutral-400);
 }
 
 /* ── Info / Warn boxes ── */
@@ -171,12 +171,12 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  background: #F0FDF4;
-  border: 1px solid #BBF7D0;
+  background: var(--pcs-status-success-bg);
+  border: 1px solid var(--pcs-status-success-bg);
   border-radius: 12px;
   padding: 14px 16px;
   font-size: 14px;
-  color: #166534;
+  color: var(--pcs-status-success);
 }
 
 .infoIcon {
@@ -189,12 +189,12 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  background: #FFFBEB;
-  border: 1px solid #FDE68A;
+  background: var(--pcs-status-warning-bg);
+  border: 1px solid var(--pcs-status-warning-bg);
   border-radius: 12px;
   padding: 14px 16px;
   font-size: 14px;
-  color: #92400E;
+  color: var(--pcs-status-warning);
 }
 
 .warnIcon {
@@ -210,14 +210,14 @@
   justify-content: flex-end;
   gap: 10px;
   padding: 16px 24px 20px;
-  border-top: 1px solid #F3F4F6;
+  border-top: 1px solid var(--pcs-neutral-100);
 }
 
 .btnCancel {
   padding: 9px 20px;
-  border: 1.5px solid #E5E7EB;
-  background: #F9FAFB;
-  color: #374151;
+  border: 1.5px solid var(--pcs-neutral-200);
+  background: var(--pcs-neutral-50);
+  color: var(--pcs-neutral-600);
   border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
@@ -227,8 +227,8 @@
 }
 
 .btnCancel:hover:not(:disabled) {
-  background: #F3F4F6;
-  border-color: #D1D5DB;
+  background: var(--pcs-neutral-100);
+  border-color: var(--pcs-neutral-200);
 }
 
 .btnCancel:disabled {
@@ -238,7 +238,7 @@
 
 .btnPrimary {
   padding: 9px 22px;
-  background: var(--primary, #4CAF50);
+  background: var(--pcs-brand-primary);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -250,7 +250,7 @@
 }
 
 .btnPrimary:hover:not(:disabled) {
-  background: var(--primary-dark, #2E7D32);
+  background: var(--pcs-brand-primary-hover);
 }
 
 .btnPrimary:disabled {
@@ -260,7 +260,7 @@
 
 .btnDanger {
   padding: 9px 22px;
-  background: #DC2626;
+  background: var(--pcs-status-error);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -272,7 +272,7 @@
 }
 
 .btnDanger:hover:not(:disabled) {
-  background: #B91C1C;
+  background: var(--pcs-status-error);
 }
 
 .btnDanger:disabled {

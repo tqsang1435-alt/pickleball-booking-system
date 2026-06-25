@@ -181,7 +181,7 @@ export default function ProfileTab({ token, onProfileUpdated, showToast }: Profi
 
         <div className={styles.formRow}>
           <div className={styles.formGroup}>
-            <label className={styles.label}>Thời gian rảnh bắt đầu <span style={{ color: "#ef4444" }}>*</span></label>
+            <label className={styles.label}>Thời gian rảnh bắt đầu <span style={{ color: "var(--pcs-status-error)" }}>*</span></label>
             <CustomTimePicker
               value={profileForm.AvailableStartTime || ""}
               onChange={(val) => setProfileForm({ ...profileForm, AvailableStartTime: val })}
@@ -190,7 +190,7 @@ export default function ProfileTab({ token, onProfileUpdated, showToast }: Profi
           </div>
 
           <div className={styles.formGroup}>
-            <label className={styles.label}>Thời gian rảnh kết thúc <span style={{ color: "#ef4444" }}>*</span></label>
+            <label className={styles.label}>Thời gian rảnh kết thúc <span style={{ color: "var(--pcs-status-error)" }}>*</span></label>
             <CustomTimePicker
               value={profileForm.AvailableEndTime || ""}
               onChange={(val) => setProfileForm({ ...profileForm, AvailableEndTime: val })}

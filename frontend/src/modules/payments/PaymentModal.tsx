@@ -180,7 +180,7 @@ export default function PaymentModal({
           {appliedPromotion && (
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Tạm tính</span>
-              <span className={styles.infoValue} style={{ textDecoration: "line-through", color: "#9ca3af" }}>
+              <span className={styles.infoValue} style={{ textDecoration: "line-through", color: "var(--pcs-neutral-400)" }}>
                 {formatCurrency(originalAmount)}
               </span>
             </div>
@@ -188,7 +188,7 @@ export default function PaymentModal({
           {appliedPromotion && (
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>Giảm giá</span>
-              <span className={styles.infoValue} style={{ color: "#16a34a" }}>
+              <span className={styles.infoValue} style={{ color: "var(--pcs-status-success)" }}>
                 - {formatCurrency(appliedPromotion.discountAmount)}
               </span>
             </div>

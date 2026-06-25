@@ -2,7 +2,7 @@
 
 .page {
   min-height: 100vh;
-  background-color: #fafafa;
+  background-color: var(--pcs-neutral-50);
   font-family: "Inter", sans-serif;
   padding: 0 0 60px;
 }
@@ -24,7 +24,7 @@
   border: none;
   font-size: 14px;
   font-weight: 600;
-  color: #555;
+  color: var(--pcs-neutral-600);
   cursor: pointer;
   padding: 0;
   display: inline-flex;
@@ -34,7 +34,7 @@
 }
 
 .backBtnLink:hover {
-  color: #0f8a22;
+  color: var(--pcs-brand-primary);
 }
 
 /* Banner Section */
@@ -43,8 +43,8 @@
   width: 100%;
   height: 380px;
   overflow: hidden;
-  border-radius: 16px;
-  background: #eaeaea;
+  border-radius: var(--pcs-radius-xl);
+  background: var(--pcs-neutral-200);
   margin-bottom: 24px;
 }
 
@@ -84,9 +84,9 @@
   width: 160px;
   height: 160px;
   border-radius: 50%;
-  border: 5px solid white;
+  border: 5px solid #ffffff;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-  background: white;
+  background: #ffffff;
   flex-shrink: 0;
   margin-top: -80px; /* Pulls up to overlap the banner */
   z-index: 10;
@@ -104,8 +104,8 @@
   bottom: -10px;
   left: 50%;
   transform: translateX(-50%);
-  background: #0f8a22;
-  color: white;
+  background: var(--pcs-brand-primary);
+  color: #ffffff;
   font-size: 11px;
   font-weight: 700;
   padding: 6px 16px;
@@ -124,7 +124,7 @@
 .coachName {
   font-size: 32px;
   font-weight: 800;
-  color: #111;
+  color: var(--pcs-neutral-900);
   margin: 0 0 6px 0;
   display: flex;
   align-items: center;
@@ -142,14 +142,14 @@
 
 .coachTitle {
   font-size: 15px;
-  color: #555;
+  color: var(--pcs-neutral-600);
   font-weight: 600;
   margin: 0 0 8px 0;
 }
 
 .coachSubBio {
   font-size: 14px;
-  color: #666;
+  color: var(--pcs-neutral-600);
   line-height: 1.5;
   margin: 0;
   max-width: 600px;
@@ -161,8 +161,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px 0;
-  border-top: 1px solid #eaeaea;
-  border-bottom: 1px solid #eaeaea;
+  border-top: 1px solid var(--pcs-neutral-200);
+  border-bottom: 1px solid var(--pcs-neutral-200);
   margin-bottom: 32px;
   margin-top: 16px;
 }
@@ -174,7 +174,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  border-right: 1px solid #eaeaea;
+  border-right: 1px solid var(--pcs-neutral-200);
 }
 
 .statCell:last-child {
@@ -184,7 +184,7 @@
 .statVal {
   font-size: 20px;
   font-weight: 700;
-  color: #111;
+  color: var(--pcs-neutral-900);
   display: flex;
   align-items: center;
   line-height: 1.2;
@@ -192,16 +192,16 @@
 
 .statLbl {
   font-size: 12px;
-  color: #666;
+  color: var(--pcs-neutral-600);
   margin-top: 4px;
   font-weight: 500;
 }
 
 /* Details Single Card */
 .detailsCard {
-  background: white;
-  border: 1px solid #eaeaea;
-  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid var(--pcs-neutral-200);
+  border-radius: var(--pcs-radius-lg);
   padding: 32px;
   display: flex;
   flex-direction: column;
@@ -217,13 +217,13 @@
 .section h2 {
   font-size: 18px;
   font-weight: 700;
-  color: #111;
+  color: var(--pcs-neutral-900);
   margin: 0 0 16px 0;
 }
 
 .bioText {
   font-size: 14px;
-  color: #555;
+  color: var(--pcs-neutral-600);
   line-height: 1.65;
   margin: 0;
 }
@@ -236,8 +236,8 @@
 }
 
 .expertisePill {
-  background: #eaf6ec;
-  color: #0f8a22;
+  background: var(--pcs-brand-primary-light);
+  color: var(--pcs-brand-primary-hover);
   font-size: 13px;
   font-weight: 600;
   padding: 8px 16px;
@@ -260,7 +260,7 @@
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #333;
+  color: var(--pcs-neutral-800);
 }
 
 .checkIcon {
@@ -270,8 +270,8 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #eaf6ec;
-  color: #0f8a22;
+  background: var(--pcs-brand-primary-light);
+  color: var(--pcs-brand-primary);
   flex-shrink: 0;
 }
 
@@ -293,7 +293,7 @@
 .ratingNumber {
   font-size: 48px;
   font-weight: 800;
-  color: #111;
+  color: var(--pcs-neutral-900);
   line-height: 1.1;
 }
 
@@ -305,7 +305,7 @@
 
 .reviewsSummaryCard small {
   font-size: 13px;
-  color: #666;
+  color: var(--pcs-neutral-600);
   font-weight: 500;
 }
 
@@ -316,9 +316,9 @@
 }
 
 .reviewCommentCard {
-  background: #fafafa;
-  border: 1px solid #eaeaea;
-  border-radius: 12px;
+  background: var(--pcs-neutral-50);
+  border: 1px solid var(--pcs-neutral-200);
+  border-radius: var(--pcs-radius-md);
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -336,8 +336,8 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: #f0f0f0;
-  color: #555;
+  background: var(--pcs-neutral-200);
+  color: var(--pcs-neutral-600);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -366,7 +366,7 @@
 .authorName {
   font-size: 13px;
   font-weight: 600;
-  color: #111;
+  color: var(--pcs-neutral-900);
   word-break: break-word;
 }
 
@@ -380,14 +380,14 @@
 
 .timeAgo {
   font-size: 11px;
-  color: #999;
+  color: var(--pcs-neutral-500);
   margin-left: 6px;
   font-weight: 400;
 }
 
 .reviewText {
   font-size: 12px;
-  color: #555;
+  color: var(--pcs-neutral-600);
   line-height: 1.5;
   margin: 0;
 }
@@ -399,11 +399,11 @@
 }
 
 .viewReviewsLink {
-  background: white;
-  border: 1px solid #eaeaea;
+  background: #ffffff;
+  border: 1px solid var(--pcs-neutral-200);
   font-size: 13px;
   font-weight: 600;
-  color: #333;
+  color: var(--pcs-neutral-800);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -414,9 +414,9 @@
 }
 
 .viewReviewsLink:hover {
-  background: #fafafa;
-  border-color: #ccc;
-  color: #000;
+  background: var(--pcs-neutral-50);
+  border-color: var(--pcs-neutral-300);
+  color: var(--pcs-neutral-900);
 }
 
 /* Right Column: Sticky Booking Card */
@@ -427,9 +427,9 @@
 .bookingCard {
   position: sticky;
   top: 100px;
-  background: white;
-  border: 1px solid #eaeaea;
-  border-radius: 24px;
+  background: #ffffff;
+  border: 1px solid var(--pcs-neutral-200);
+  border-radius: var(--pcs-radius-lg);
   padding: 24px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.03);
 }
@@ -443,22 +443,22 @@
 .price {
   font-size: 28px;
   font-weight: 800;
-  color: #0f8a22;
+  color: var(--pcs-brand-primary);
 }
 
 .unit {
   font-size: 14px;
-  color: #666;
+  color: var(--pcs-neutral-600);
   margin-left: 4px;
 }
 
 .lessonType {
   font-size: 13px;
-  color: #333;
+  color: var(--pcs-neutral-800);
   font-weight: 600;
-  background: #f5f5f5;
+  background: var(--pcs-neutral-100);
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: var(--pcs-radius-md);
   display: inline-flex;
   align-items: center;
   margin-bottom: 20px;
@@ -471,14 +471,14 @@
 .fieldLabel {
   font-size: 13px;
   font-weight: 700;
-  color: #333;
+  color: var(--pcs-neutral-800);
   margin-bottom: 8px;
   display: block;
 }
 
 /* Custom Calendar styling */
 .calendarContainer {
-  background: white;
+  background: #ffffff;
   margin-top: 8px;
 }
 
@@ -493,7 +493,7 @@
 .monthYearTitle {
   font-size: 14px;
   font-weight: 700;
-  color: #111;
+  color: var(--pcs-neutral-900);
   text-align: center;
   flex-grow: 1;
 }
@@ -503,7 +503,7 @@
   border: none;
   font-size: 16px;
   font-weight: 600;
-  color: #666;
+  color: var(--pcs-neutral-600);
   cursor: pointer;
   width: 32px;
   height: 32px;
@@ -515,8 +515,8 @@
 }
 
 .monthNavBtn:hover {
-  background: #f5f5f5;
-  color: #000;
+  background: var(--pcs-neutral-100);
+  color: var(--pcs-neutral-900);
 }
 
 .weekdayRow {
@@ -529,7 +529,7 @@
 .weekdayRow span {
   font-size: 11px;
   font-weight: 500;
-  color: #888;
+  color: var(--pcs-neutral-500);
   text-transform: uppercase;
 }
 
@@ -550,7 +550,7 @@
   background: none;
   font-size: 13px;
   font-weight: 600;
-  color: #333;
+  color: var(--pcs-neutral-800);
   border-radius: 50%;
   cursor: pointer;
   display: flex;
@@ -561,18 +561,18 @@
 }
 
 .dayCell:hover:not(:disabled) {
-  background: #eaf6ec;
-  color: #0f8a22;
+  background: var(--pcs-brand-primary-light);
+  color: var(--pcs-brand-primary);
 }
 
 .daySelected {
-  background: #0f8a22 !important;
-  color: white !important;
+  background: var(--pcs-brand-primary) !important;
+  color: #ffffff !important;
   font-weight: 700;
 }
 
 .dayPast {
-  color: #ccc;
+  color: var(--pcs-neutral-300);
   cursor: not-allowed;
 }
 
@@ -587,36 +587,36 @@
 .slotsLoading,
 .slotsEmpty {
   font-size: 13px;
-  color: #666;
+  color: var(--pcs-neutral-600);
   text-align: center;
   padding: 16px 0;
-  background: #fafafa;
-  border-radius: 12px;
-  border: 1px solid #eaeaea;
+  background: var(--pcs-neutral-50);
+  border-radius: var(--pcs-radius-md);
+  border: 1px solid var(--pcs-neutral-200);
 }
 
 .slotBtn {
   height: 38px;
-  border: 1px solid #eaeaea;
-  border-radius: 8px;
-  background: white;
+  border: 1px solid var(--pcs-neutral-200);
+  border-radius: var(--pcs-radius-md);
+  background: #ffffff;
   font-size: 13px;
   font-weight: 600;
-  color: #333;
+  color: var(--pcs-neutral-800);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .slotBtn:hover {
-  border-color: #0f8a22;
-  color: #0f8a22;
-  background: #eaf6ec;
+  border-color: var(--pcs-brand-primary);
+  color: var(--pcs-brand-primary);
+  background: var(--pcs-brand-primary-light);
 }
 
 .slotSelected {
-  border-color: #0f8a22 !important;
-  background: #0f8a22 !important;
-  color: white !important;
+  border-color: var(--pcs-brand-primary) !important;
+  background: var(--pcs-brand-primary) !important;
+  color: #ffffff !important;
   font-weight: 700;
 }
 
@@ -625,9 +625,9 @@
   width: 100%;
   height: 50px;
   border: none;
-  border-radius: 12px;
-  background: #0f8a22;
-  color: white;
+  border-radius: var(--pcs-radius-md);
+  background: var(--pcs-brand-primary);
+  color: #ffffff;
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
@@ -641,11 +641,11 @@
 }
 
 .bookNowBtn:hover {
-  background: #064e1f;
+  background: var(--pcs-brand-primary-hover);
 }
 
 .bookNowBtn:disabled {
-  background: #ccc;
+  background: var(--pcs-neutral-300);
   cursor: not-allowed;
   box-shadow: none;
 }
@@ -653,10 +653,10 @@
 .saveCoachBtn {
   width: 100%;
   height: 46px;
-  border: 1.5px solid #0f8a22;
-  border-radius: 12px;
-  background: white;
-  color: #0f8a22;
+  border: 1.5px solid var(--pcs-brand-primary);
+  border-radius: var(--pcs-radius-md);
+  background: #ffffff;
+  color: var(--pcs-brand-primary);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -668,7 +668,7 @@
 }
 
 .saveCoachBtn:hover {
-  background: #eaf6ec;
+  background: var(--pcs-brand-primary-light);
 }
 
 /* Reassurance Badges */
@@ -679,7 +679,7 @@
   align-items: center;
   margin-top: 20px;
   padding-top: 16px;
-  border-top: 1px solid #eaeaea;
+  border-top: 1px solid var(--pcs-neutral-200);
   gap: 8px;
 }
 
@@ -688,12 +688,12 @@
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  color: #666;
+  color: var(--pcs-neutral-600);
   font-weight: 500;
 }
 
 .reassuranceItem svg {
-  color: #666;
+  color: var(--pcs-neutral-600);
   flex-shrink: 0;
 }
 
@@ -701,9 +701,9 @@
 .upcomingSection {
   margin-top: 48px;
   margin-bottom: 60px;
-  background: white;
-  border: 1px solid #eaeaea;
-  border-radius: 24px;
+  background: #ffffff;
+  border: 1px solid var(--pcs-neutral-200);
+  border-radius: var(--pcs-radius-lg);
   padding: 30px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
 }
@@ -711,7 +711,7 @@
 .upcomingSection h2 {
   font-size: 18px;
   font-weight: 700;
-  color: #111;
+  color: var(--pcs-neutral-900);
   margin: 0 0 20px 0;
   display: flex;
   align-items: center;
@@ -720,7 +720,7 @@
 
 .upcomingLoading {
   text-align: center;
-  color: #666;
+  color: var(--pcs-neutral-600);
   font-size: 14px;
   padding: 24px;
 }
@@ -740,9 +740,9 @@
 }
 
 .upcomingCol {
-  background: #fafafa;
-  border: 1px solid #eaeaea;
-  border-radius: 16px;
+  background: var(--pcs-neutral-50);
+  border: 1px solid var(--pcs-neutral-200);
+  border-radius: var(--pcs-radius-md);
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -753,10 +753,10 @@
 .upcomingDayHeader {
   font-size: 13px;
   font-weight: 800;
-  color: #111;
+  color: var(--pcs-neutral-900);
   text-align: center;
   padding-bottom: 8px;
-  border-bottom: 1px solid #eaeaea;
+  border-bottom: 1px solid var(--pcs-neutral-200);
 }
 
 .upcomingSlotsWrap {
@@ -768,7 +768,7 @@
 
 .upcomingNoSlots {
   font-size: 12px;
-  color: #999;
+  color: var(--pcs-neutral-500);
   text-align: center;
   grid-column: span 2;
   padding: 16px 0;
@@ -777,29 +777,29 @@
 
 .upcomingSlotBtn {
   height: 36px;
-  border: 1px solid #eaeaea;
-  border-radius: 8px;
-  background: white;
+  border: 1px solid var(--pcs-neutral-200);
+  border-radius: var(--pcs-radius-md);
+  background: #ffffff;
   font-size: 13px;
   font-weight: 600;
-  color: #333;
+  color: var(--pcs-neutral-800);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .upcomingSlotBtn:hover {
-  border-color: #0f8a22;
-  color: #0f8a22;
-  background: #eaf6ec;
+  border-color: var(--pcs-brand-primary);
+  color: var(--pcs-brand-primary);
+  background: var(--pcs-brand-primary-light);
 }
 
 .upcomingNextBtn {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 1px solid #eaeaea;
-  background: white;
-  color: #333;
+  border: 1px solid var(--pcs-neutral-200);
+  background: #ffffff;
+  color: var(--pcs-neutral-800);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -810,9 +810,9 @@
 }
 
 .upcomingNextBtn:hover {
-  background: #fafafa;
-  border-color: #ccc;
-  color: #000;
+  background: var(--pcs-neutral-50);
+  border-color: var(--pcs-neutral-300);
+  color: var(--pcs-neutral-900);
 }
 
 /* General Loading state Page styles */
@@ -821,22 +821,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fafafa;
+  background: var(--pcs-neutral-50);
 }
 
 .backButton {
-  background: white;
-  border: 1px solid #ccc;
-  color: #333;
+  background: #ffffff;
+  border: 1px solid var(--pcs-neutral-300);
+  color: var(--pcs-neutral-800);
   padding: 10px 20px;
-  border-radius: 8px;
+  border-radius: var(--pcs-radius-md);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .backButton:hover {
-  background: #f5f5f5;
+  background: var(--pcs-neutral-100);
 }
 
 /* Responsive Styles */
@@ -903,7 +903,7 @@
 
   .reviewsSummaryCard {
     border-right: none;
-    border-bottom: 1px solid #eaeaea;
+    border-bottom: 1px solid var(--pcs-neutral-200);
     padding-right: 0;
     padding-bottom: 20px;
   }

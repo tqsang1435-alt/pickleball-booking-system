@@ -59,7 +59,7 @@ export default function UserSelectorForVoucher({
         style={{
           width: "100%",
           padding: "0.55rem 0.75rem",
-          border: "1.5px solid #d1d5db",
+          border: "1.5px solid var(--pcs-neutral-300)",
           borderRadius: "8px",
           fontSize: "0.9rem",
           outline: "none",
@@ -70,7 +70,7 @@ export default function UserSelectorForVoucher({
       {/* Search results */}
       {results.length > 0 && (
         <div style={{
-          border: "1px solid #e5e7eb",
+          border: "1px solid var(--pcs-neutral-200)",
           borderRadius: "8px",
           marginTop: "0.3rem",
           background: "white",
@@ -85,19 +85,19 @@ export default function UserSelectorForVoucher({
               style={{
                 padding: "0.5rem 0.75rem",
                 cursor: "pointer",
-                borderBottom: "1px solid #f3f4f6",
+                borderBottom: "1px solid var(--pcs-neutral-100)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#f9fafb")}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--pcs-neutral-100)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
               <div>
                 <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>{u.FullName}</div>
-                <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>{u.Email}</div>
+                <div style={{ fontSize: "0.75rem", color: "var(--pcs-neutral-500)" }}>{u.Email}</div>
               </div>
-              <span style={{ fontSize: "0.75rem", color: "#9ca3af" }}>
+              <span style={{ fontSize: "0.75rem", color: "var(--pcs-neutral-400)" }}>
                 {u.RoleName || "Player"}
               </span>
             </div>
@@ -105,7 +105,7 @@ export default function UserSelectorForVoucher({
         </div>
       )}
       {searching && (
-        <p style={{ fontSize: "0.8rem", color: "#9ca3af", marginTop: "0.3rem" }}>
+        <p style={{ fontSize: "0.8rem", color: "var(--pcs-neutral-400)", marginTop: "0.3rem" }}>
           Đang tìm kiếm...
         </p>
       )}
@@ -113,7 +113,7 @@ export default function UserSelectorForVoucher({
       {/* Selected users */}
       {selectedUsers.length > 0 && (
         <div style={{ marginTop: "0.75rem" }}>
-          <div style={{ fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.4rem", color: "#374151" }}>
+          <div style={{ fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.4rem", color: "var(--pcs-neutral-800)" }}>
             Đã chọn ({selectedUsers.length} người):
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
@@ -121,15 +121,15 @@ export default function UserSelectorForVoucher({
               <span
                 key={u.UserID}
                 style={{
-                  background: "#f3e8ff",
-                  border: "1px solid #d8b4fe",
+                  background: "var(--pcs-brand-primary-light)",
+                  border: "1px solid var(--pcs-brand-primary-border)",
                   borderRadius: "999px",
                   padding: "3px 10px",
                   fontSize: "0.8rem",
                   display: "flex",
                   alignItems: "center",
                   gap: "6px",
-                  color: "#6d28d9",
+                  color: "var(--pcs-brand-primary)",
                 }}
               >
                 {u.FullName}
@@ -138,7 +138,7 @@ export default function UserSelectorForVoucher({
                   style={{
                     background: "none",
                     border: "none",
-                    color: "#dc2626",
+                    color: "var(--pcs-status-error)",
                     cursor: "pointer",
                     padding: 0,
                     fontSize: "0.85rem",

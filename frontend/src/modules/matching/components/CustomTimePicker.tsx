@@ -87,10 +87,10 @@ export default function CustomTimePicker({ value, onChange, required }: CustomTi
           width: "100%",
           padding: "0.625rem 0.75rem",
           fontSize: "14px",
-          border: isOpen ? "1px solid #22c55e" : "1px solid #cbd5e1",
+          border: isOpen ? "1px solid var(--pcs-brand-primary)" : "1px solid var(--pcs-neutral-300)",
           borderRadius: "8px",
           backgroundColor: "#ffffff",
-          color: value ? "#0f172a" : "#64748b",
+          color: value ? "var(--pcs-neutral-900)" : "var(--pcs-neutral-600)",
           textAlign: "left",
           cursor: "pointer",
           outline: "none",
@@ -102,7 +102,7 @@ export default function CustomTimePicker({ value, onChange, required }: CustomTi
         }}
       >
         <span>{value ? displayLabel : "--:-- --"}</span>
-        <span style={{ fontSize: "16px", color: "#64748b" }}>🕒</span>
+        <span style={{ fontSize: "16px", color: "var(--pcs-neutral-600)" }}>🕒</span>
       </button>
 
       {/* Popover Columns Picker */}
@@ -117,7 +117,7 @@ export default function CustomTimePicker({ value, onChange, required }: CustomTi
             gap: "8px",
             padding: "10px",
             backgroundColor: "#ffffff",
-            border: "1px solid #e2e8f0",
+            border: "1px solid var(--pcs-neutral-200)",
             borderRadius: "12px",
             boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)",
             width: "240px",
@@ -151,7 +151,7 @@ export default function CustomTimePicker({ value, onChange, required }: CustomTi
               gap: "4px",
             }}
           >
-            <div style={{ fontSize: "11px", fontWeight: "700", color: "#94a3b8", textAlign: "center", marginBottom: "4px" }}>GIỜ</div>
+            <div style={{ fontSize: "11px", fontWeight: "700", color: "var(--pcs-neutral-400)", textAlign: "center", marginBottom: "4px" }}>GIỜ</div>
             {hoursList.map((h) => {
               const isSelected = h === hour;
               return (
@@ -163,8 +163,8 @@ export default function CustomTimePicker({ value, onChange, required }: CustomTi
                     padding: "6px 0",
                     fontSize: "13px",
                     fontWeight: isSelected ? "700" : "500",
-                    color: isSelected ? "#ffffff" : "#334155",
-                    backgroundColor: isSelected ? "#22c55e" : "transparent",
+                    color: isSelected ? "#ffffff" : "var(--pcs-neutral-700)",
+                    backgroundColor: isSelected ? "var(--pcs-brand-primary)" : "transparent",
                     border: "none",
                     borderRadius: "6px",
                     cursor: "pointer",
@@ -172,7 +172,7 @@ export default function CustomTimePicker({ value, onChange, required }: CustomTi
                     textAlign: "center",
                   }}
                   onMouseEnter={(e) => {
-                    if (!isSelected) e.currentTarget.style.backgroundColor = "#f1f5f9";
+                    if (!isSelected) e.currentTarget.style.backgroundColor = "var(--pcs-neutral-100)";
                   }}
                   onMouseLeave={(e) => {
                     if (!isSelected) e.currentTarget.style.backgroundColor = "transparent";
@@ -185,7 +185,7 @@ export default function CustomTimePicker({ value, onChange, required }: CustomTi
           </div>
 
           {/* Divider */}
-          <div style={{ width: "1px", backgroundColor: "#f1f5f9", height: "160px", marginTop: "20px" }} />
+          <div style={{ width: "1px", backgroundColor: "var(--pcs-neutral-100)", height: "160px", marginTop: "20px" }} />
 
           {/* Minute Column */}
           <div
@@ -199,7 +199,7 @@ export default function CustomTimePicker({ value, onChange, required }: CustomTi
               gap: "4px",
             }}
           >
-            <div style={{ fontSize: "11px", fontWeight: "700", color: "#94a3b8", textAlign: "center", marginBottom: "4px" }}>PHÚT</div>
+            <div style={{ fontSize: "11px", fontWeight: "700", color: "var(--pcs-neutral-400)", textAlign: "center", marginBottom: "4px" }}>PHÚT</div>
             {minutesList.map((m) => {
               const isSelected = m === minute;
               return (
@@ -211,8 +211,8 @@ export default function CustomTimePicker({ value, onChange, required }: CustomTi
                     padding: "6px 0",
                     fontSize: "13px",
                     fontWeight: isSelected ? "700" : "500",
-                    color: isSelected ? "#ffffff" : "#334155",
-                    backgroundColor: isSelected ? "#22c55e" : "transparent",
+                    color: isSelected ? "#ffffff" : "var(--pcs-neutral-700)",
+                    backgroundColor: isSelected ? "var(--pcs-brand-primary)" : "transparent",
                     border: "none",
                     borderRadius: "6px",
                     cursor: "pointer",
@@ -220,7 +220,7 @@ export default function CustomTimePicker({ value, onChange, required }: CustomTi
                     textAlign: "center",
                   }}
                   onMouseEnter={(e) => {
-                    if (!isSelected) e.currentTarget.style.backgroundColor = "#f1f5f9";
+                    if (!isSelected) e.currentTarget.style.backgroundColor = "var(--pcs-neutral-100)";
                   }}
                   onMouseLeave={(e) => {
                     if (!isSelected) e.currentTarget.style.backgroundColor = "transparent";
@@ -233,7 +233,7 @@ export default function CustomTimePicker({ value, onChange, required }: CustomTi
           </div>
 
           {/* Divider */}
-          <div style={{ width: "1px", backgroundColor: "#f1f5f9", height: "160px", marginTop: "20px" }} />
+          <div style={{ width: "1px", backgroundColor: "var(--pcs-neutral-100)", height: "160px", marginTop: "20px" }} />
 
           {/* AM/PM Column */}
           <div
@@ -247,7 +247,7 @@ export default function CustomTimePicker({ value, onChange, required }: CustomTi
               gap: "4px",
             }}
           >
-            <div style={{ fontSize: "11px", fontWeight: "700", color: "#94a3b8", textAlign: "center", marginBottom: "4px" }}>BUỔI</div>
+            <div style={{ fontSize: "11px", fontWeight: "700", color: "var(--pcs-neutral-400)", textAlign: "center", marginBottom: "4px" }}>BUỔI</div>
             {(["AM", "PM"] as const).map((p) => {
               const isSelected = p === period;
               return (
@@ -259,8 +259,8 @@ export default function CustomTimePicker({ value, onChange, required }: CustomTi
                     padding: "8px 0",
                     fontSize: "13px",
                     fontWeight: isSelected ? "700" : "500",
-                    color: isSelected ? "#ffffff" : "#334155",
-                    backgroundColor: isSelected ? "#22c55e" : "transparent",
+                    color: isSelected ? "#ffffff" : "var(--pcs-neutral-700)",
+                    backgroundColor: isSelected ? "var(--pcs-brand-primary)" : "transparent",
                     border: "none",
                     borderRadius: "6px",
                     cursor: "pointer",
@@ -268,7 +268,7 @@ export default function CustomTimePicker({ value, onChange, required }: CustomTi
                     textAlign: "center",
                   }}
                   onMouseEnter={(e) => {
-                    if (!isSelected) e.currentTarget.style.backgroundColor = "#f1f5f9";
+                    if (!isSelected) e.currentTarget.style.backgroundColor = "var(--pcs-neutral-100)";
                   }}
                   onMouseLeave={(e) => {
                     if (!isSelected) e.currentTarget.style.backgroundColor = "transparent";
