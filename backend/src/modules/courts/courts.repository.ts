@@ -1,9 +1,9 @@
 import { getPool, sql } from "@/database/connection";
 
-export async function findAllCourts() {
+export async function findAllCourts(includeInactive = false) {
   const pool = await getPool();
 
-  const result = await pool.request().query(`
+  let query = `
     SELECT
       CourtID,
       CourtCode,
@@ -19,9 +19,15 @@ export async function findAllCourts() {
       CreatedAt,
       UpdatedAt
     FROM Courts
-    WHERE Status <> 'Inactive'
-    ORDER BY CourtID ASC
-  `);
+  `;
+
+  if (!includeInactive) {
+    query += ` WHERE Status <> 'Inactive'`;
+  }
+
+  query += ` ORDER BY CourtID ASC`;
+
+  const result = await pool.request().query(query);
 
   return result.recordset;
 }

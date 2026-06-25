@@ -6,6 +6,7 @@ import { getCourts, createCourt, updateCourt, deleteCourt } from "@/services/cou
 import { getToken, getUser } from "@/utils/authStorage";
 import type { Court } from "@/types/court";
 import StateBox from "@/components/common/StateBox";
+import ConfirmModal from "@/modules/staff/shared/ConfirmModal";
 import SlotManager from "./SlotManager";
 import styles from "./AdminCourtsPage.module.css";
 import { formatCurrency } from "@/utils/formatCurrency";
@@ -26,6 +27,10 @@ export default function AdminCourtsPage() {
   const [formError, setFormError] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [selectedCourtForSlot, setSelectedCourtForSlot] = useState<Court | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState<{ isOpen: boolean; court: Court | null }>({
+    isOpen: false,
+    court: null,
+  });
 
   // File Upload State
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -67,7 +72,8 @@ export default function AdminCourtsPage() {
     try {
       setLoading(true);
       setError("");
-      const data = await getCourts();
+      const userToken = getToken();
+      const data = await getCourts(true, userToken || undefined);
       setCourts(data);
     } catch (err: any) {
       setError(err.message || "Không thể tải danh sách sân");
@@ -197,16 +203,19 @@ export default function AdminCourtsPage() {
     }
   }
 
-  async function handleDelete(court: Court) {
+  function handleDelete(court: Court) {
     if (!token) return;
-    const confirmed = window.confirm(
-      `Bạn có chắc muốn xóa sân "${court.CourtName}" không?\nSân sẽ bị ẩn khỏi hệ thống (xóa mềm) và không thể đặt lịch.`
-    );
-    if (!confirmed) return;
+    setConfirmConfig({ isOpen: true, court });
+  }
+
+  async function confirmDelete() {
+    if (!token || !confirmConfig.court) return;
+    const court = confirmConfig.court;
 
     try {
       setDeletingId(court.CourtID);
       await deleteCourt(token, court.CourtID);
+      setConfirmConfig({ isOpen: false, court: null });
       loadCourts();
     } catch (err: any) {
       alert(err.message || "Không thể xóa sân. Vui lòng thử lại.");
@@ -559,6 +568,20 @@ export default function AdminCourtsPage() {
           court={selectedCourtForSlot}
           token={token}
           onClose={() => setSelectedCourtForSlot(null)}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {confirmConfig.isOpen && confirmConfig.court && (
+        <ConfirmModal
+          title="Xác nhận xóa sân"
+          message={`Bạn có chắc muốn xóa sân "${confirmConfig.court.CourtName}" không? Sân sẽ bị ẩn khỏi hệ thống (xóa mềm) và không thể đặt lịch.`}
+          onConfirm={confirmDelete}
+          onCancel={() => setConfirmConfig({ isOpen: false, court: null })}
+          confirmLabel="Xóa sân"
+          cancelLabel="Hủy"
+          variant="danger"
+          loading={deletingId === confirmConfig.court.CourtID}
         />
       )}
     </div>

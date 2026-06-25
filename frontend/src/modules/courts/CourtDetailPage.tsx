@@ -28,6 +28,66 @@ export default function CourtDetailPage({ courtId }: { courtId: string }) {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [bookingSlot, setBookingSlot] = useState<CourtSlot | null>(null);
 
+  // Lightbox State
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+
+  const displayImages = court
+    ? [
+        court.CourtImage || "/images/courts/c1.jpg",
+        "/images/courts/c2.jpg",
+        "/images/courts/c3.jpg",
+        "/images/courts/c4.jpg",
+        "/images/courts/c5.jpg",
+      ]
+    : [];
+
+  const openLightbox = (index: number) => {
+    setActiveImageIndex(index);
+    setLightboxOpen(true);
+  };
+
+  const handlePrevImage = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setActiveImageIndex((prev) => (prev > 0 ? prev - 1 : displayImages.length - 1));
+  };
+
+  const handleNextImage = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setActiveImageIndex((prev) => (prev < displayImages.length - 1 ? prev + 1 : 0));
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null || displayImages.length <= 1) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+
+    if (diff > 50) {
+      handleNextImage(); // Swipe left -> next
+    } else if (diff < -50) {
+      handlePrevImage(); // Swipe right -> prev
+    }
+    setTouchStartX(null);
+  };
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxOpen(false);
+      if (e.key === "ArrowLeft") handlePrevImage();
+      if (e.key === "ArrowRight") handleNextImage();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxOpen, activeImageIndex]); // activeImageIndex needed so handlers use latest state
+
   useEffect(() => {
     async function fetchCourt() {
       try {
@@ -82,6 +142,7 @@ export default function CourtDetailPage({ courtId }: { courtId: string }) {
   });
 
   const handleBookNow = () => {
+    if (!court || court.Status !== "Available") return;
     if (!selectedSlot) return;
     setBookingSlot(selectedSlot);
   };
@@ -111,6 +172,8 @@ export default function CourtDetailPage({ courtId }: { courtId: string }) {
     );
   }
 
+  const isCourtBookable = court.Status === "Available";
+
   return (
     <main className={styles.page}>
       <div className={`container ${styles.container}`}>
@@ -129,9 +192,9 @@ export default function CourtDetailPage({ courtId }: { courtId: string }) {
           <div className={styles.leftCol}>
             {/* Gallery Section */}
             <section className={styles.gallery}>
-              <div className={styles.mainImage}>
+              <div className={styles.mainImage} onClick={() => openLightbox(0)}>
                 <Image
-                  src={court.CourtImage || "/images/courts/c1.jpg"}
+                  src={displayImages[0]}
                   alt={court.CourtName}
                   fill
                   priority
@@ -142,21 +205,16 @@ export default function CourtDetailPage({ courtId }: { courtId: string }) {
                 </span>
               </div>
               <div className={styles.thumbnails}>
-                <div className={styles.thumbItem}>
-                  <Image src="/images/courts/c2.jpg" alt="court view 1" fill style={{ objectFit: "cover" }} />
-                </div>
-                <div className={styles.thumbItem}>
-                  <Image src="/images/courts/c3.jpg" alt="court view 2" fill style={{ objectFit: "cover" }} />
-                </div>
-                <div className={styles.thumbItem}>
-                  <Image src="/images/courts/c4.jpg" alt="court view 3" fill style={{ objectFit: "cover" }} />
-                </div>
-                <div className={styles.thumbItem}>
-                  <Image src="/images/courts/c5.jpg" alt="court view 4" fill style={{ objectFit: "cover" }} />
-                  <div className={styles.moreOverlay}>
-                    <span>Xem tất cả (18)</span>
+                {displayImages.slice(1, 5).map((img, idx) => (
+                  <div key={idx} className={styles.thumbItem} onClick={() => openLightbox(idx + 1)}>
+                    <Image src={img} alt={`${court.CourtName} view ${idx + 1}`} fill style={{ objectFit: "cover" }} />
+                    {idx === 3 && displayImages.length >= 5 && (
+                      <div className={styles.moreOverlay}>
+                        <span>Xem tất cả ({displayImages.length})</span>
+                      </div>
+                    )}
                   </div>
-                </div>
+                ))}
               </div>
             </section>
 
@@ -306,6 +364,13 @@ export default function CourtDetailPage({ courtId }: { courtId: string }) {
             <div className={styles.bookingCard}>
               <h3 className={styles.cardTitle}>Đặt sân ngay</h3>
               
+              {!isCourtBookable && (
+                <div className={styles.maintenanceNotice}>
+                  <strong>{court.Status === "Maintenance" ? "Sân đang bảo trì" : "Sân tạm ngưng hoạt động"}</strong>
+                  <p>Hiện tại sân chưa thể nhận lịch đặt. Vui lòng chọn sân khác hoặc quay lại sau.</p>
+                </div>
+              )}
+
               <div className={styles.priceRow}>
                 <span className={styles.price}>{formatCurrency(court.PricePerHour)}</span>
                 <span className={styles.unit}>/ giờ</span>
@@ -330,6 +395,7 @@ export default function CourtDetailPage({ courtId }: { courtId: string }) {
                       setSelectedSlot(null);
                     }}
                     className={styles.dateInput}
+                    disabled={!isCourtBookable}
                   />
                 </div>
               </div>
@@ -344,7 +410,7 @@ export default function CourtDetailPage({ courtId }: { courtId: string }) {
                 ) : (
                   <div className={styles.slotsGrid}>
                     {visibleSlots.map((slot) => {
-                      const isAvailable = slot.Status === "Available";
+                      const isAvailable = isCourtBookable && slot.Status === "Available";
                       const isSelected = selectedSlot?.SlotID === slot.SlotID;
                       return (
                         <button
@@ -386,8 +452,8 @@ export default function CourtDetailPage({ courtId }: { courtId: string }) {
               <button
                 type="button"
                 onClick={handleBookNow}
-                disabled={!selectedSlot}
-                className={styles.bookNowBtn}
+                disabled={!isCourtBookable || !selectedSlot}
+                className={`${styles.bookNowBtn} ${!isCourtBookable ? styles.bookingDisabled : ""}`}
               >
                 📅 Đặt sân ngay
               </button>
@@ -429,6 +495,49 @@ export default function CourtDetailPage({ courtId }: { courtId: string }) {
             reload();
           }}
         />
+      )}
+
+      {/* Lightbox Modal */}
+      {lightboxOpen && displayImages.length > 0 && (
+        <div className={styles.lightboxOverlay} onClick={() => setLightboxOpen(false)} role="dialog" aria-modal="true">
+          <div
+            className={styles.lightboxContent}
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            <button className={styles.lightboxClose} onClick={() => setLightboxOpen(false)} aria-label="Đóng">
+              &times;
+            </button>
+
+            {displayImages.length > 1 && (
+              <button className={styles.lightboxPrev} onClick={handlePrevImage} aria-label="Ảnh trước">
+                &lt;
+              </button>
+            )}
+
+            <div style={{ position: "relative", width: "100%", height: "100%" }}>
+              <Image
+                src={displayImages[activeImageIndex]}
+                alt={`${court.CourtName} image ${activeImageIndex + 1}`}
+                fill
+                className={styles.lightboxImage}
+              />
+            </div>
+
+            {displayImages.length > 1 && (
+              <button className={styles.lightboxNext} onClick={handleNextImage} aria-label="Ảnh sau">
+                &gt;
+              </button>
+            )}
+
+            {displayImages.length > 1 && (
+              <div className={styles.lightboxCounter}>
+                {activeImageIndex + 1} / {displayImages.length}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </main>
   );

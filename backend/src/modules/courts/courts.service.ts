@@ -17,8 +17,8 @@ import {
 
 // ─── COURTS ──────────────────────────────────────────────────
 
-export async function getAllCourts() {
-  return courtRepo.findAllCourts();
+export async function getAllCourts(includeInactive = false) {
+  return courtRepo.findAllCourts(includeInactive);
 }
 
 export async function getCourtById(courtId: number) {

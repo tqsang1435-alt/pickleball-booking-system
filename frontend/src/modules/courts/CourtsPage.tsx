@@ -82,12 +82,12 @@ export default function CourtsPage() {
             </div>
             <div className={styles.heroVisual}>
               <div className={styles.heroImage}>
-                <Image 
-                  src="/images/courts/c1.jpg" 
-                  alt="Pickleball court" 
-                  width={600} 
-                  height={400} 
-                  priority 
+                <Image
+                  src="/images/courts/c1.jpg"
+                  alt="Pickleball court"
+                  width={600}
+                  height={400}
+                  priority
                 />
               </div>
             </div>
@@ -151,10 +151,14 @@ export default function CourtsPage() {
                     sizes="(max-width: 768px) 100vw, 33vw"
                     style={{ objectFit: 'cover' }}
                   />
-                  <span className={styles.status}>
-                    {court.Status === "Available" ? "Còn trống"
+                  <span className={`${styles.status} ${
+                    court.Status === "Available" ? styles.statusAvailable
+                      : court.Status === "Maintenance" ? styles.statusMaintenance
+                      : styles.statusInactive
+                  }`}>
+                    {court.Status === "Available" ? "Đang hoạt động"
                       : court.Status === "Maintenance" ? "Bảo trì"
-                      : "Không hoạt động"}
+                      : "Tạm ngưng"}
                   </span>
                 </div>
 
@@ -181,14 +185,41 @@ export default function CourtsPage() {
 
                   <div className={styles.actions}>
                     {/* UC-12: Nút mở drawer lịch sân */}
-                    <button
-                      type="button"
-                      onClick={() => setSelectedCourt(court)}
-                      disabled={court.Status !== "Available"}
-                      title={court.Status !== "Available" ? "Sân hiện không hoạt động" : "Xem lịch sân theo ngày"}
-                    >
-                      📅 Xem lịch & đặt sân
-                    </button>
+                    {(() => {
+                      const isCourtBookable = court.Status === "Available";
+
+                      const buttonContent = (
+                        <button
+                          type="button"
+                          onClick={() => isCourtBookable && setSelectedCourt(court)}
+                          disabled={!isCourtBookable}
+                          title={isCourtBookable ? "Xem lịch sân theo ngày" : undefined}
+                          className={!isCourtBookable ? styles.disabledAction : undefined}
+                        >
+                          📅 Xem lịch & đặt sân
+                        </button>
+                      );
+
+                      if (isCourtBookable) {
+                        return buttonContent;
+                      }
+
+                      const disabledMessage =
+                        court.Status === "Maintenance"
+                          ? "Sân hiện đang bảo trì"
+                          : "Sân hiện tạm ngưng hoạt động";
+
+                      return (
+                        <span
+                          className={styles.disabledTooltip}
+                          data-tooltip={disabledMessage}
+                          aria-label={disabledMessage}
+                          tabIndex={0}
+                        >
+                          {buttonContent}
+                        </span>
+                      );
+                    })()}
                     <a href={`/courts/${court.CourtID}`} className={styles.outline} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}>
                       Chi tiết
                     </a>
