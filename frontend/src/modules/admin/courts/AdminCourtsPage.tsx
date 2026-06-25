@@ -7,7 +7,7 @@ import { getToken, getUser } from "@/utils/authStorage";
 import type { Court } from "@/types/court";
 import StateBox from "@/components/common/StateBox";
 import SlotManager from "./SlotManager";
-import ConfirmModal from "@/modules/staff/shared/ConfirmModal";
+import ConfirmModal from "../../staff/shared/ConfirmModal";
 import styles from "./AdminCourtsPage.module.css";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { getImageUrl } from "@/utils/image";
