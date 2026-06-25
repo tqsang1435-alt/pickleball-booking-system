@@ -66,15 +66,15 @@ export default function InvitationsTab({ token, onActionSuccess, showToast }: In
   function getStatusLabel(status: string) {
     switch (status) {
       case "Pending":
-        return <span style={{ color: "#d97706", fontWeight: "600" }}>Chờ xử lý</span>;
+        return <span style={{ color: "var(--pcs-status-warning)", fontWeight: "600" }}>Chờ xử lý</span>;
       case "Accepted":
-        return <span style={{ color: "#16a34a", fontWeight: "600" }}>Đã đồng ý</span>;
+        return <span style={{ color: "var(--pcs-brand-primary-hover)", fontWeight: "600" }}>Đã đồng ý</span>;
       case "Rejected":
-        return <span style={{ color: "#dc2626", fontWeight: "600" }}>Đã từ chối</span>;
+        return <span style={{ color: "var(--pcs-status-error)", fontWeight: "600" }}>Đã từ chối</span>;
       case "Cancelled":
-        return <span style={{ color: "#94a3b8", fontWeight: "600" }}>Đã hủy</span>;
+        return <span style={{ color: "var(--pcs-neutral-400)", fontWeight: "600" }}>Đã hủy</span>;
       case "Expired":
-        return <span style={{ color: "#94a3b8", fontWeight: "600" }}>Hết hạn</span>;
+        return <span style={{ color: "var(--pcs-neutral-400)", fontWeight: "600" }}>Hết hạn</span>;
       default:
         return <span>{status}</span>;
     }
@@ -82,15 +82,15 @@ export default function InvitationsTab({ token, onActionSuccess, showToast }: In
 
   return (
     <div>
-      <div style={{ display: "flex", gap: "1rem", borderBottom: "2px solid #f1f5f9", marginBottom: "1.5rem" }}>
+      <div style={{ display: "flex", gap: "1rem", borderBottom: "2px solid var(--pcs-neutral-100)", marginBottom: "1.5rem" }}>
         <button
           onClick={() => setSubTab("received")}
           style={{
             padding: "0.75rem 1rem",
             background: "none",
             border: "none",
-            borderBottom: subTab === "received" ? "2px solid #22c55e" : "none",
-            color: subTab === "received" ? "#16a34a" : "#64748b",
+            borderBottom: subTab === "received" ? "2px solid var(--pcs-brand-primary)" : "none",
+            color: subTab === "received" ? "var(--pcs-brand-primary-hover)" : "var(--pcs-neutral-600)",
             fontWeight: subTab === "received" ? "600" : "500",
             cursor: "pointer",
             fontSize: "15px",
@@ -104,8 +104,8 @@ export default function InvitationsTab({ token, onActionSuccess, showToast }: In
             padding: "0.75rem 1rem",
             background: "none",
             border: "none",
-            borderBottom: subTab === "sent" ? "2px solid #22c55e" : "none",
-            color: subTab === "sent" ? "#16a34a" : "#64748b",
+            borderBottom: subTab === "sent" ? "2px solid var(--pcs-brand-primary)" : "none",
+            color: subTab === "sent" ? "var(--pcs-brand-primary-hover)" : "var(--pcs-neutral-600)",
             fontWeight: subTab === "sent" ? "600" : "500",
             cursor: "pointer",
             fontSize: "15px",
@@ -127,8 +127,8 @@ export default function InvitationsTab({ token, onActionSuccess, showToast }: In
                 <div>
                   {inv.InvitationType === "InviteOpponent" && inv.Status === "Accepted" && (
                     <div style={{
-                      backgroundColor: "#dcfce7",
-                      color: "#15803d",
+                      backgroundColor: "var(--pcs-brand-primary-light)",
+                      color: "var(--pcs-brand-primary-hover)",
                       padding: "0.5rem",
                       borderRadius: "6px",
                       fontSize: "13px",
@@ -157,23 +157,23 @@ export default function InvitationsTab({ token, onActionSuccess, showToast }: In
                     </div>
                   </div>
 
-                  <div className={styles.cardBody} style={{ backgroundColor: "#f8fafc", padding: "0.75rem", borderRadius: "8px", marginBottom: "0.5rem" }}>
-                    <p style={{ margin: 0, fontSize: "13px", fontStyle: "italic", color: "#475569" }}>
+                  <div className={styles.cardBody} style={{ backgroundColor: "var(--pcs-neutral-50)", padding: "0.75rem", borderRadius: "8px", marginBottom: "0.5rem" }}>
+                    <p style={{ margin: 0, fontSize: "13px", fontStyle: "italic", color: "var(--pcs-neutral-600)" }}>
                       "{inv.Message || "Không có lời nhắn."}"
                     </p>
                   </div>
                   
                   {inv.InvitationType === "InviteOpponent" && (
-                    <div style={{ fontSize: "13px", color: "#475569", display: "flex", flexDirection: "column", gap: "0.35rem", padding: "0.5rem", backgroundColor: "#f1f5f9", borderRadius: "6px", marginBottom: "0.5rem" }}>
+                    <div style={{ fontSize: "13px", color: "var(--pcs-neutral-600)", display: "flex", flexDirection: "column", gap: "0.35rem", padding: "0.5rem", backgroundColor: "var(--pcs-neutral-100)", borderRadius: "6px", marginBottom: "0.5rem" }}>
                       {inv.GroupName && (
-                        <div>Nhóm gửi thách đấu: <strong style={{ color: "#0f172a" }}>{inv.GroupName}</strong></div>
+                        <div>Nhóm gửi thách đấu: <strong style={{ color: "var(--pcs-neutral-900)" }}>{inv.GroupName}</strong></div>
                       )}
-                      <div>Nhóm nhận thách đấu: <strong style={{ color: "#0f172a" }}>{inv.ReceiverGroupName || inv.ReceiverName || "Nhóm đối thủ"}</strong></div>
+                      <div>Nhóm nhận thách đấu: <strong style={{ color: "var(--pcs-neutral-900)" }}>{inv.ReceiverGroupName || inv.ReceiverName || "Nhóm đối thủ"}</strong></div>
                       {inv.ChallengeDate && (
-                        <div>Ngày thi đấu đề xuất: <strong style={{ color: "#0f172a" }}>{inv.ChallengeDate}</strong></div>
+                        <div>Ngày thi đấu đề xuất: <strong style={{ color: "var(--pcs-neutral-900)" }}>{inv.ChallengeDate}</strong></div>
                       )}
                       {inv.ChallengeStartTime && inv.ChallengeEndTime && (
-                        <div>Giờ thi đấu: <strong style={{ color: "#0f172a" }}>{inv.ChallengeStartTime} - {inv.ChallengeEndTime}</strong></div>
+                        <div>Giờ thi đấu: <strong style={{ color: "var(--pcs-neutral-900)" }}>{inv.ChallengeStartTime} - {inv.ChallengeEndTime}</strong></div>
                       )}
                     </div>
                   )}
@@ -192,7 +192,7 @@ export default function InvitationsTab({ token, onActionSuccess, showToast }: In
                       <button
                         onClick={() => handleReject(inv.InvitationID)}
                         className={styles.secondaryBtn}
-                        style={{ flex: 1, color: "#ef4444", borderColor: "#fecaca" }}
+                        style={{ flex: 1, color: "var(--pcs-status-error)", borderColor: "var(--pcs-status-error-border, #fecaca)" }}
                       >
                         Từ chối
                       </button>
@@ -217,12 +217,12 @@ export default function InvitationsTab({ token, onActionSuccess, showToast }: In
                           ) : (
                             <div style={{
                               fontSize: "12px",
-                              color: "#b45309",
-                              backgroundColor: "#fffbeb",
+                              color: "var(--pcs-status-warning)",
+                              backgroundColor: "var(--pcs-status-warning-bg, #fffbeb)",
                               padding: "0.5rem",
                               borderRadius: "6px",
                               textAlign: "center",
-                              border: "1px solid #fef3c7"
+                              border: "1px solid var(--pcs-status-warning-border, #fef3c7)"
                             }}>
                               ⚠️ Lời mời này chưa có lịch thi đấu hợp lệ.
                             </div>
@@ -246,8 +246,8 @@ export default function InvitationsTab({ token, onActionSuccess, showToast }: In
                 <div>
                   {inv.InvitationType === "InviteOpponent" && inv.Status === "Accepted" && (
                     <div style={{
-                      backgroundColor: "#dcfce7",
-                      color: "#15803d",
+                      backgroundColor: "var(--pcs-brand-primary-light)",
+                      color: "var(--pcs-brand-primary-hover)",
                       padding: "0.5rem",
                       borderRadius: "6px",
                       fontSize: "13px",
@@ -276,31 +276,31 @@ export default function InvitationsTab({ token, onActionSuccess, showToast }: In
                     </div>
                   </div>
 
-                  <div className={styles.cardBody} style={{ backgroundColor: "#f8fafc", padding: "0.75rem", borderRadius: "8px", marginBottom: "0.5rem" }}>
-                    <p style={{ margin: 0, fontSize: "13px", fontStyle: "italic", color: "#475569" }}>
+                  <div className={styles.cardBody} style={{ backgroundColor: "var(--pcs-neutral-50)", padding: "0.75rem", borderRadius: "8px", marginBottom: "0.5rem" }}>
+                    <p style={{ margin: 0, fontSize: "13px", fontStyle: "italic", color: "var(--pcs-neutral-600)" }}>
                       "{inv.Message || "Không có lời nhắn."}"
                     </p>
                   </div>
 
                   {inv.InvitationType === "InviteOpponent" && (
-                    <div style={{ fontSize: "13px", color: "#475569", display: "flex", flexDirection: "column", gap: "0.35rem", padding: "0.5rem", backgroundColor: "#f1f5f9", borderRadius: "6px", marginBottom: "0.5rem" }}>
+                    <div style={{ fontSize: "13px", color: "var(--pcs-neutral-600)", display: "flex", flexDirection: "column", gap: "0.35rem", padding: "0.5rem", backgroundColor: "var(--pcs-neutral-100)", borderRadius: "6px", marginBottom: "0.5rem" }}>
                       {inv.GroupName && (
-                        <div>Nhóm gửi thách đấu: <strong style={{ color: "#0f172a" }}>{inv.GroupName}</strong></div>
+                        <div>Nhóm gửi thách đấu: <strong style={{ color: "var(--pcs-neutral-900)" }}>{inv.GroupName}</strong></div>
                       )}
-                      <div>Nhóm nhận thách đấu: <strong style={{ color: "#0f172a" }}>{inv.ReceiverGroupName || inv.ReceiverName || "Nhóm đối thủ"}</strong></div>
+                      <div>Nhóm nhận thách đấu: <strong style={{ color: "var(--pcs-neutral-900)" }}>{inv.ReceiverGroupName || inv.ReceiverName || "Nhóm đối thủ"}</strong></div>
                       {inv.ChallengeDate && (
-                        <div>Ngày thi đấu đề xuất: <strong style={{ color: "#0f172a" }}>{inv.ChallengeDate}</strong></div>
+                        <div>Ngày thi đấu đề xuất: <strong style={{ color: "var(--pcs-neutral-900)" }}>{inv.ChallengeDate}</strong></div>
                       )}
                       {inv.ChallengeStartTime && inv.ChallengeEndTime && (
-                        <div>Giờ thi đấu: <strong style={{ color: "#0f172a" }}>{inv.ChallengeStartTime} - {inv.ChallengeEndTime}</strong></div>
+                        <div>Giờ thi đấu: <strong style={{ color: "var(--pcs-neutral-900)" }}>{inv.ChallengeStartTime} - {inv.ChallengeEndTime}</strong></div>
                       )}
                     </div>
                   )}
                 </div>
 
-                <div style={{ marginTop: "1.25rem", display: "flex", flexDirection: "column", gap: "0.5rem", borderTop: "1px dashed #e2e8f0", paddingTop: "0.75rem" }}>
+                <div style={{ marginTop: "1.25rem", display: "flex", flexDirection: "column", gap: "0.5rem", borderTop: "1px dashed var(--pcs-neutral-200)", paddingTop: "0.75rem" }}>
                   <div style={{ textAlign: "center" }}>
-                    <span style={{ fontSize: "13px", color: "#64748b" }}>
+                    <span style={{ fontSize: "13px", color: "var(--pcs-neutral-600)" }}>
                       Trạng thái: {getStatusLabel(inv.Status)}
                     </span>
                   </div>
@@ -319,12 +319,12 @@ export default function InvitationsTab({ token, onActionSuccess, showToast }: In
                       ) : (
                         <div style={{
                           fontSize: "12px",
-                          color: "#b45309",
-                          backgroundColor: "#fffbeb",
+                          color: "var(--pcs-status-warning)",
+                          backgroundColor: "var(--pcs-status-warning-bg, #fffbeb)",
                           padding: "0.5rem",
                           borderRadius: "6px",
                           textAlign: "center",
-                          border: "1px solid #fef3c7"
+                          border: "1px solid var(--pcs-status-warning-border, #fef3c7)"
                         }}>
                           ⚠️ Lời mời này chưa có lịch thi đấu hợp lệ.
                         </div>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, ReactNode } from "react";
+import { createPortal } from "react-dom";
 import {
   getCourtSlots,
   createSlot,
@@ -11,7 +12,7 @@ import {
 } from "@/services/courtApi";
 import type { Court } from "@/types/court";
 import { formatCurrency } from "@/utils/formatCurrency";
-import ConfirmModal from "@/modules/staff/shared/ConfirmModal";
+import ConfirmModal from "../../staff/shared/ConfirmModal";
 import styles from "./SlotManager.module.css";
 
 const AUTO_REFRESH_SEC = 30;
@@ -59,13 +60,27 @@ export default function SlotManager({ court, token, onClose }: Props) {
   // Single action
   const [actioningId, setActioningId] = useState<number | null>(null);
 
-  // Custom confirm state
+  // Modal and Toast
+  const [mounted, setMounted] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
   const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
     title: string;
     message: string;
+    variant: 'danger' | 'warning' | 'info' | 'success';
     onConfirm: () => void;
-    variant?: "danger" | "warning" | "info";
-  } | null>(null);
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    variant: "info",
+    onConfirm: () => {},
+  });
+
+  function showToast(msg: string) {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(""), 3000);
+  }
 
   // ─── Load slots ─────────────────────────────────────────────
   const loadSlots = useCallback(async (silent = false) => {
@@ -82,6 +97,7 @@ export default function SlotManager({ court, token, onClose }: Props) {
   }, [court.CourtID, date]);
 
   useEffect(() => {
+    setMounted(true);
     loadSlots();
     setCountdown(AUTO_REFRESH_SEC);
     setGenSuccess("");
@@ -129,39 +145,58 @@ export default function SlotManager({ court, token, onClose }: Props) {
 
   // ─── Single status change ────────────────────────────────────
   async function handleStatusChange(slotId: number, newStatus: string) {
-    try {
-      setActioningId(slotId);
-      await updateSlotStatus(token, slotId, newStatus);
-      await loadSlots(true);
-      resetCountdown();
-    } catch (err: any) {
-      alert(err.message || "Không thể cập nhật trạng thái slot");
-    } finally {
-      setActioningId(null);
-    }
-  }
+    const actionText = { Available: "mở", Blocked: "khóa", Maintenance: "chuyển sang bảo trì" }[newStatus] || newStatus;
+    const actionLabel = { Available: "Mở", Blocked: "Khóa", Maintenance: "Bảo trì" }[newStatus] || newStatus;
 
-  // ─── Delete slot ─────────────────────────────────────────────
-  function handleDeleteSlot(slotId: number) {
+    let variant: 'danger' | 'warning' | 'info' | 'success' = 'info';
+    if (newStatus === "Available") variant = "success";
+    if (newStatus === "Blocked") variant = "danger";
+    if (newStatus === "Maintenance") variant = "warning";
+
+    let message = `Bạn có chắc muốn ${actionText} slot này không?`;
+
     setConfirmConfig({
-      title: "Xác nhận xóa slot",
-      message: "Bạn có chắc muốn xóa slot này không?",
-      variant: "danger",
-      onConfirm: () => executeDeleteSlot(slotId),
+      isOpen: true,
+      title: `Xác nhận ${actionLabel}`,
+      message,
+      variant,
+      onConfirm: async () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        try {
+          setActioningId(slotId);
+          await updateSlotStatus(token, slotId, newStatus);
+          await loadSlots(true);
+          resetCountdown();
+        } catch (err: any) {
+          showToast(err.message || "Không thể cập nhật trạng thái slot");
+        } finally {
+          setActioningId(null);
+        }
+      }
     });
   }
 
-  async function executeDeleteSlot(slotId: number) {
-    try {
-      setActioningId(slotId);
-      await deleteSlot(token, slotId);
-      await loadSlots(true);
-      resetCountdown();
-    } catch (err: any) {
-      alert(err.message || "Không thể xóa slot");
-    } finally {
-      setActioningId(null);
-    }
+  // ─── Delete slot ─────────────────────────────────────────────
+  async function handleDeleteSlot(slotId: number) {
+    setConfirmConfig({
+      isOpen: true,
+      title: "Xác nhận xóa",
+      message: "Bạn có chắc muốn xóa slot này không?",
+      variant: "danger",
+      onConfirm: async () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        try {
+          setActioningId(slotId);
+          await deleteSlot(token, slotId);
+          await loadSlots(true);
+          resetCountdown();
+        } catch (err: any) {
+          showToast(err.message || "Không thể xóa slot");
+        } finally {
+          setActioningId(null);
+        }
+      }
+    });
   }
 
   // ─── Bulk actions ─────────────────────────────────────────────
@@ -181,28 +216,56 @@ export default function SlotManager({ court, token, onClose }: Props) {
 
   function handleBulkStatus(newStatus: string) {
     if (selectedIds.size === 0) return;
-    const label = { Available: "mở", Blocked: "khóa", Maintenance: "bảo trì" }[newStatus] ?? newStatus;
-    setConfirmConfig({
-      title: `Xác nhận ${label === "mở" ? "mở" : label === "khóa" ? "khóa" : "bảo trì"} slot`,
-      message: `Bạn muốn ${label} ${selectedIds.size} slot đã chọn?`,
-      variant: newStatus === "Available" ? "info" : "warning",
-      onConfirm: () => executeBulkStatus(newStatus),
-    });
-  }
 
-  async function executeBulkStatus(newStatus: string) {
-    try {
-      setBulkActing(true);
-      await Promise.all(
-        Array.from(selectedIds).map((id) =>
-          updateSlotStatus(token, id, newStatus).catch(() => null)
-        )
-      );
-      await loadSlots(true);
-      resetCountdown();
-    } finally {
-      setBulkActing(false);
+    const slotsToUpdate = Array.from(selectedIds).filter(id => {
+      const slot = slots.find(s => s.SlotID === id);
+      return slot && slot.Status !== newStatus;
+    });
+
+    if (slotsToUpdate.length === 0) {
+      const msgMap: Record<string, string> = {
+        Available: "Tất cả slot đã chọn hiện đang mở.",
+        Blocked: "Tất cả slot đã chọn hiện đã bị khóa.",
+        Maintenance: "Tất cả slot đã chọn hiện đang bảo trì."
+      };
+      showToast(msgMap[newStatus] || "Tất cả slot đã chọn đã ở trạng thái này.");
+      return;
     }
+
+    const actionText = { Available: "mở", Blocked: "khóa", Maintenance: "chuyển ... sang bảo trì" }[newStatus] || newStatus;
+    const actionLabel = { Available: "Mở", Blocked: "Khóa", Maintenance: "Bảo trì" }[newStatus] || newStatus;
+
+    let variant: 'danger' | 'warning' | 'info' | 'success' = 'info';
+    if (newStatus === "Available") variant = "success";
+    if (newStatus === "Blocked") variant = "danger";
+    if (newStatus === "Maintenance") variant = "warning";
+
+    let message = `Bạn có chắc muốn ${actionText} ${slotsToUpdate.length} slot đã chọn không?`;
+    if (newStatus === "Maintenance") {
+      message = `Bạn có chắc muốn chuyển ${slotsToUpdate.length} slot đã chọn sang bảo trì không?`;
+    }
+
+    setConfirmConfig({
+      isOpen: true,
+      title: `Xác nhận ${actionLabel}`,
+      message,
+      variant,
+      onConfirm: async () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        try {
+          setBulkActing(true);
+          await Promise.all(
+            slotsToUpdate.map((id) =>
+              updateSlotStatus(token, id, newStatus).catch(() => null)
+            )
+          );
+          await loadSlots(true);
+          resetCountdown();
+        } finally {
+          setBulkActing(false);
+        }
+      }
+    });
   }
 
   // ─── Create single slot ──────────────────────────────────────
@@ -505,16 +568,20 @@ export default function SlotManager({ court, token, onClose }: Props) {
           )}
         </div>
       </div>
-      {confirmConfig && (
+      {toastMessage && mounted && createPortal(
+        <div className={styles.toastOverlay}>
+          {toastMessage}
+        </div>,
+        document.body
+      )}
+      {confirmConfig.isOpen && (
         <ConfirmModal
           title={confirmConfig.title}
           message={confirmConfig.message}
-          onConfirm={() => {
-            confirmConfig.onConfirm();
-            setConfirmConfig(null);
-          }}
-          onCancel={() => setConfirmConfig(null)}
           variant={confirmConfig.variant}
+          onConfirm={confirmConfig.onConfirm}
+          onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+          loading={bulkActing || actioningId !== null}
         />
       )}
     </div>

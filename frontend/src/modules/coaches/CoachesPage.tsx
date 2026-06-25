@@ -270,7 +270,7 @@ export default function CoachesPage() {
                     <div>
                       <h2>✨ Kết quả gợi ý từ AI</h2>
                       {aiFallback && (
-                        <p style={{ color: "#b45309", fontSize: "0.85rem", marginTop: "4px" }}>
+                        <p style={{ color: "var(--pcs-status-warning)", fontSize: "0.85rem", marginTop: "4px" }}>
                           ⚠ Đang sử dụng thuật toán cơ bản do hệ thống AI bận.
                         </p>
                       )}

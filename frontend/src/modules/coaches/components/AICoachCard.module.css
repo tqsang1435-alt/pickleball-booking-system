@@ -1,9 +1,9 @@
 .card {
-  background: white;
-  border-radius: 16px;
-  border: 1px solid #e2f0e6;
+  background: #ffffff;
+  border-radius: var(--pcs-radius-lg);
+  border: 1px solid var(--pcs-neutral-200);
   padding: 16px;
-  box-shadow: 0 4px 20px rgba(15, 138, 34, 0.05);
+  box-shadow: var(--pcs-shadow-sm);
   display: flex;
   flex-direction: column;
   transition: transform 0.2s, box-shadow 0.2s;
@@ -11,7 +11,7 @@
 }
 .card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 30px rgba(15, 138, 34, 0.1);
+  box-shadow: var(--pcs-shadow-md);
 }
 .cardHeader {
   display: flex;
@@ -23,24 +23,24 @@
   font-size: 0.7rem;
   font-weight: 700;
   padding: 4px 8px;
-  border-radius: 8px;
+  border-radius: var(--pcs-radius-md);
   display: inline-flex;
   align-items: center;
   gap: 4px;
 }
 .bestMatch {
-  background: #fef3c7;
-  color: #b45309;
+  background: var(--pcs-status-warning-bg, #fff8e6);
+  color: var(--pcs-status-warning);
 }
 .alternative {
-  background: #e0f2fe;
-  color: #0369a1;
+  background: #eff6ff;
+  color: var(--pcs-status-info, #1d4ed8);
 }
 .favoriteBtn {
   background: none;
   border: none;
   font-size: 1rem;
-  color: #999;
+  color: var(--pcs-neutral-500);
   cursor: pointer;
 }
 .coachInfo {
@@ -53,7 +53,7 @@
   height: 56px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #f3ffe9;
+  border: 2px solid var(--pcs-brand-primary-light);
 }
 .details {
   flex: 1;
@@ -62,7 +62,7 @@
 .name {
   font-size: 1rem;
   font-weight: 700;
-  color: #111;
+  color: var(--pcs-neutral-900);
   margin: 0 0 2px 0;
   white-space: nowrap;
   overflow: hidden;
@@ -70,12 +70,12 @@
 }
 .meta {
   font-size: 0.8rem;
-  color: #666;
+  color: var(--pcs-neutral-600);
   margin: 0 0 2px 0;
 }
 .specialization {
   font-size: 0.8rem;
-  color: #444;
+  color: var(--pcs-neutral-700);
   margin: 0 0 6px 0;
   white-space: nowrap;
   overflow: hidden;
@@ -87,11 +87,11 @@
   gap: 6px;
 }
 .tag {
-  background: #f3ffe9;
-  color: #0f8a22;
+  background: var(--pcs-brand-primary-light);
+  color: var(--pcs-brand-primary);
   font-size: 0.7rem;
   padding: 4px 6px;
-  border-radius: 6px;
+  border-radius: var(--pcs-radius-sm);
   font-weight: 600;
 }
 .middleSection {
@@ -110,24 +110,24 @@
   gap: 6px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #333;
+  color: var(--pcs-neutral-800);
   margin-bottom: 6px;
 }
 .scoreValue {
   font-size: 1.5rem;
   font-weight: 800;
-  color: #0f8a22;
+  color: var(--pcs-brand-primary);
   margin-bottom: 6px;
 }
 .progressBg {
   height: 6px;
-  background: #e5e5e5;
+  background: var(--pcs-neutral-200);
   border-radius: 3px;
   overflow: hidden;
 }
 .progressFill {
   height: 100%;
-  background: linear-gradient(90deg, #0f8a22, #34d399);
+  background: linear-gradient(90deg, var(--pcs-brand-primary), var(--pcs-status-success, #34d399));
   border-radius: 3px;
 }
 .reasons {
@@ -137,7 +137,7 @@
 .reasonsTitle {
   font-size: 0.8rem;
   font-weight: 600;
-  color: #333;
+  color: var(--pcs-neutral-800);
   margin-bottom: 6px;
 }
 .reasonItem {
@@ -145,16 +145,16 @@
   align-items: flex-start;
   gap: 6px;
   font-size: 0.8rem;
-  color: #555;
+  color: var(--pcs-neutral-600);
   margin-bottom: 4px;
 }
 .checkIcon {
-  color: #0f8a22;
+  color: var(--pcs-brand-primary);
   font-weight: bold;
 }
 .footer {
   margin-top: auto;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--pcs-neutral-200);
   padding-top: 12px;
   display: flex;
   justify-content: space-between;
@@ -164,13 +164,13 @@
 .price {
   font-size: 1rem;
   font-weight: 700;
-  color: #0f8a22;
+  color: var(--pcs-brand-primary);
   line-height: 1.2;
 }
 .price span {
   font-size: 0.75rem;
   font-weight: normal;
-  color: #666;
+  color: var(--pcs-neutral-600);
 }
 .actions {
   display: flex;
@@ -178,7 +178,7 @@
 }
 .btnView, .btnBook {
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: var(--pcs-radius-md);
   font-size: 0.8rem;
   font-weight: 600;
   text-align: center;
@@ -188,19 +188,19 @@
   white-space: nowrap;
 }
 .btnView {
-  background: white;
-  color: #064e1f;
-  border: 1px solid #064e1f;
+  background: #ffffff;
+  color: var(--pcs-brand-primary);
+  border: 1px solid var(--pcs-brand-primary);
 }
 .btnView:hover {
-  background: #f3ffe9;
+  background: var(--pcs-brand-primary-light);
 }
 .btnBook {
-  background: #0f8a22;
-  color: white;
-  border: 1px solid #0f8a22;
+  background: var(--pcs-brand-primary);
+  color: #ffffff;
+  border: 1px solid var(--pcs-brand-primary);
 }
 .btnBook:hover {
-  background: #064e1f;
-  border-color: #064e1f;
+  background: var(--pcs-brand-primary-hover);
+  border-color: var(--pcs-brand-primary-hover);
 }

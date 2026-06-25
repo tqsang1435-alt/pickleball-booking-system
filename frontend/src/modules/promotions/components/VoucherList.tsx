@@ -41,7 +41,7 @@ export default function VoucherList({ token, bookingAmount, onSelect }: VoucherL
         style={{
           background: "none",
           border: "none",
-          color: "#7c3aed",
+          color: "var(--pcs-brand-primary)",
           fontSize: "0.83rem",
           cursor: "pointer",
           padding: 0,

@@ -21,6 +21,56 @@
   --pink-dark: #6fbd00;
   --pink-soft: #f3ffe4;
   --pink-border: #dff5c7;
+
+  /* PCS Foundation V2 (Operational SaaS) */
+  /* Brand Colors */
+  --pcs-brand-primary: #16a34a; /* Pickle Club Green */
+  --pcs-brand-primary-hover: #15803d;
+  --pcs-brand-primary-light: #f0fdf4;
+  --pcs-brand-primary-border: #bbf7d0;
+
+  /* Neutrals */
+  --pcs-neutral-50: #f8fafc;
+  --pcs-neutral-100: #f1f5f9;
+  --pcs-neutral-200: #e2e8f0;
+  --pcs-neutral-300: #cbd5e1;
+  --pcs-neutral-400: #94a3b8;
+  --pcs-neutral-500: #64748b;
+  --pcs-neutral-600: #475569;
+  --pcs-neutral-700: #334155;
+  --pcs-neutral-800: #1e293b;
+  --pcs-neutral-900: #0f172a;
+
+  /* Semantic Status */
+  --pcs-status-success: #22c55e;
+  --pcs-status-success-bg: #f0fdf4;
+  --pcs-status-warning: #eab308;
+  --pcs-status-warning-bg: #fefce8;
+  --pcs-status-error: #ef4444;
+  --pcs-status-error-bg: #fef2f2;
+  --pcs-status-error-border: #fecaca;
+  --pcs-status-info: #3b82f6;
+
+  /* Radii Scale */
+  --pcs-radius-sm: 4px;
+  --pcs-radius-md: 8px;
+  --pcs-radius-lg: 12px;
+  --pcs-radius-xl: 16px;
+
+  /* Shadows */
+  --pcs-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --pcs-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --pcs-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+
+  /* Spacing */
+  --pcs-spacing-xs: 0.25rem;
+  --pcs-spacing-sm: 0.5rem;
+  --pcs-spacing-md: 1rem;
+  --pcs-spacing-lg: 1.5rem;
+  --pcs-spacing-xl: 2rem;
+
+  /* Focus Ring */
+  --pcs-focus-ring: 0 0 0 2px #ffffff, 0 0 0 4px var(--pcs-brand-primary);
 }
 
 html {

@@ -73,13 +73,13 @@ export default function PaymentFailedPage() {
         {/* Icon */}
         <div
           className={styles.iconWrap}
-          style={{ background: "linear-gradient(135deg, #fecaca, #f87171)" }}
+          style={{ background: "var(--pcs-brand-primary)" }}
         >
           <span className={styles.icon}>❌</span>
         </div>
 
         {/* Title */}
-        <h1 className={styles.title} style={{ color: "#991b1b" }}>
+        <h1 className={styles.title} style={{ color: "var(--pcs-status-error)" }}>
           Thanh toán không thành công
         </h1>
         <p className={styles.subtitle}>{errorMessage}</p>

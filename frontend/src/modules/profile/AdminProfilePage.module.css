@@ -1,6 +1,6 @@
 .page {
   min-height: 100vh;
-  background: #f8fcf3;
+  background: var(--pcs-neutral-50);
   padding: 40px;
 }
 
@@ -17,24 +17,24 @@
 }
 
 .header span {
-  color: #5e9f25;
+  color: var(--pcs-brand-primary);
   font-weight: 800;
 }
 
 .header h1 {
   font-size: 36px;
-  color: #182018;
+  color: var(--pcs-neutral-900);
   margin: 8px 0;
 }
 
 .header p {
-  color: #6f7969;
+  color: var(--pcs-neutral-600);
 }
 
 .backBtn {
-  border: 1px solid #dcebd0;
+  border: 1px solid var(--pcs-neutral-200);
   background: #fff;
-  color: #2f5f25;
+  color: var(--pcs-neutral-800);
   padding: 12px 18px;
   border-radius: 14px;
   font-weight: 700;
@@ -50,7 +50,7 @@
 .sidebar,
 .formCard {
   background: #fff;
-  border: 1px solid #e2edd7;
+  border: 1px solid var(--pcs-neutral-200);
   border-radius: 28px;
   box-shadow: 0 18px 45px rgba(45, 75, 30, 0.08);
 }
@@ -66,13 +66,13 @@
   height: 132px;
   margin: 0 auto 20px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6ec91d, #285c25);
+  background: linear-gradient(135deg, var(--pcs-brand-primary), var(--pcs-brand-primary-hover));
   display: grid;
   place-items: center;
   color: #fff;
   font-size: 54px;
   font-weight: 900;
-  border: 7px solid #eef8e5;
+  border: 7px solid var(--pcs-brand-primary-light);
   overflow: hidden;
 }
 
@@ -84,12 +84,12 @@
 
 .sidebar h2 {
   font-size: 26px;
-  color: #182018;
+  color: var(--pcs-neutral-900);
   margin-bottom: 6px;
 }
 
 .sidebar p {
-  color: #737d6e;
+  color: var(--pcs-neutral-600);
   margin-bottom: 16px;
 }
 
@@ -97,8 +97,8 @@
   display: inline-block;
   padding: 8px 18px;
   border-radius: 999px;
-  background: #ecf8df;
-  color: #3d7f1c;
+  background: var(--pcs-brand-primary-light);
+  color: var(--pcs-brand-primary);
   font-weight: 800;
   margin-bottom: 24px;
 }
@@ -112,19 +112,19 @@
 .infoList div {
   padding: 16px;
   border-radius: 18px;
-  background: #f7fcf2;
-  border: 1px solid #edf5e8;
+  background: var(--pcs-neutral-50);
+  border: 1px solid var(--pcs-neutral-100);
 }
 
 .infoList span {
   display: block;
   font-size: 13px;
-  color: #7b8575;
+  color: var(--pcs-neutral-500);
   margin-bottom: 6px;
 }
 
 .infoList strong {
-  color: #1c251a;
+  color: var(--pcs-neutral-900);
 }
 
 .formCard {
@@ -133,7 +133,7 @@
 
 .formCard h2 {
   font-size: 26px;
-  color: #182018;
+  color: var(--pcs-neutral-900);
   margin-bottom: 24px;
 }
 
@@ -147,14 +147,14 @@
   display: flex;
   flex-direction: column;
   gap: 9px;
-  color: #42513b;
+  color: var(--pcs-neutral-800);
   font-weight: 700;
 }
 
 .formGrid input,
 .formGrid select,
 .formGrid textarea {
-  border: 1px solid #dbe8ce;
+  border: 1px solid var(--pcs-neutral-200);
   border-radius: 16px;
   padding: 15px 16px;
   font-size: 15px;
@@ -165,13 +165,13 @@
 .formGrid input:focus,
 .formGrid select:focus,
 .formGrid textarea:focus {
-  border-color: #73cf1e;
+  border-color: var(--pcs-brand-primary);
   box-shadow: 0 0 0 4px rgba(115, 207, 30, 0.13);
 }
 
 .formGrid input:disabled {
-  background: #f2f5ef;
-  color: #81887c;
+  background: var(--pcs-neutral-50);
+  color: var(--pcs-neutral-500);
 }
 
 .formGrid textarea {
@@ -200,12 +200,12 @@
 }
 
 .cancelBtn {
-  background: #f2f6ee;
-  color: #42513b;
+  background: var(--pcs-neutral-100);
+  color: var(--pcs-neutral-800);
 }
 
 .saveBtn {
-  background: linear-gradient(135deg, #73cf1e, #2e6b24);
+  background: linear-gradient(135deg, var(--pcs-brand-primary), var(--pcs-brand-primary-hover));
   color: #fff;
   box-shadow: 0 12px 24px rgba(75, 145, 25, 0.22);
 }
@@ -222,26 +222,26 @@
   border-radius: 18px;
   padding: 16px 18px;
   margin-bottom: 18px;
-  border: 1px solid #e6eedc;
+  border: 1px solid var(--pcs-neutral-200);
 }
 
 .error {
-  color: #d71920;
-  background: #fff1f1;
-  border-color: #ffc9c9;
+  color: var(--pcs-status-error);
+  background: var(--pcs-status-error-bg);
+  border-color: var(--pcs-status-error-bg);
 }
 
 .success {
-  color: #2c7d22;
-  background: #f0ffe8;
-  border-color: #cdefbd;
+  color: var(--pcs-status-success);
+  background: var(--pcs-status-success-bg);
+  border-color: var(--pcs-status-success-bg);
 }
 
 .state {
   max-width: 500px;
   margin: 80px auto;
   text-align: center;
-  color: #5f6b58;
+  color: var(--pcs-neutral-600);
 }
 
 @media (max-width: 900px) {

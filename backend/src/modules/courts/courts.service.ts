@@ -17,8 +17,8 @@ import {
 
 // ─── COURTS ──────────────────────────────────────────────────
 
-export async function getAllCourts() {
-  return courtRepo.findAllCourts();
+export async function getAllCourts(includeInactive = false) {
+  return courtRepo.findAllCourts(includeInactive);
 }
 
 export async function getCourtById(courtId: number) {
@@ -40,11 +40,12 @@ export async function getAvailableCourts(
     throw new Error("bookingDate is required");
   }
 
-  if (!startTime || !endTime) {
-    throw new Error("startTime and endTime are required");
+  if (startTime || endTime) {
+    if (!startTime || !endTime) {
+      throw new Error("Cần cung cấp cả startTime và endTime, hoặc không cung cấp cả hai");
+    }
+    validateTimeRange(startTime, endTime);
   }
-
-  validateTimeRange(startTime, endTime);
 
   return courtRepo.findAvailableCourts(bookingDate, startTime, endTime);
 }

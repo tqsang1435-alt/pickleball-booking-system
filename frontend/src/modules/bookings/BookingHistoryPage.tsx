@@ -33,9 +33,9 @@ const REFUND_STATUS_LABELS: Record<string, string> = {
 };
 
 const TYPE_LABELS: Record<string, string> = {
-  Court: "🏟️ Đặt sân",
-  Coach: "👨‍🏫 Đặt HLV",
-  Combo: "🔥 Combo",
+  Court: "Đặt sân",
+  Coach: "Đặt HLV",
+  Combo: "Combo",
 };
 
 function getStatusClass(status: string): string {
@@ -87,7 +87,7 @@ function CountdownBadge({ booking }: { booking: Booking }) {
 
   return (
     <div className={`${styles.countdownBadge} ${isUrgent ? styles.countdownUrgent : ""}`}>
-      ⏱️ Còn {mins}:{secs.toString().padStart(2, "0")} để thanh toán
+      Còn {mins}:{secs.toString().padStart(2, "0")}
     </div>
   );
 }
@@ -355,9 +355,9 @@ export default function BookingHistoryPage() {
             onChange={(e) => { setFilterType(e.target.value as FilterType); setPage(1); }}
           >
             <option value="all">Tất cả loại</option>
-            <option value="Court">🏟️ Đặt sân</option>
-            <option value="Coach">👨‍🏫 Đặt HLV</option>
-            <option value="Combo">🔥 Combo</option>
+            <option value="Court">Đặt sân</option>
+            <option value="Coach">Đặt HLV</option>
+            <option value="Combo">Combo</option>
           </select>
 
           <div className={styles.dateRange}>
@@ -425,34 +425,34 @@ export default function BookingHistoryPage() {
                   const isPast = Date.now() >= startDateTime.getTime();
                   return (
                     <tr key={booking.BookingID}>
-                      <td>
+                      <td data-label="Mã Booking">
                         <div className={styles.bookingCode}>{booking.BookingCode}</div>
                         <div className={styles.bookingDate}>
                           Đặt ngày: {new Date(booking.CreatedAt).toLocaleDateString("vi-VN", { timeZone: "UTC" })}
                         </div>
                       </td>
-                      <td>
+                      <td data-label="Dịch vụ">
                         <div className={styles.serviceType}>
                           {TYPE_LABELS[booking.BookingType] || booking.BookingType}
                         </div>
                         {booking.CourtName && <div className={styles.serviceDetail}>Sân: {booking.CourtName}</div>}
                         {booking.CoachName && <div className={styles.serviceDetail}>HLV: {booking.CoachName}</div>}
                       </td>
-                      <td>
+                      <td data-label="Thời gian">
                         <div className={styles.playDate}>
-                          📅 {new Date(booking.BookingDate).toLocaleDateString("vi-VN", { timeZone: "UTC" })}
+                          {new Date(booking.BookingDate).toLocaleDateString("vi-VN", { timeZone: "UTC" })}
                         </div>
                         <div className={styles.playTime}>
-                          ⏱️ {booking.StartTime} - {booking.EndTime}
+                          {booking.StartTime} - {booking.EndTime}
                         </div>
                       </td>
-                      <td>
+                      <td data-label="Tổng tiền">
                         <div className={styles.amount}>{formatCurrency(Number(booking.TotalAmount))}</div>
                         {booking.PaymentMethod && (
-                          <div className={styles.paymentMethod}>💳 {booking.PaymentMethod}</div>
+                          <div className={styles.paymentMethod}>{booking.PaymentMethod}</div>
                         )}
                       </td>
-                      <td>
+                      <td data-label="Trạng thái">
                         <span className={`${styles.badge} ${styles["badge" + booking.Status] || ""}`}>
                           {STATUS_LABELS[booking.Status] || booking.Status}
                         </span>
@@ -470,7 +470,7 @@ export default function BookingHistoryPage() {
                         )}
                         <CountdownBadge booking={booking} />
                       </td>
-                      <td>
+                      <td data-label="Hành động">
                         <div className={styles.actionCell}>
                           {isPending && !isExpired && (
                             <button
@@ -478,7 +478,7 @@ export default function BookingHistoryPage() {
                               onClick={() => setPayTarget(booking)}
                               title="Thanh toán booking này"
                             >
-                              💳 Thanh toán
+                              Thanh toán
                             </button>
                           )}
                           {isPending && !isExpired && (
@@ -491,10 +491,9 @@ export default function BookingHistoryPage() {
                           )}
                           {["Confirmed", "Paid"].includes(booking.Status) && !isPast && (
                             <button
-                              className={styles.btnCancel}
+                              className={`${styles.btnCancel} ${styles.btnCancelRefund}`}
                               onClick={() => setRefundTarget(booking)}
                               title="Yêu cầu hoàn tiền và hủy"
-                              style={{ backgroundColor: "#ef4444", color: "white" }}
                             >
                               Yêu cầu Hoàn tiền
                             </button>

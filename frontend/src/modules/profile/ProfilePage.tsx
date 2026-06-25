@@ -366,7 +366,7 @@ export default function ProfilePage() {
                               className={styles.btnPay}
                               onClick={() => handleCheckIn(booking)}
                               disabled={isActioning}
-                              style={{ backgroundColor: "#22c55e" }}
+                              style={{ backgroundColor: "var(--pcs-brand-primary)" }}
                             >
                               Check-In
                             </button>

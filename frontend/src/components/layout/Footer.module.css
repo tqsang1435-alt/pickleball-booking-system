@@ -2,14 +2,9 @@
   margin-top: 70px;
   padding: 56px 0 24px;
 
-  background:
-    linear-gradient(
-      135deg,
-      #ffffff 0%,
-      #f8fff1 100%
-    );
+  background: var(--pcs-neutral-50);
 
-  border-top: 1px solid #dff5c7;
+  border-top: 1px solid var(--pcs-neutral-200);
 
   position: relative;
   overflow: hidden;
@@ -29,7 +24,7 @@
   background:
     radial-gradient(
       circle,
-      rgba(139, 216, 15, 0.16),
+      var(--pcs-brand-primary-light),
       transparent 70%
     );
 
@@ -62,11 +57,11 @@
 
   letter-spacing: -0.04em;
 
-  color: #171a2a;
+  color: var(--pcs-neutral-900);
 }
 
 .logo span {
-  color: #3f6b32;
+  color: var(--pcs-brand-primary);
 }
 
 .footer h4 {
@@ -75,7 +70,7 @@
   font-size: 16px;
   font-weight: 900;
 
-  color: #171a2a;
+  color: var(--pcs-neutral-900);
 
   letter-spacing: -0.02em;
 }
@@ -84,7 +79,7 @@
 .footer p {
   display: block;
 
-  color: #52614d;
+  color: var(--pcs-neutral-600);
 
   font-size: 15px;
   font-weight: 600;
@@ -95,7 +90,7 @@
 }
 
 .footer a:hover {
-  color: #2f5a24;
+  color: var(--pcs-brand-primary);
   transform: translateX(3px);
 }
 
@@ -119,14 +114,9 @@
 
   border-radius: 50%;
 
-  background:
-    linear-gradient(
-      135deg,
-      #efffdd,
-      #dffff4
-    );
+  background: var(--pcs-brand-primary-light);
 
-  color: #2f5a24;
+  color: var(--pcs-brand-primary);
 
   font-size: 13px;
   font-weight: 900;
@@ -140,12 +130,7 @@
 .socials span:hover {
   transform: translateY(-4px) scale(1.05);
 
-  background:
-    linear-gradient(
-      135deg,
-      #3f6b32,
-      #274b1f
-    );
+  background: var(--pcs-brand-primary-hover);
 
   color: #ffffff;
 }
@@ -161,12 +146,12 @@
 
   text-align: center;
 
-  color: #6f7d69;
+  color: var(--pcs-neutral-500);
 
   font-size: 14px;
   font-weight: 700;
 
-  border-top: 1px solid #e7f5db;
+  border-top: 1px solid var(--pcs-neutral-200);
 }
 
 @media (max-width: 900px) {

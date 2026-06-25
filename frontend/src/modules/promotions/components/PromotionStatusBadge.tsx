@@ -12,21 +12,21 @@ interface StatusConfig {
 const statusConfig: Record<PromotionStatus, StatusConfig> = {
   Active: {
     label: "Đang hoạt động",
-    bg: "#dcfce7",
-    color: "#15803d",
-    dot: "#16a34a",
+    bg: "var(--pcs-status-success-bg)",
+    color: "var(--pcs-status-success)",
+    dot: "var(--pcs-status-success)",
   },
   Inactive: {
     label: "Tạm dừng",
-    bg: "#f3f4f6",
-    color: "#6b7280",
-    dot: "#9ca3af",
+    bg: "var(--pcs-neutral-100)",
+    color: "var(--pcs-neutral-500)",
+    dot: "var(--pcs-neutral-400)",
   },
   Expired: {
     label: "Đã hết hạn",
-    bg: "#fee2e2",
-    color: "#dc2626",
-    dot: "#dc2626",
+    bg: "var(--pcs-status-error-bg)",
+    color: "var(--pcs-status-error)",
+    dot: "var(--pcs-status-error)",
   },
 };
 
@@ -37,9 +37,9 @@ export default function PromotionStatusBadge({
 }) {
   const cfg = statusConfig[status] ?? {
     label: status,
-    bg: "#f3f4f6",
-    color: "#374151",
-    dot: "#9ca3af",
+    bg: "var(--pcs-neutral-100)",
+    color: "var(--pcs-neutral-800)",
+    dot: "var(--pcs-neutral-400)",
   };
   return (
     <span

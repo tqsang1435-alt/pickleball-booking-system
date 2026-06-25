@@ -7,6 +7,7 @@ import { calculateHours, validateBookingDate, validateHoldingLimit, validateCoac
 import { isScheduleExpired } from "../coaches/coaches.validation";
 import { sendBookingCreatedEmail, sendPaymentSuccessEmail, sendCoachAssignedEmail, sendNoShowEmail, sendPaymentExpiredEmail } from "@/utils/mail";
 import { countActiveGroupMembers } from "../playgroups/playgroups.repository";
+import { AppError } from "@/utils/AppError";
 
 // ---- Create Bookings ----
 
@@ -651,9 +652,9 @@ export async function mockPayBooking(
       .request()
       .input("BookingID", sql.Int, bookingId)
       .query(`
-        SELECT b.BookingCode, b.BookingType, 
-               CONVERT(VARCHAR(10), b.BookingDate, 103) AS BookingDate, 
-               CONVERT(VARCHAR(5), bd.StartTime, 108) AS StartTime, 
+        SELECT b.BookingCode, b.BookingType,
+               CONVERT(VARCHAR(10), b.BookingDate, 103) AS BookingDate,
+               CONVERT(VARCHAR(5), bd.StartTime, 108) AS StartTime,
                CONVERT(VARCHAR(5), bd.EndTime, 108) AS EndTime,
                b.DiscountAmount,
                u.UserID, u.Email, u.FullName,
@@ -799,11 +800,11 @@ export async function getMyBookings(userId: number) {
   const user = await findUserById(userId);
   if (!user) throw new Error("Nguoi dung khong ton tai");
   const bookings = await findBookingsByUserId(userId);
-  
+
   return bookings.map((b) => ({
     ...b,
-    PaymentDeadline: b.Status === "PendingPayment" 
-      ? calculatePaymentDeadline(b.CreatedAt, b.BookingDate, b.StartTime) 
+    PaymentDeadline: b.Status === "PendingPayment"
+      ? calculatePaymentDeadline(b.CreatedAt, b.BookingDate, b.StartTime)
       : null
   }));
 }
@@ -880,6 +881,18 @@ export async function createTeamBooking(input: {
 }) {
   // BR-23
   validateBookingDate(input.bookingDate, input.startTime);
+
+  // Validate duration <= 2 hours (120 minutes)
+  const [startH, startM] = input.startTime.split(':').map(Number);
+  const [endH, endM] = input.endTime.split(':').map(Number);
+  const durationMins = (endH * 60 + endM) - (startH * 60 + startM);
+
+  if (durationMins <= 0) {
+    throw new AppError("Thời gian kết thúc phải sau thời gian bắt đầu.", 400);
+  }
+  if (durationMins > 120) {
+    throw new AppError("Bạn chỉ có thể đặt tối đa 2 giờ liên tiếp cho một lần đặt sân nhóm.", 400);
+  }
 
   // Validate user
   const user = await findUserById(input.userId);

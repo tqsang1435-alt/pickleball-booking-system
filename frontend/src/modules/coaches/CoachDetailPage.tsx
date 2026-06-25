@@ -370,7 +370,7 @@ export default function CoachDetailPage() {
                   {coach.FullName}
                   <span className={styles.verifiedBadge}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="12" cy="12" r="10" fill="#0f8a22"/>
+                      <circle cx="12" cy="12" r="10" fill="var(--pcs-brand-primary)"/>
                       <path d="M8.5 12.5L11 15L16 9" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </span>
@@ -388,7 +388,7 @@ export default function CoachDetailPage() {
             <div className={styles.statsRow}>
               <div className={styles.statCell}>
                 <div className={styles.statVal}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="#ffb700" style={{ marginRight: "4px" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--pcs-status-warning)" style={{ marginRight: "4px" }}>
                     <path d="M12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.63L12 2L9.19 8.63L2 9.24L7.46 13.97L5.82 21L12 17.27Z"/>
                   </svg>
                   {Number(coach.AverageRating || 0).toFixed(1)}
@@ -478,7 +478,7 @@ export default function CoachDetailPage() {
                     <strong className={styles.ratingNumber}>4.9</strong>
                     <div className={styles.starsRow}>
                       {[...Array(5)].map((_, i) => (
-                        <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill="#ffb700">
+                        <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill="var(--pcs-status-warning)">
                           <path d="M12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.63L12 2L9.19 8.63L2 9.24L7.46 13.97L5.82 21L12 17.27Z"/>
                         </svg>
                       ))}
@@ -505,7 +505,7 @@ export default function CoachDetailPage() {
                             <strong className={styles.authorName}>{rev.name}</strong>
                             <div className={styles.reviewStarsMini}>
                               {[...Array(rev.stars)].map((_, i) => (
-                                <svg key={i} width="10" height="10" viewBox="0 0 24 24" fill="#ffb700">
+                                <svg key={i} width="10" height="10" viewBox="0 0 24 24" fill="var(--pcs-status-warning)">
                                   <path d="M12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.63L12 2L9.19 8.63L2 9.24L7.46 13.97L5.82 21L12 17.27Z"/>
                                 </svg>
                               ))}

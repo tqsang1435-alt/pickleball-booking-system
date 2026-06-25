@@ -81,7 +81,8 @@ export default function AdminCourtsPage() {
     try {
       setLoading(true);
       setError("");
-      const data = await getCourts();
+      const userToken = getToken();
+      const data = await getCourts(true, userToken || undefined);
       setCourts(data);
     } catch (err: any) {
       setError(err.message || "Không thể tải danh sách sân");

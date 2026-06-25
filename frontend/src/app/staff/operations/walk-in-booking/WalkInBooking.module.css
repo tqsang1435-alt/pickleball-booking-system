@@ -1,6 +1,6 @@
 .page {
   padding: 28px;
-  color: #111827;
+  color: var(--pcs-neutral-900);
 }
 
 .header {
@@ -19,7 +19,7 @@
 
 .header p {
   margin: 0;
-  color: #6b7280;
+  color: var(--pcs-neutral-500);
 }
 
 .staffBox {
@@ -32,7 +32,7 @@
 
 .staffBox span {
   display: block;
-  color: #6b7280;
+  color: var(--pcs-neutral-500);
   font-size: 12px;
   margin-bottom: 4px;
 }
@@ -45,7 +45,7 @@
 
 .panel {
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--pcs-neutral-200);
   border-radius: 8px;
   padding: 18px;
 }
@@ -72,18 +72,18 @@
   gap: 7px;
   font-size: 13px;
   font-weight: 700;
-  color: #374151;
+  color: var(--pcs-neutral-800);
 }
 
 .formGrid input,
 .formGrid select,
 .customerSearch input,
 .customerSearch select {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--pcs-neutral-300);
   border-radius: 8px;
   padding: 11px 12px;
   font-size: 14px;
-  color: #111827;
+  color: var(--pcs-neutral-900);
   background: #fff;
 }
 
@@ -91,7 +91,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px;
-  background: #f3f4f6;
+  background: var(--pcs-neutral-100);
   border-radius: 8px;
   padding: 4px;
   margin-bottom: 14px;
@@ -103,12 +103,12 @@
   padding: 10px;
   background: transparent;
   font-weight: 700;
-  color: #4b5563;
+  color: var(--pcs-neutral-700);
 }
 
 .segmented .active {
   background: #fff;
-  color: #166534;
+  color: var(--pcs-status-success);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -139,7 +139,7 @@
 }
 
 .payments label {
-  border: 1.5px solid #e5e7eb;
+  border: 1.5px solid var(--pcs-neutral-200);
   border-radius: 8px;
   padding: 13px;
   display: flex;
@@ -150,8 +150,8 @@
 
 .payments .payActive {
   border-color: #2e7d32;
-  background: #f0fdf4;
-  color: #166534;
+  background: var(--pcs-status-success-bg);
+  color: var(--pcs-status-success);
 }
 
 .totalBox {
@@ -193,15 +193,15 @@
 }
 
 .error {
-  background: #fef2f2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
+  background: var(--pcs-status-error-bg);
+  color: var(--pcs-status-error);
+  border: 1px solid var(--pcs-status-error-border);
 }
 
 .success {
-  background: #f0fdf4;
-  color: #166534;
-  border: 1px solid #bbf7d0;
+  background: var(--pcs-status-success-bg);
+  color: var(--pcs-status-success);
+  border: 1px solid var(--pcs-status-success-border);
 }
 
 @media (max-width: 860px) {
