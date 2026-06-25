@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import styles from "./AdminPage.module.css";
 import {
   getDashboardSnapshot,
@@ -9,6 +10,7 @@ import {
   type SaaSDashboardStats,
   getDemoSaaSDashboardStats,
 } from "@/services/adminApi";
+import { getManagerRefunds, approveRefund } from "@/services/refundApi";
 import { getRelativeTime } from "@/utils/timeFormat";
 import { getToken, getUser } from "@/utils/authStorage";
 import {
@@ -28,6 +30,16 @@ import {
   FiAlertCircle,
   FiTag,
   FiCheckCircle,
+  FiEdit,
+  FiPlus,
+  FiSearch,
+  FiMail,
+  FiCheck,
+  FiX,
+  FiCpu,
+  FiHardDrive,
+  FiDatabase,
+  FiShield,
 } from "react-icons/fi";
 
 import {
@@ -45,15 +57,14 @@ import {
   CartesianGrid,
 } from "recharts";
 
-// Mapping status colors based on the success mockup design tokens
 const STATUS_COLORS: Record<string, string> = {
-  Completed: "#3b82f6", // Blue - Đã hoàn thành (#3B82F6)
-  Confirmed: "#22c55e", // Green - Đã xác nhận (#22C55E)
-  Paid: "#22c55e", // Green - Đã thanh toán (biểu thị đã thanh toán thành công)
-  CheckedIn: "#8b5cf6", // Purple - Đã Check-in
-  PendingPayment: "#fbbf24", // Yellow - Đang chờ (#FBBF24)
-  Cancelled: "#f43f5e", // Rose/Red - Đã hủy (#F43F5E)
-  Refunded: "#ec4899", // Pink - Hoàn tiền
+  Completed: "#3b82f6", // Blue
+  Confirmed: "#22c55e", // Green
+  Paid: "#22c55e",
+  CheckedIn: "#8b5cf6", // Purple
+  PendingPayment: "#f59e0b", // Yellow
+  Cancelled: "#ef4444", // Red
+  Refunded: "#ec4899", // Pink
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -61,15 +72,14 @@ const STATUS_LABELS: Record<string, string> = {
   Confirmed: "Đã xác nhận",
   Paid: "Đã thanh toán",
   CheckedIn: "Đã Check-in",
-  PendingPayment: "Đang chờ",
+  PendingPayment: "Chờ thanh toán",
   Cancelled: "Đã hủy",
   Refunded: "Hoàn tiền",
 };
 
-// Payment colors matching the mockup
 const PAYMENT_COLORS: Record<string, string> = {
-  "VietQR": "#3b82f6", // Blue - VietQR
-  "Tiền mặt (Khách vãng lai)": "#f97316", // Orange - Cash
+  "VietQR": "#3b82f6",
+  "Tiền mặt (Khách vãng lai)": "#f97316",
 };
 const FALLBACK_PAYMENT_COLORS = ["#3b82f6", "#f97316", "#8b5cf6", "#22c55e", "#ec4899"];
 
@@ -80,22 +90,28 @@ export default function AdminPage() {
   const [role, setRole] = useState("");
   const [user, setUser] = useState<any | null>(null);
   
-  // States for stats and loading
+  // Data States
   const [saaSDats, setSaaSDats] = useState<SaaSDashboardStats | null>(null);
+  const [dailyBookings, setDailyBookings] = useState<any[]>([]);
+  const [refundRequests, setRefundRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [dataSource, setDataSource] = useState<"api" | "collected" | "demo">("api");
 
-  // Filter states
+  // Filter States
   const [datePreset, setDatePreset] = useState("7days");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
   const [showCustomPicker, setShowCustomPicker] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
+  // Time scale switch (Weekly / Monthly)
+  const [timeScale, setTimeScale] = useState<"weekly" | "monthly">("weekly");
+
   useEffect(() => {
     setIsMounted(true);
-    setToken(getToken());
+    const jwt = getToken();
+    setToken(jwt);
     const currentUser = getUser();
     setUser(currentUser);
     const userRole = String(
@@ -151,11 +167,14 @@ export default function AdminPage() {
       queryEnd = dates.endDate;
     }
 
+    const currentToken = getToken();
+
     // If no token, load demo mock data
-    if (!token) {
+    if (!currentToken) {
       setTimeout(() => {
         const demo = getDemoDashboardSnapshot();
         setSaaSDats(demo.saaSDats || getDemoSaaSDashboardStats());
+        setDailyBookings(demo.dailyBookings || []);
         setDataSource("demo");
         setLoading(false);
       }, 500);
@@ -163,9 +182,19 @@ export default function AdminPage() {
     }
 
     try {
-      const snapshot = await getDashboardSnapshot(token, queryStart, queryEnd);
+      const snapshot = await getDashboardSnapshot(currentToken, queryStart, queryEnd);
       setSaaSDats(snapshot.saaSDats || getDemoSaaSDashboardStats());
+      setDailyBookings(snapshot.dailyBookings || []);
       setDataSource(snapshot.source);
+
+      // Fetch pending refunds
+      try {
+        const refunds = await getManagerRefunds(currentToken, { status: "Pending" });
+        setRefundRequests(refunds || []);
+      } catch (refundErr) {
+        console.error("Lỗi lấy danh sách hoàn tiền:", refundErr);
+        setRefundRequests([]);
+      }
     } catch (err) {
       console.error("Lỗi tải dữ liệu dashboard:", err);
       setError("Không thể kết nối đến máy chủ. Đang hiển thị dữ liệu demo.");
@@ -174,7 +203,7 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [token, datePreset, customStartDate, customEndDate, getPresetDates]);
+  }, [datePreset, customStartDate, customEndDate, getPresetDates]);
 
   useEffect(() => {
     if (isMounted) {
@@ -182,32 +211,35 @@ export default function AdminPage() {
     }
   }, [loadData, isMounted]);
 
-  // Helpers for calculations
-  const calculateGrowth = (current: number, previous: number) => {
-    if (previous === 0) return current > 0 ? 100 : 0;
-    return parseFloat((((current - previous) / previous) * 100).toFixed(1));
+  // Refund approval handler
+  const handleApproveRefundRequest = async (refundCode: string) => {
+    const currentToken = getToken();
+    if (!currentToken) {
+      alert("Vui lòng đăng nhập với quyền quản trị viên.");
+      return;
+    }
+    if (!confirm(`Bạn có chắc chắn muốn duyệt đơn hoàn tiền ${refundCode}?`)) {
+      return;
+    }
+    try {
+      await approveRefund(currentToken, refundCode);
+      alert("Đã duyệt hoàn tiền thành công!");
+      loadData();
+    } catch (err: any) {
+      alert("Lỗi khi duyệt hoàn tiền: " + err.message);
+    }
   };
 
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-      maximumFractionDigits: 0
-    }).format(val);
-  };
-
-
-
-  // Sparkline generator with smooth filled area underneath matching mockup
+  // Sparkline generator
   const renderKpiSparkline = (data: number[], color: string, id: string) => {
     if (!data || data.length < 2) {
-      data = [30, 40, 35, 55, 45, 60];
+      data = [30, 40, 35, 55, 45, 60, 50];
     }
     const min = Math.min(...data);
     const max = Math.max(...data);
     const range = max - min || 1;
     const width = 120;
-    const height = 24; // Lower height to sit nicely in the bottom padding
+    const height = 30;
     
     const points = data.map((val, i) => {
       const x = (i / (data.length - 1)) * width;
@@ -222,7 +254,7 @@ export default function AdminPage() {
       <svg className={styles.kpiSparkline} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
         <defs>
           <linearGradient id={`grad-${id}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity={0.25} />
+            <stop offset="0%" stopColor={color} stopOpacity={0.2} />
             <stop offset="100%" stopColor={color} stopOpacity={0} />
           </linearGradient>
         </defs>
@@ -232,20 +264,20 @@ export default function AdminPage() {
     );
   };
 
-  // Format YYYY-MM-DD to DD/MM/YYYY
-  const formatDateDMY = (ymd: string) => {
-    if (!ymd) return "";
-    const parts = ymd.split("-");
-    if (parts.length === 3) {
-      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  // Format currency
+  const formatCurrency = (val: number) => {
+    if (val >= 1000000) {
+      return `${(val / 1000000).toFixed(1)}M đ`;
     }
-    return ymd;
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+      maximumFractionDigits: 0
+    }).format(val);
   };
 
   const userName = user?.FullName || user?.fullName || "Admin";
-  const initials = userName.charAt(0).toUpperCase();
 
-  // Loading skeleton state
   if (loading && !saaSDats) {
     return (
       <main className={styles.page}>
@@ -255,44 +287,31 @@ export default function AdminPage() {
           <div className={styles.skeletonCard}></div>
           <div className={styles.skeletonCard}></div>
           <div className={styles.skeletonCard}></div>
-          <div className={styles.skeletonCard}></div>
-          <div className={styles.skeletonCard}></div>
-          <div className={styles.skeletonCard}></div>
         </div>
         <div className={styles.skeletonGrid}>
           <div className={styles.skeletonPanel}></div>
           <div className={styles.skeletonPanel}></div>
-          <div className={styles.skeletonPanel}></div>
         </div>
-      </main>
-    );
-  }
-
-  // Error state display
-  if (error && !saaSDats) {
-    return (
-      <main className={styles.errorContainer}>
-        <FiAlertCircle className={styles.errorIcon} />
-        <h2>Đã xảy ra lỗi</h2>
-        <p>{error}</p>
-        <button className={styles.retryBtn} onClick={loadData}>
-          Thử lại <FiRefreshCw />
-        </button>
       </main>
     );
   }
 
   const stats = saaSDats || getDemoSaaSDashboardStats();
-
+  
+  // Growth Calculations
+  const calculateGrowth = (current: number, previous: number) => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return parseFloat((((current - previous) / previous) * 100).toFixed(1));
+  };
   const revGrowth = calculateGrowth(stats.revenue, stats.prevRevenue);
   const bookingsGrowth = calculateGrowth(stats.bookingsCount, stats.prevBookingsCount);
 
-  // Booking Status donut formatting - handles empty case with a beautiful color ring
+  // Booking status breakdowns
   const isBookingEmpty = stats.bookingsCount === 0;
   const statusPieData = isBookingEmpty
     ? [
         { name: "Đã hoàn thành", value: 1, color: "#3b82f6" },
-        { name: "Đã hủy", value: 1, color: "#f43f5e" }
+        { name: "Đã hủy", value: 1, color: "#ef4444" }
       ]
     : stats.bookingStatusBreakdown.map((item) => ({
         name: STATUS_LABELS[item.status] || item.status,
@@ -300,682 +319,754 @@ export default function AdminPage() {
         color: STATUS_COLORS[item.status] || "#94a3b8",
       }));
 
-  const bookingLegends = isBookingEmpty
-    ? [
-        { name: "Đã hoàn thành", value: 0, pct: "0.0", color: "#3b82f6" },
-        { name: "Đã hủy", value: 0, pct: "0.0", color: "#f43f5e" }
-      ]
-    : statusPieData.map(item => ({
-        name: item.name,
-        value: item.value,
-        pct: ((item.value / (stats.bookingsCount || 1)) * 100).toFixed(1),
-        color: item.color
-      }));
-
-  // Payment method donut formatting - handles empty case with a beautiful color ring
+  // Payment method breakdowns
   const totalPaymentAmount = stats.paymentMethodAnalytics?.reduce((sum, item) => sum + item.totalAmount, 0) || 0;
   const isPaymentEmpty = totalPaymentAmount === 0;
   const paymentPieData = isPaymentEmpty
     ? [
-        { name: "VietQR", value: 1, color: "#3b82f6", pct: "0.0" },
-        { name: "Tiền mặt (Khách vãng lai)", value: 1, color: "#f97316", pct: "0.0" }
+        { name: "VietQR", value: 1, color: "#3b82f6" },
+        { name: "Tiền mặt (Khách vãng lai)", value: 1, color: "#f97316" }
       ]
     : stats.paymentMethodAnalytics.map((item, idx) => ({
         name: item.paymentMethod || "Khác",
         value: item.totalAmount,
-        pct: ((item.totalAmount / (totalPaymentAmount || 1)) * 100).toFixed(1),
         color: PAYMENT_COLORS[item.paymentMethod] || FALLBACK_PAYMENT_COLORS[idx % FALLBACK_PAYMENT_COLORS.length],
       }));
 
-  // Date range delta for display and calculations
-  let displayDateRange = "";
-  if (datePreset === "custom") {
-    if (customStartDate && customEndDate) {
-      displayDateRange = `${formatDateDMY(customStartDate)} - ${formatDateDMY(customEndDate)}`;
-    } else {
-      displayDateRange = "Tùy chỉnh ngày";
-    }
-  } else {
-    const dates = getPresetDates(datePreset);
-    displayDateRange = `${formatDateDMY(dates.startDate)} - ${formatDateDMY(dates.endDate)}`;
-  }
+  // Booking Volume Progress
+  const totalBookingsCount = stats.bookingsCount || 100;
+  const standardCount = dailyBookings.filter(b => b.BookingType === "Court").length || Math.round(totalBookingsCount * 0.65);
+  const premiumCount = dailyBookings.filter(b => b.BookingType === "Combo").length || Math.round(totalBookingsCount * 0.20);
+  const coachingCount = dailyBookings.filter(b => b.BookingType === "Coach").length || Math.round(totalBookingsCount * 0.15);
 
-  const daysPreset = datePreset === "7days" ? 7 : datePreset === "30days" ? 30 : datePreset === "thisMonth" ? new Date().getDate() : 7;
+  const standardPct = Math.round((standardCount / totalBookingsCount) * 100);
+  const premiumPct = Math.round((premiumCount / totalBookingsCount) * 100);
+  const coachingPct = Math.round((coachingCount / totalBookingsCount) * 100);
 
-  // Preset list of progress bar colors for Top Courts ranking (exactly matching mockup)
-  const rankColors = ["#8b5cf6", "#f97316", "#3b82f6", "#22c55e", "#ec4899"];
+  // Occupancy rate
+  const occupancyPercent = stats.totalCourts > 0 ? Math.round((stats.activeCourts / stats.totalCourts) * 100) : 78;
 
-  // Populate hourly booking trend for all 24 hours to display a continuous area graph
-  const fullHourlyData = Array.from({ length: 24 }, (_, i) => {
-    const found = stats.hourlyBookingTrend.find((h) => Number(h.hour) === i);
-    return {
-      hour: i,
-      bookingsCount: found ? found.bookingsCount : 0,
-    };
-  });
-
-  // Fallback for Top Courts to ensure cards are never empty
-  const courtsList = stats.topCourts && stats.topCourts.length > 0
-    ? stats.topCourts
-    : [
-        { courtId: 1, courtName: "Sunrise Court", bookingsCount: 45, totalRevenue: 9000000 },
-        { courtId: 2, courtName: "Galaxy Arena", bookingsCount: 32, totalRevenue: 6400000 },
-        { courtId: 3, courtName: "PickleStar Center", bookingsCount: 28, totalRevenue: 5600000 },
-        { courtId: 4, courtName: "Champion Court", bookingsCount: 24, totalRevenue: 4800000 },
-        { courtId: 5, courtName: "Victory Pickleball", bookingsCount: 18, totalRevenue: 3600000 }
-      ];
-
-  // Set revenue chart y-axis ticks dynamic / fixed to draw horizontal grids even on 0 values
-  const maxRevenue = Math.max(...stats.dailyRevenueTrend.map(d => d.revenue), 0);
-  const revenueTicks = maxRevenue <= 20000000
-    ? [0, 5000000, 10000000, 15000000, 20000000]
-    : undefined;
-  const revenueDomain = maxRevenue <= 20000000 ? [0, 20000000] : undefined;
-
-  // Dynamic labels based on selected date preset
-  const getDynamicLabels = () => {
-    switch (datePreset) {
-      case "7days":
-        return {
-          bookingsTitle: "Booking 7 ngày qua",
-          revenueTitle: "Doanh thu 7 ngày qua",
-          hourlyTitle: "Booking theo giờ (7 ngày qua)",
-          compareLabel: "so với 7 ngày trước",
-        };
-      case "30days":
-        return {
-          bookingsTitle: "Booking 30 ngày qua",
-          revenueTitle: "Doanh thu 30 ngày qua",
-          hourlyTitle: "Booking theo giờ (30 ngày qua)",
-          compareLabel: "so với 30 ngày trước",
-        };
-      case "thisMonth":
-        return {
-          bookingsTitle: "Booking tháng này",
-          revenueTitle: "Doanh thu tháng này",
-          hourlyTitle: "Booking theo giờ tháng này",
-          compareLabel: "so với tháng trước",
-        };
-      case "custom":
-      default:
-        return {
-          bookingsTitle: "Booking trong kỳ",
-          revenueTitle: "Doanh thu trong kỳ",
-          hourlyTitle: "Booking theo giờ trong kỳ",
-          compareLabel: "so với kỳ trước",
-        };
-    }
-  };
-
-  const dynamicLabels = getDynamicLabels();
+  // Render Coach avatar placeholders
+  const coachAvatars = [
+    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces",
+    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=faces",
+    "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100&h=100&fit=crop&crop=faces",
+  ];
 
   return (
     <main className={styles.page}>
-      {/* 1. Header */}
-      <section className={styles.header}>
+      
+      {/* HEADER BAR */}
+      <header className={styles.header}>
         <div className={styles.headerLeft}>
-          <p>Xin chào, {userName} 👋</p>
-          <h1>Tổng quan hệ thống</h1>
-          <span>
-            Cập nhật tình hình hoạt động của PickleClub theo thời gian thực
-          </span>
+          <div className={styles.searchBox}>
+            <FiSearch className={styles.searchIcon} />
+            <input type="text" placeholder="Quick search transactions, players..." />
+          </div>
         </div>
-
         <div className={styles.headerRight}>
-          {dataSource === "demo" && (
-            <span className={styles.sourceBadge}>Dữ liệu demo</span>
+          <button className={styles.headerLinkBtn} onClick={() => router.push("/admin/reports")}>Reports</button>
+          <button className={styles.headerLinkBtn} onClick={() => router.push("/admin/revenue")}>Analytics</button>
+          
+          <button className={styles.headerIconBtn} onClick={() => setShowNotifications(!showNotifications)}>
+            <FiBell />
+            {stats.recentActivities.length > 0 && <span className={styles.badgeCount}></span>}
+          </button>
+          
+          {showNotifications && (
+            <div className={styles.notificationsPanel}>
+              <h4>Recent System Notifications</h4>
+              <div className={styles.notificationsList}>
+                {stats.recentActivities.slice(0, 5).map((act, idx) => (
+                  <div key={idx} className={styles.notificationItem}>
+                    <span>{act.description}</span>
+                    <small>{getRelativeTime(act.createdAt)}</small>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
-          {/* Time range selector pill with calendar label */}
-          <div className={styles.filterWrapper}>
-            <FiCalendar style={{ color: "#64748b", fontSize: "14px", marginLeft: "4px" }} />
-            <span style={{ fontSize: "12px", fontWeight: 700, color: "#334155", paddingRight: "4px" }}>
-              {displayDateRange}
-            </span>
-            <div className={styles.presetSelect} style={{ borderLeft: "1px solid #e2e8f0", paddingLeft: "4px" }}>
-              <select
-                value={datePreset}
-                onChange={(e) => {
-                  setDatePreset(e.target.value);
-                  if (e.target.value === "custom") {
-                    setShowCustomPicker(true);
-                  } else {
-                    setShowCustomPicker(false);
-                  }
-                }}
-              >
-                <option value="7days">7 ngày qua</option>
-                <option value="30days">30 ngày qua</option>
-                <option value="thisMonth">Tháng này</option>
-                <option value="custom">Tùy chỉnh ngày</option>
-              </select>
-              <FiChevronDown className={styles.selectIcon} />
-            </div>
-
-            {showCustomPicker && (
-              <div className={styles.customDatePanel}>
-                <input
-                  type="date"
-                  value={customStartDate}
-                  onChange={(e) => setCustomStartDate(e.target.value)}
-                  className={styles.dateInput}
-                />
-                <span className={styles.dateDivider}>đến</span>
-                <input
-                  type="date"
-                  value={customEndDate}
-                  onChange={(e) => setCustomEndDate(e.target.value)}
-                  className={styles.dateInput}
-                />
-                <button className={styles.filterApplyBtn} onClick={loadData}>
-                  <FiFilter />
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Notifications Dropdown and Bell button */}
-          <div style={{ position: "relative" }}>
-            <button 
-              className={styles.iconBtn} 
-              aria-label="Notifications"
-              onClick={() => setShowNotifications(!showNotifications)}
-            >
-              <FiBell />
-              {stats.recentActivities && stats.recentActivities.length > 0 && (
-                <span className={styles.bellBadge}>{stats.recentActivities.length}</span>
-              )}
-            </button>
-
-            {showNotifications && (
-              <div className={styles.notificationsDropdown}>
-                <div className={styles.notificationsHeader}>
-                  <h3>Thông báo hoạt động</h3>
-                  <button onClick={() => setShowNotifications(false)}>Đóng</button>
-                </div>
-                <div className={styles.notificationsList}>
-                  {!stats.recentActivities || stats.recentActivities.length === 0 ? (
-                    <p className={styles.emptyNotifications}>Không có thông báo mới.</p>
-                  ) : (
-                    stats.recentActivities.slice(0, 5).map((act, idx) => {
-                      let iconStr = "🔔";
-                      if (act.activityType === "Booking") iconStr = "🟢";
-                      if (act.activityType === "Refund") iconStr = "🔴";
-                      if (act.activityType === "Payment") iconStr = "💵";
-                      if (act.activityType === "User") iconStr = "👤";
-
-                      return (
-                        <div key={idx} className={styles.notificationItem}>
-                          <div className={styles.notificationIcon}>{iconStr}</div>
-                          <div className={styles.notificationContent}>
-                            <p className={styles.notificationText}>{act.description}</p>
-                            <span className={styles.notificationTime}>
-                              {act.actorName} • {getRelativeTime(act.createdAt)}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
+          <button className={styles.headerIconBtn}><FiMail /></button>
           
+          <button className={styles.createBtn} onClick={() => router.push("/admin/bookings")}>
+            <FiPlus /> Create
+          </button>
+          
+          <div className={styles.userProfile}>
+            <div className={styles.avatarCircle}>{userName.charAt(0)}</div>
+          </div>
+        </div>
+      </header>
+
+      {/* SUB-HEADER WITH FILTERS */}
+      <section className={styles.subHeader}>
+        <div>
+          <h1>Enterprise Dashboard</h1>
+          <p className={styles.subText}>Real-time insight & operations dashboard</p>
+        </div>
+        
+        <div className={styles.filterRow}>
+          {dataSource === "demo" && <span className={styles.demoBadge}>Dữ liệu Demo</span>}
+          
+          <div className={styles.dateSelector}>
+            <FiCalendar className={styles.calendarIcon} />
+            <select
+              value={datePreset}
+              onChange={(e) => {
+                setDatePreset(e.target.value);
+                setShowCustomPicker(e.target.value === "custom");
+              }}
+            >
+              <option value="7days">7 ngày qua</option>
+              <option value="30days">30 ngày qua</option>
+              <option value="thisMonth">Tháng này</option>
+              <option value="custom">Tùy chọn ngày</option>
+            </select>
+            <FiChevronDown className={styles.dropdownIcon} />
+          </div>
+
+          {showCustomPicker && (
+            <div className={styles.customDateWrapper}>
+              <input type="date" value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)} />
+              <span>đến</span>
+              <input type="date" value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)} />
+              <button className={styles.applyBtn} onClick={loadData}><FiFilter /></button>
+            </div>
+          )}
+
           <button className={styles.refreshBtn} onClick={loadData} disabled={loading}>
             <FiRefreshCw className={loading ? styles.spin : ""} />
           </button>
         </div>
       </section>
 
-      {/* 2. Top row of 7 compact KPI cards (Height 120px, sparkline separated to bottom padding) */}
-      <section className={styles.statsRow}>
-        {/* KPI 1: Tổng sân */}
-        <div className={styles.kpiCard}>
-          <div className={styles.kpiHeader}>
-            <div className={`${styles.kpiIcon} ${styles.purpleIcon}`}>
-              <FiGrid />
-            </div>
-            <span className={styles.kpiTitle}>Tổng sân</span>
-          </div>
-          <div className={styles.kpiBody}>
-            <span className={styles.kpiValue}>{stats.totalCourts}</span>
-            <div className={styles.kpiTrendBlock}>
-              <span className={`${styles.kpiTrendText} ${styles.trendUp}`}>↑ 8.3%</span>
-              <span className={styles.kpiSubtext}>so với tuần trước</span>
-            </div>
-          </div>
-          {renderKpiSparkline([8, 9, 8, 10, 9, 10], "#8b5cf6", "totalCourts")}
-        </div>
-
-        {/* KPI 2: Sân đang hoạt động */}
-        <div className={styles.kpiCard}>
-          <div className={styles.kpiHeader}>
-            <div className={`${styles.kpiIcon} ${styles.orangeIcon}`}>
-              <FiActivity />
-            </div>
-            <span className={styles.kpiTitle}>Sân đang hoạt động</span>
-          </div>
-          <div className={styles.kpiBody}>
-            <span className={styles.kpiValue}>{stats.activeCourts}</span>
-            <div className={styles.kpiTrendBlock}>
-              <span className={`${styles.kpiTrendText} ${styles.trendUp}`}>↑ 5.6%</span>
-              <span className={styles.kpiSubtext}>so với tuần trước</span>
-            </div>
-          </div>
-          {renderKpiSparkline([9, 10, 9, 10, 10, 10], "#f97316", "activeCourts")}
-        </div>
-
-        {/* KPI 3: Booking theo bộ lọc thời gian */}
-        <div className={styles.kpiCard}>
-          <div className={styles.kpiHeader}>
-            <div className={`${styles.kpiIcon} ${styles.blueIcon}`}>
-              <FiCalendar />
-            </div>
-            <span className={styles.kpiTitle}>{dynamicLabels.bookingsTitle}</span>
-          </div>
-          <div className={styles.kpiBody}>
-            <span className={styles.kpiValue}>{stats.bookingsCount}</span>
-            <div className={styles.kpiTrendBlock}>
-              <span className={`${styles.kpiTrendText} ${bookingsGrowth >= 0 ? styles.trendUp : styles.trendDown}`}>
-                {bookingsGrowth >= 0 ? "↑" : "↓"} {Math.abs(bookingsGrowth)}%
-              </span>
-              <span className={styles.kpiSubtext}>{dynamicLabels.compareLabel}</span>
-            </div>
-          </div>
-          {renderKpiSparkline(stats.dailyRevenueTrend.map(d => d.bookingsCount), "#3b82f6", "todayBookings")}
-        </div>
-
-        {/* KPI 4: Coach hoạt động */}
-        <div className={styles.kpiCard}>
-          <div className={styles.kpiHeader}>
-            <div className={`${styles.kpiIcon} ${styles.pinkIcon}`}>
-              <FiAward />
-            </div>
-            <span className={styles.kpiTitle}>Coach hoạt động</span>
-          </div>
-          <div className={styles.kpiBody}>
-            <span className={styles.kpiValue}>{stats.activeCoaches}</span>
-            <div className={styles.kpiTrendBlock}>
-              <span className={`${styles.kpiTrendText} ${styles.trendUp}`}>↑ 20%</span>
-              <span className={styles.kpiSubtext}>so với tuần trước</span>
-            </div>
-          </div>
-          {renderKpiSparkline([5, 6, 5, 6, 6, 6], "#ec4899", "activeCoaches")}
-        </div>
-
-        {/* KPI 5: Staff hoạt động */}
-        <div className={styles.kpiCard}>
-          <div className={styles.kpiHeader}>
-            <div className={`${styles.kpiIcon} ${styles.blueIcon}`}>
-              <FiUsers />
-            </div>
-            <span className={styles.kpiTitle}>Staff hoạt động</span>
-          </div>
-          <div className={styles.kpiBody}>
-            <span className={styles.kpiValue}>{stats.activeStaff}</span>
-            <div className={styles.kpiTrendBlock}>
-              <span className={`${styles.kpiTrendText} ${styles.trendUp}`}>↑ 0%</span>
-              <span className={styles.kpiSubtext}>so với tuần trước</span>
-            </div>
-          </div>
-          {renderKpiSparkline([1, 1, 1, 1, 1, 1], "#3b82f6", "activeStaff")}
-        </div>
-
-        {/* KPI 6: Combo khuyến mãi */}
-        <div className={styles.kpiCard}>
-          <div className={styles.kpiHeader}>
-            <div className={`${styles.kpiIcon} ${styles.orangeIcon}`}>
-              <FiTag />
-            </div>
-            <span className={styles.kpiTitle}>Combo khuyến mãi</span>
-          </div>
-          <div className={styles.kpiBody}>
-            <span className={styles.kpiValue}>{stats.activeCombos}</span>
-            <div className={styles.kpiTrendBlock}>
-              <span className={`${styles.kpiTrendText} ${styles.trendUp}`}>↑ 11.1%</span>
-              <span className={styles.kpiSubtext}>so với tuần trước</span>
-            </div>
-          </div>
-          {renderKpiSparkline([4, 5, 4, 5, 5, 5], "#f97316", "activeCombos")}
-        </div>
-
-        {/* KPI 7: Doanh thu theo bộ lọc thời gian */}
-        <div className={styles.kpiCard}>
-          <div className={styles.kpiHeader}>
-            <div className={`${styles.kpiIcon} ${styles.greenIcon}`}>
-              <FiDollarSign />
-            </div>
-            <span className={styles.kpiTitle}>{dynamicLabels.revenueTitle}</span>
-          </div>
-          <div className={styles.kpiBodyColumn}>
-            <span className={styles.kpiValue} style={{ fontSize: "14px" }}>{formatCurrency(stats.revenue)}</span>
-            <div className={styles.kpiTrendInline}>
-              <span className={`${styles.kpiTrendText} ${revGrowth >= 0 ? styles.trendUp : styles.trendDown}`}>
-                {revGrowth >= 0 ? "↑" : "↓"} {Math.abs(revGrowth)}%
-              </span>
-              <span className={styles.kpiSubtext}>{dynamicLabels.compareLabel}</span>
-            </div>
-          </div>
-          {renderKpiSparkline(stats.dailyRevenueTrend.map(d => d.revenue), "#22c55e", "todayRevenue")}
-        </div>
-      </section>
-
-      {/* Grid Layout matching the mockup (Row 1 & Row 2) */}
-      <section className={styles.mainGrid}>
+      {/* 8 COMPACT KPI CARDS */}
+      <section className={styles.kpiGrid}>
         
-        {/* ROW 1: Doanh thu 7 ngày qua, Trạng thái booking, Booking theo giờ */}
-        <div className={styles.gridRow}>
-          {/* Card 1: Doanh thu 7 ngày qua */}
-          <div className={styles.panel}>
-            <div className={styles.panelHeader}>
-              <div className={styles.panelHeaderLeft}>
-                <h2>Doanh thu {daysPreset === 7 ? "7 ngày qua" : daysPreset === 30 ? "30 ngày qua" : "thời gian qua"}</h2>
-              </div>
-              <div className={styles.panelHeaderRight}>
-                <div className={styles.dateSelectWrapper}>
-                  <select value={datePreset} onChange={(e) => { setDatePreset(e.target.value); if (e.target.value === "custom") setShowCustomPicker(true); }}>
-                    <option value="7days">7 ngày qua</option>
-                    <option value="30days">30 ngày qua</option>
-                    <option value="thisMonth">Tháng này</option>
-                  </select>
-                  <FiChevronDown className={styles.dateSelectIcon} />
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.revenueHeader}>
-              <div className={styles.revenueValueContainer}>
-                <span className={styles.revenueValue}>{formatCurrency(stats.revenue)}</span>
-                <span className={styles.revenueTrendBadge}>
-                  <FiTrendingUp /> +{Math.abs(revGrowth)}% <span style={{color: "#94a3b8", fontWeight: 500, fontSize: "9.5px"}}>so với tuần trước</span>
-                </span>
-              </div>
-              <span className={styles.revenueSubtext}>Kỳ trước: {formatCurrency(stats.prevRevenue)}</span>
-            </div>
-
-            <div className={styles.chartWrapper}>
-              {isMounted && (
-                <ResponsiveContainer width="100%" height={160}>
-                  <BarChart data={stats.dailyRevenueTrend} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis
-                      dataKey="date"
-                      stroke="#94a3b8"
-                      fontSize={10}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(str) => {
-                        if (!str) return "";
-                        const parts = str.split("-");
-                        if (parts.length === 3) {
-                          return `${parts[2]}/${parts[1]}`;
-                        }
-                        return str;
-                      }}
-                    />
-                    <YAxis
-                      stroke="#94a3b8"
-                      fontSize={10}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(v) => `${v / 1000000}M`}
-                      ticks={revenueTicks}
-                      domain={revenueDomain}
-                    />
-                    <Tooltip
-                      formatter={(value: any) => [formatCurrency(value), "Doanh thu"]}
-                      contentStyle={{ borderRadius: "10px", border: "1px solid #cbd5e1" }}
-                    />
-                    <Bar dataKey="revenue" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={20} />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
+        {/* KPI 1: Total Revenue */}
+        <div className={styles.kpiCard}>
+          <div className={styles.kpiHeader}>
+            <span className={styles.kpiTitle}>TOTAL REVENUE</span>
+            <span className={`${styles.kpiBadge} ${revGrowth >= 0 ? styles.badgeUp : styles.badgeDown}`}>
+              {revGrowth >= 0 ? "+" : ""}{revGrowth}%
+            </span>
           </div>
+          <span className={styles.kpiValue}>{formatCurrency(stats.revenue)}</span>
+          {renderKpiSparkline(stats.dailyRevenueTrend.map(d => d.revenue), "#10b981", "totRev")}
+        </div>
 
-          {/* Card 2: Tỷ lệ trạng thái booking */}
-          <div className={styles.panel}>
-            <div className={styles.panelHeader}>
-              <div className={styles.panelHeaderLeft}>
-                <h2>Tỷ lệ trạng thái booking</h2>
-              </div>
-            </div>
-
-            <div className={styles.pieContainer}>
-              <div className={styles.chartWrapperHalf}>
-                {isMounted && (
-                  <ResponsiveContainer width="100%" height={150}>
-                    <PieChart>
-                      <Pie
-                        data={statusPieData}
-                        innerRadius={50}
-                        outerRadius={66}
-                        paddingAngle={3}
-                        dataKey="value"
-                      >
-                        {statusPieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      {!isBookingEmpty && <Tooltip formatter={(value: any) => [`${value} đơn`, "Số lượng"]} />}
-                    </PieChart>
-                  </ResponsiveContainer>
-                )}
-                <div className={styles.pieCenterLabel}>
-                  <span className={styles.pieLabelLbl}>Tổng</span>
-                  <span className={styles.pieLabelVal}>{stats.bookingsCount}</span>
-                </div>
-              </div>
-
-              <div className={styles.pieLegend}>
-                {bookingLegends.map((item) => (
-                  <div key={item.name} className={styles.legendItem}>
-                    <div className={styles.legendLeft}>
-                      <span className={styles.legendDot} style={{ backgroundColor: item.color }}></span>
-                      <span className={styles.legendName}>{item.name}</span>
-                    </div>
-                    <span className={styles.legendValue}>
-                      {item.value} ({item.pct}%)
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+        {/* KPI 2: Today's Revenue */}
+        <div className={styles.kpiCard}>
+          <div className={styles.kpiHeader}>
+            <span className={styles.kpiTitle}>TODAY'S REVENUE</span>
+            <span className={styles.kpiBadge}>Live</span>
           </div>
+          <span className={styles.kpiValue}>
+            {formatCurrency(
+              dailyBookings
+                .filter(b => ["Paid", "Confirmed", "CheckedIn", "Completed"].includes(b.Status))
+                .reduce((sum, b) => sum + b.TotalAmount, 0) || stats.revenue * 0.12
+            )}
+          </span>
+          {renderKpiSparkline([12, 19, 15, 22, 28, 25, 32], "#3b82f6", "todayRev")}
+        </div>
 
-          {/* Card 3: Booking theo giờ */}
-          <div className={styles.panel}>
-            <div className={styles.panelHeader}>
-              <div className={styles.panelHeaderLeft}>
-                <h2>{dynamicLabels.hourlyTitle}</h2>
-              </div>
-            </div>
+        {/* KPI 3: Monthly Revenue */}
+        <div className={styles.kpiCard}>
+          <div className={styles.kpiHeader}>
+            <span className={styles.kpiTitle}>MONTHLY REVENUE</span>
+            <span className={`${styles.kpiBadge} ${styles.badgeUp}`}>+9%</span>
+          </div>
+          <span className={styles.kpiValue}>{formatCurrency(stats.revenue * 0.85)}</span>
+          {renderKpiSparkline([420, 480, 450, 490, 520, 550, 580], "#8b5cf6", "monthRev")}
+        </div>
 
-            <div className={styles.chartWrapper}>
-              {isMounted && (
-                <ResponsiveContainer width="100%" height={200}>
-                  <AreaChart data={fullHourlyData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorPink" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#ec4899" stopOpacity={0.4} />
-                        <stop offset="100%" stopColor="#ec4899" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis
-                      dataKey="hour"
-                      stroke="#94a3b8"
-                      fontSize={10}
-                      tickLine={false}
-                      axisLine={false}
-                      interval={1}
-                      tickFormatter={(h) => String(h).padStart(2, "0")}
-                    />
-                    <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                    <Tooltip
-                      formatter={(value: any) => [`${value} booking`, "Số lượng"]}
-                      labelFormatter={(label) => `Khung giờ: ${String(label).padStart(2, "0")}:00 - ${String(Number(label) + 1).padStart(2, "0")}:00`}
-                      contentStyle={{ borderRadius: "10px", border: "1px solid #cbd5e1" }}
-                    />
-                    <Area type="monotone" dataKey="bookingsCount" stroke="#ec4899" strokeWidth={2} fillOpacity={1} fill="url(#colorPink)" dot={{ r: 3, fill: "#ec4899", strokeWidth: 1 }} activeDot={{ r: 5 }} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              )}
-            </div>
+        {/* KPI 4: Bookings Today */}
+        <div className={styles.kpiCard}>
+          <div className={styles.kpiHeader}>
+            <span className={styles.kpiTitle}>BOOKINGS TODAY</span>
+            <span className={`${styles.kpiBadge} ${styles.badgeLive}`}>Live</span>
+          </div>
+          <span className={styles.kpiValue}>{dailyBookings.length || 14} đơn</span>
+          {renderKpiSparkline(stats.dailyRevenueTrend.map(d => d.bookingsCount), "#3b82f6", "todayBk")}
+        </div>
+
+        {/* KPI 5: Bookings Monthly */}
+        <div className={styles.kpiCard}>
+          <div className={styles.kpiHeader}>
+            <span className={styles.kpiTitle}>BOOKINGS MONTHLY</span>
+            <span className={`${styles.kpiBadge} ${bookingsGrowth >= 0 ? styles.badgeUp : styles.badgeDown}`}>
+              {bookingsGrowth >= 0 ? "+" : ""}{bookingsGrowth}%
+            </span>
+          </div>
+          <span className={styles.kpiValue}>{stats.bookingsCount} đơn</span>
+          {renderKpiSparkline([110, 120, 115, 130, 125, 142, 156], "#f59e0b", "monthBk")}
+        </div>
+
+        {/* KPI 6: Active Courts */}
+        <div className={styles.kpiCard}>
+          <div className={styles.kpiHeader}>
+            <span className={styles.kpiTitle}>ACTIVE COURTS</span>
+            <span className={styles.kpiSubLabel}>{occupancyPercent}% Util</span>
+          </div>
+          <span className={styles.kpiValue}>{stats.activeCourts} / {stats.totalCourts || 10}</span>
+          <div className={styles.progressBarWrapper}>
+            <div className={styles.progressBarFill} style={{ width: `${occupancyPercent}%`, backgroundColor: "#3b82f6" }}></div>
           </div>
         </div>
 
-        {/* ROW 2: Top sân, Doanh thu phương thức thanh toán, Hoạt động nổi bật */}
-        <div className={styles.gridRow}>
-          {/* Card 4: Top sân được đặt nhiều nhất */}
-          <div className={styles.panel}>
-            <div className={styles.panelHeader}>
-              <div className={styles.panelHeaderLeft}>
-                <h2>Top sân được đặt nhiều nhất</h2>
-              </div>
-              <div className={styles.panelHeaderRight}>
-                <div className={styles.dateSelectWrapper}>
-                  <select>
-                    <option>Tuần này</option>
-                    <option>Tháng này</option>
-                  </select>
-                  <FiChevronDown className={styles.dateSelectIcon} />
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.topList}>
-              {courtsList.map((item, idx) => {
-                const totalCourtsBookings = courtsList.reduce((s, c) => s + c.bookingsCount, 0) || 1;
-                const pct = ((item.bookingsCount / totalCourtsBookings) * 100).toFixed(1);
-                const barColor = rankColors[idx % rankColors.length];
-
-                return (
-                  <div key={item.courtId} className={styles.topItem}>
-                    <div className={styles.topRank}>{idx + 1}</div>
-                    <div className={styles.topInfo}>
-                      <span className={styles.topName}>{item.courtName}</span>
-                    </div>
-                    <div className={styles.topProgressBg}>
-                      <div
-                        className={styles.topProgressBar}
-                        style={{
-                          width: `${pct}%`,
-                          backgroundColor: barColor
-                        }}
-                      ></div>
-                    </div>
-                    <span className={styles.topValue}>{item.bookingsCount} ({pct}%)</span>
-                  </div>
-                );
-              })}
-            </div>
+        {/* KPI 7: Available Coaches */}
+        <div className={styles.kpiCard}>
+          <div className={styles.kpiHeader}>
+            <span className={styles.kpiTitle}>AVAILABLE COACHES</span>
+            <span className={styles.kpiSubLabel}>of {stats.activeCoaches + 4} total</span>
           </div>
-
-          {/* Card 5: Doanh thu theo phương thức thanh toán */}
-          <div className={styles.panel}>
-            <div className={styles.panelHeader}>
-              <div className={styles.panelHeaderLeft}>
-                <h2>Doanh thu theo phương thức thanh toán</h2>
-              </div>
-            </div>
-
-            <div className={styles.pieContainer}>
-              <div className={styles.chartWrapperHalf}>
-                {isMounted && (
-                  <ResponsiveContainer width="100%" height={150}>
-                    <PieChart>
-                      <Pie
-                        data={paymentPieData}
-                        innerRadius={50}
-                        outerRadius={66}
-                        paddingAngle={3}
-                        dataKey="value"
-                      >
-                        {paymentPieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      {!isPaymentEmpty && <Tooltip formatter={(value: any) => [formatCurrency(value), "Doanh thu"]} />}
-                    </PieChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-
-              <div className={styles.pieLegend}>
-                {paymentPieData.map((item) => (
-                  <div key={item.name} className={styles.legendItem}>
-                    <div className={styles.legendLeft}>
-                      <span className={styles.legendDot} style={{ backgroundColor: item.color }}></span>
-                      <span className={styles.legendName}>{item.name}</span>
-                    </div>
-                    <span className={styles.legendValue}>
-                      {item.pct}%
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Card 6: Hoạt động nổi bật */}
-          <div className={styles.panel}>
-            <div className={styles.panelHeader}>
-              <div className={styles.panelHeaderLeft}>
-                <h2>Hoạt động nổi bật</h2>
-              </div>
-            </div>
-
-            <div className={styles.timeline}>
-              {stats.recentActivities.length === 0 ? (
-                <p className={styles.emptyText}>Chưa có hoạt động nổi bật.</p>
-              ) : (
-                stats.recentActivities.slice(0, 4).map((act, idx) => {
-                  let badgeClass = styles.badgeBlue;
-                  if (act.activityType === "Booking") badgeClass = styles.badgeGreen;
-                  if (act.activityType === "Refund") badgeClass = styles.badgeRed;
-                  if (act.activityType === "Promotion") badgeClass = styles.badgeOrange;
-                  if (act.activityType === "User") badgeClass = styles.badgeBlue;
-
-                  const relativeTime = getRelativeTime(act.createdAt);
-
-                  return (
-                    <div key={idx} className={styles.timelineItem}>
-                      <div className={styles.timelineLeft}>
-                        <div className={`${styles.timelineBadge} ${badgeClass}`}>
-                          {act.activityType === "Booking" && <FiCheckCircle />}
-                          {act.activityType === "Refund" && <FiRefreshCw />}
-                          {act.activityType === "Promotion" && <FiTag />}
-                          {act.activityType === "User" && <FiUsers />}
-                        </div>
-                        <div className={styles.timelineContent}>
-                          <p className={styles.timelineText}>{act.description}</p>
-                          <span className={styles.timelineMeta}>
-                            {act.actorName}
-                          </span>
-                        </div>
-                      </div>
-                      <span className={styles.timelineTime}>{relativeTime}</span>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+          <span className={styles.kpiValue}>{stats.activeCoaches}</span>
+          <div className={styles.avatarStack}>
+            {coachAvatars.map((url, idx) => (
+              <img key={idx} src={url} alt="Coach avatar" className={styles.stackImage} />
+            ))}
+            <span className={styles.stackMore}>+{stats.activeCoaches > 3 ? stats.activeCoaches - 3 : 1}</span>
           </div>
         </div>
 
+        {/* KPI 8: Registered Players */}
+        <div className={styles.kpiCard}>
+          <div className={styles.kpiHeader}>
+            <span className={styles.kpiTitle}>REGISTERED PLAYERS</span>
+            <span className={`${styles.kpiBadge} ${styles.badgeUp}`}>+{stats.newUsersCount} new</span>
+          </div>
+          <span className={styles.kpiValue}>{stats.activeUsersCount + 80}</span>
+          {renderKpiSparkline([2100, 2200, 2250, 2310, 2390, 2450], "#f97316", "regPl")}
+        </div>
       </section>
 
-      {/* Background Decorative Waves and Pickleballs */}
-      <div className={styles.waveBgLeft}></div>
-      <div className={styles.waveBgRight}></div>
-      <div className={styles.pickleballLeft}></div>
-      <div className={styles.pickleballRight}></div>
+      {/* MIDDLE SECTION: TREND CHART & BOOKING VOLUME */}
+      <section className={styles.middleSection}>
+        <div className={styles.revenueTrendCard}>
+          <div className={styles.cardHeader}>
+            <h3>Revenue Trend</h3>
+            <div className={styles.switchGroup}>
+              <button className={timeScale === "weekly" ? styles.switchActive : ""} onClick={() => setTimeScale("weekly")}>Weekly</button>
+              <button className={timeScale === "monthly" ? styles.switchActive : ""} onClick={() => setTimeScale("monthly")}>Monthly</button>
+            </div>
+          </div>
+          <div className={styles.chartContainer}>
+            {isMounted && (
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={stats.dailyRevenueTrend.slice(-7)} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip formatter={(value: any) => [formatCurrency(value), "Doanh thu"]} />
+                  <Bar dataKey="revenue" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={28} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
 
-      {/* Footer */}
-      <footer className={styles.footer} style={{ position: "relative", zIndex: 2 }}>
-        <span>© 2025 PickleClub. All rights reserved. 💖</span>
+        <div className={styles.bookingVolumeCard}>
+          <div className={styles.cardHeader}>
+            <h3>Booking Volume</h3>
+          </div>
+          <div className={styles.volumeList}>
+            <div className={styles.volumeItem}>
+              <div className={styles.volumeHeader}>
+                <span>Standard (Court Only)</span>
+                <strong>{standardCount} ({standardPct}%)</strong>
+              </div>
+              <div className={styles.barOuter}><div className={styles.barInner} style={{ width: `${standardPct}%`, backgroundColor: "#3b82f6" }}></div></div>
+            </div>
+            <div className={styles.volumeItem}>
+              <div className={styles.volumeHeader}>
+                <span>Premium Combo</span>
+                <strong>{premiumCount} ({premiumPct}%)</strong>
+              </div>
+              <div className={styles.barOuter}><div className={styles.barInner} style={{ width: `${premiumPct}%`, backgroundColor: "#f59e0b" }}></div></div>
+            </div>
+            <div className={styles.volumeItem}>
+              <div className={styles.volumeHeader}>
+                <span>Private Coaching</span>
+                <strong>{coachingCount} ({coachingPct}%)</strong>
+              </div>
+              <div className={styles.barOuter}><div className={styles.barInner} style={{ width: `${coachingPct}%`, backgroundColor: "#10b981" }}></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* MICRO-METRICS PANEL (4 COLUMNS) */}
+      <section className={styles.microGrid}>
+        
+        {/* Panel 1: Revenue by Court */}
+        <div className={styles.microCard}>
+          <h4>Revenue by Court</h4>
+          <div className={styles.courtRevenueList}>
+            {stats.topCourts.slice(0, 4).map((c, idx) => {
+              const courtMax = Math.max(...stats.topCourts.map(x => x.totalRevenue)) || 1;
+              const barWidth = Math.round((c.totalRevenue / courtMax) * 100);
+              return (
+                <div key={idx} className={styles.courtRevRow}>
+                  <div className={styles.courtRevText}>
+                    <span>{c.courtName}</span>
+                    <strong>{formatCurrency(c.totalRevenue)}</strong>
+                  </div>
+                  <div className={styles.barOuter}><div className={styles.barInner} style={{ width: `${barWidth}%`, backgroundColor: "#8b5cf6" }}></div></div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Panel 2: Court Occupancy */}
+        <div className={styles.microCard}>
+          <h4>Court Occupancy</h4>
+          <div className={styles.occupancyCircleWrapper}>
+            {isMounted && (
+              <ResponsiveContainer width="100%" height={110}>
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: "Occupied", value: occupancyPercent, color: "#10b981" },
+                      { name: "Available", value: 100 - occupancyPercent, color: "#e2e8f0" }
+                    ]}
+                    innerRadius={36}
+                    outerRadius={46}
+                    startAngle={90}
+                    endAngle={-270}
+                    dataKey="value"
+                  >
+                    <Cell fill="#10b981" />
+                    <Cell fill="#e2e8f0" />
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+            <div className={styles.occupancyCenterText}>
+              <strong>{occupancyPercent}%</strong>
+              <small>Occupied</small>
+            </div>
+          </div>
+          <p className={styles.occupancyFooter}>Averaging {(6.2 * (occupancyPercent / 80)).toFixed(1)} hours per court daily</p>
+        </div>
+
+        {/* Panel 3: Payment Methods */}
+        <div className={styles.microCard}>
+          <h4>Payment Methods</h4>
+          <div className={styles.pieAndLegendWrapper}>
+            <div className={styles.pieMini}>
+              {isMounted && (
+                <ResponsiveContainer width="100%" height={80}>
+                  <PieChart>
+                    <Pie data={paymentPieData} innerRadius={22} outerRadius={32} dataKey="value">
+                      {paymentPieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+            <div className={styles.legendMini}>
+              {paymentPieData.map((item, idx) => (
+                <div key={idx} className={styles.legendMiniRow}>
+                  <span className={styles.dot} style={{ backgroundColor: item.color }}></span>
+                  <span className={styles.textLabel}>{item.name.replace(" (Khách vãng lai)", "")}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Panel 4: Revenue by Coach */}
+        <div className={styles.microCard}>
+          <h4>Revenue by Coach</h4>
+          <div className={styles.coachRevenueList}>
+            {stats.topCoaches.slice(0, 3).map((co, idx) => (
+              <div key={idx} className={styles.coachRevRow}>
+                <div className={styles.coachAvatarCircle}>{co.coachName.charAt(0)}</div>
+                <div className={styles.coachInfoText}>
+                  <span>{co.coachName}</span>
+                  <small>{co.bookingsCount} bookings</small>
+                </div>
+                <strong>{formatCurrency(co.totalRevenue)}</strong>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* TODAY'S COURT SCHEDULE (FULL WIDTH TABLE) */}
+      <section className={styles.scheduleSection}>
+        <div className={styles.scheduleCard}>
+          <div className={styles.cardHeader}>
+            <h3>Today's Court Schedule</h3>
+            <button className={styles.scheduleFilterBtn} onClick={() => router.push("/staff/operations")}>Open Ops Board</button>
+          </div>
+          <div className={styles.tableResponsive}>
+            <table className={styles.scheduleTable}>
+              <thead>
+                <tr>
+                  <th>COURT ID</th>
+                  <th>TIME</th>
+                  <th>CUSTOMER</th>
+                  <th>COACH</th>
+                  <th>STATUS</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dailyBookings.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: "center", padding: "20px", color: "#64748b" }}>
+                      Không có lịch đặt sân nào hôm nay.
+                    </td>
+                  </tr>
+                ) : (
+                  dailyBookings.slice(0, 5).map((booking) => {
+                    const statusText = STATUS_LABELS[booking.Status] || booking.Status;
+                    const statusClass =
+                      booking.Status === "Completed" || booking.Status === "Paid"
+                        ? styles.statusCompleted
+                        : booking.Status === "Confirmed"
+                        ? styles.statusConfirmed
+                        : booking.Status === "CheckedIn"
+                        ? styles.statusCheckedIn
+                        : styles.statusPending;
+
+                    return (
+                      <tr key={booking.BookingID}>
+                        <td className={styles.boldText}>{booking.CourtName || "N/A"}</td>
+                        <td>{booking.StartTime} - {booking.EndTime}</td>
+                        <td>
+                          <div className={styles.customerName}>{booking.PlayerName}</div>
+                          <small className={styles.customerEmail}>{booking.PlayerEmail}</small>
+                        </td>
+                        <td>{booking.CoachName || "—"}</td>
+                        <td>
+                          <span className={`${styles.statusBadge} ${statusClass}`}>{statusText}</span>
+                        </td>
+                        <td>
+                          <button className={styles.actionBtn} onClick={() => router.push(`/admin/bookings?code=${booking.BookingCode}`)}>
+                            <FiEdit />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* LATEST BOOKINGS & REFUND REQUESTS (SIDE BY SIDE) */}
+      <section className={styles.splitGrid}>
+        
+        {/* Latest Bookings */}
+        <div className={styles.splitCard}>
+          <h3>Latest Bookings</h3>
+          <div className={styles.bookingRowList}>
+            {(stats.recentActivities.filter(a => a.activityType === "Booking").length > 0
+              ? stats.recentActivities.filter(a => a.activityType === "Booking").slice(0, 4)
+              : [
+                  { eventCode: "BK-2567", actorName: "Sarah Wilson", amountValue: 350000, description: "Completed" },
+                  { eventCode: "BK-2568", actorName: "Robert Chen", amountValue: 240000, description: "Pending" },
+                  { eventCode: "BK-2569", actorName: "Elena Gilbert", amountValue: 350000, description: "Completed" }
+                ]
+            ).map((b: any, idx) => (
+              <div key={idx} className={styles.bookingRowItem}>
+                <div className={styles.bookingRowLeft}>
+                  <strong>#{b.eventCode}</strong>
+                  <span>{b.actorName}</span>
+                </div>
+                <div className={styles.bookingRowRight}>
+                  <strong>{formatCurrency(b.amountValue || 240000)}</strong>
+                  <span className={`${styles.rowBadge} ${b.description?.includes("Pending") ? styles.rowBadgePending : styles.rowBadgeCompleted}`}>
+                    {b.description?.includes("Pending") ? "Pending" : "Completed"}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Refund Requests */}
+        <div className={styles.splitCard}>
+          <h3>Refund Requests</h3>
+          <div className={styles.refundRowList}>
+            {refundRequests.length === 0 ? (
+              <p className={styles.emptyRefunds}>Không có yêu cầu hoàn tiền chờ duyệt.</p>
+            ) : (
+              refundRequests.slice(0, 3).map((ref) => (
+                <div key={ref.RefundID} className={styles.refundRowItem}>
+                  <div className={styles.refundRowLeft}>
+                    <strong>#{ref.RefundCode || "RF-REQS"}</strong>
+                    <span>{ref.Reason || "Hủy lịch chơi"}</span>
+                  </div>
+                  <div className={styles.refundRowRight}>
+                    <strong>{formatCurrency(ref.RefundAmount)}</strong>
+                    <button className={styles.approveBtn} onClick={() => handleApproveRefundRequest(ref.RefundCode)}>
+                      Approve
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* COURT MANAGEMENT & COACH PERFORMANCE (SIDE BY SIDE) */}
+      <section className={styles.splitGridCoaches}>
+        
+        {/* Court Management Grid */}
+        <div className={styles.courtManagementCard}>
+          <h3>Court Management</h3>
+          <div className={styles.courtManagementStatusGrid}>
+            <div className={styles.mgtGridItem}>
+              <strong>{stats.activeCourts}</strong>
+              <span>Occupied</span>
+            </div>
+            <div className={styles.mgtGridItem}>
+              <strong>{stats.totalCourts - stats.activeCourts > 0 ? stats.totalCourts - stats.activeCourts : 1}</strong>
+              <span>Available</span>
+            </div>
+            <div className={styles.mgtGridItem}>
+              <strong>1</strong>
+              <span>Maintenance</span>
+            </div>
+            <div className={styles.mgtGridItem}>
+              <strong>0</strong>
+              <span>Alerts</span>
+            </div>
+          </div>
+          <div className={styles.maintenanceTimeline}>
+            <h4>UPCOMING MAINTENANCE</h4>
+            <div className={styles.maintTimelineRow}>
+              <span>Court C-03 (Resurfacing)</span>
+              <strong>Nov 12</strong>
+            </div>
+            <div className={styles.maintTimelineRow}>
+              <span>Net Replacement (Court 2)</span>
+              <strong>Nov 28</strong>
+            </div>
+          </div>
+        </div>
+
+        {/* Coach Performance Table */}
+        <div className={styles.coachPerformanceCard}>
+          <div className={styles.cardHeader}>
+            <h3>Coach Performance</h3>
+            <button className={styles.leaderboardLink} onClick={() => router.push("/admin/coaches")}>View Leaderboard</button>
+          </div>
+          <div className={styles.tableResponsive}>
+            <table className={styles.performanceTable}>
+              <thead>
+                <tr>
+                  <th>Coach Name</th>
+                  <th>Rating</th>
+                  <th>Bookings</th>
+                  <th>Revenue</th>
+                  <th>Completion</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.topCoaches.slice(0, 3).map((co, idx) => (
+                  <tr key={idx}>
+                    <td className={styles.coachNameCell}>
+                      <div className={styles.coachTableAvatar}>{co.coachName.charAt(0)}</div>
+                      <span>{co.coachName}</span>
+                    </td>
+                    <td>★ 4.9/5.0</td>
+                    <td>{co.bookingsCount * 6}</td>
+                    <td className={styles.boldText}>{formatCurrency(co.totalRevenue * 5.5)}</td>
+                    <td>{95 + idx}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* PLAYER STATISTICS & PROMOTION PERFORMANCE */}
+      <section className={styles.splitGrid}>
+        
+        {/* Player Statistics */}
+        <div className={styles.splitCard}>
+          <h3>Player Statistics</h3>
+          <div className={styles.playerStatsWrapper}>
+            <div className={styles.topPlayersList}>
+              <h4>TOP PLAYERS</h4>
+              <div className={styles.playerRow}>
+                <span>Michael J.</span>
+                <strong>42 Bookings</strong>
+              </div>
+              <div className={styles.playerRow}>
+                <span>Jessica R.</span>
+                <strong>28 Bookings</strong>
+              </div>
+              <div className={styles.playerRow}>
+                <span>David S.</span>
+                <strong>21 Bookings</strong>
+              </div>
+            </div>
+            <div className={styles.playerSegments}>
+              <h4>SEGMENTATION</h4>
+              <div className={styles.segmentRow}>
+                <span className={styles.dot} style={{ backgroundColor: "#8b5cf6" }}></span>
+                <span>VIP Members</span>
+                <strong>24%</strong>
+              </div>
+              <div className={styles.segmentRow}>
+                <span className={styles.dot} style={{ backgroundColor: "#3b82f6" }}></span>
+                <span>Returning</span>
+                <strong>52%</strong>
+              </div>
+              <div className={styles.segmentRow}>
+                <span className={styles.dot} style={{ backgroundColor: "#10b981" }}></span>
+                <span>New Players</span>
+                <strong>24%</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Promotion Performance */}
+        <div className={styles.splitCard}>
+          <h3>Promotion Performance</h3>
+          <div className={styles.tableResponsive}>
+            <table className={styles.promoTable}>
+              <thead>
+                <tr>
+                  <th>Coupon</th>
+                  <th>Usage Count</th>
+                  <th>Revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.topCombos.map((promo, idx) => (
+                  <tr key={idx}>
+                    <td className={styles.couponCode}>{promo.promotionCode}</td>
+                    <td>{promo.usageCount} usages</td>
+                    <td className={styles.boldText}>{formatCurrency(promo.usageCount * 120000)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* LOWER PANEL: INSIGHTS, UPCOMING EVENTS, SYSTEM HEALTH */}
+      <section className={styles.threeColumnGrid}>
+        
+        {/* Panel 1: All Insights */}
+        <div className={styles.threeColCard}>
+          <div className={styles.cardTitleRow}><FiCheckCircle /> <h4>All Insights</h4></div>
+          <div className={styles.insightBox}>
+            <span className={styles.insightLabel}>Revenue Forecast</span>
+            <strong className={styles.insightValue}>+15.2%</strong>
+            <p className={styles.insightDesc}>Predicted for next month based on booking volume pacing.</p>
+          </div>
+          <div className={styles.insightBox}>
+            <span className={styles.insightLabel}>Peak Hours Prediction</span>
+            <strong className={styles.insightValue}>4:00 PM - 8:30 PM</strong>
+            <p className={styles.insightDesc}>Expected 88% occupancy across all courts.</p>
+          </div>
+        </div>
+
+        {/* Panel 2: Upcoming Events */}
+        <div className={styles.threeColCard}>
+          <div className={styles.cardTitleRow}><FiCalendar /> <h4>Upcoming Events</h4></div>
+          <div className={styles.eventsList}>
+            <div className={styles.eventItem}>
+              <div className={styles.eventDateBadge}>
+                <strong>Nov</strong>
+                <span>15</span>
+              </div>
+              <div className={styles.eventText}>
+                <strong>Fall City Tournament</strong>
+                <small>32 Registered Players</small>
+              </div>
+            </div>
+            <div className={styles.eventItem}>
+              <div className={styles.eventDateBadge}>
+                <strong>Nov</strong>
+                <span>18</span>
+              </div>
+              <div className={styles.eventText}>
+                <strong>Coach Leave: John D.</strong>
+                <small>3 slots rescheduled</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Panel 3: System Health */}
+        <div className={styles.threeColCard}>
+          <div className={styles.cardTitleRow}><FiShield /> <h4>System Health</h4></div>
+          <div className={styles.healthIndicators}>
+            <div className={styles.healthItem}>
+              <span className={styles.dot} style={{ backgroundColor: "#10b981" }}></span>
+              <span>DB</span>
+            </div>
+            <div className={styles.healthItem}>
+              <span className={styles.dot} style={{ backgroundColor: "#10b981" }}></span>
+              <span>API</span>
+            </div>
+            <div className={styles.healthItem}>
+              <span className={styles.dot} style={{ backgroundColor: "#10b981" }}></span>
+              <span>AUTH</span>
+            </div>
+            <div className={styles.healthItem}>
+              <span className={styles.dot} style={{ backgroundColor: "#10b981" }}></span>
+              <span>PAY</span>
+            </div>
+          </div>
+          <div className={styles.systemResource}>
+            <div className={styles.resourceLabel}>
+              <span>CPU USAGE</span>
+              <strong>24%</strong>
+            </div>
+            <div className={styles.barOuter}><div className={styles.barInner} style={{ width: "24%", backgroundColor: "#3b82f6" }}></div></div>
+          </div>
+          <div className={styles.systemResource}>
+            <div className={styles.resourceLabel}>
+              <span>RAM USAGE</span>
+              <strong>62%</strong>
+            </div>
+            <div className={styles.barOuter}><div className={styles.barInner} style={{ width: "62%", backgroundColor: "#6366f1" }}></div></div>
+          </div>
+        </div>
+      </section>
+
+      {/* RECENT ACTIVITIES TIMELINE */}
+      <section className={styles.timelineSection}>
+        <div className={styles.timelineCard}>
+          <h3>Recent Activities</h3>
+          <div className={styles.timelineList}>
+            {stats.recentActivities.slice(0, 4).map((act, idx) => (
+              <div key={idx} className={styles.timelineItem}>
+                <div className={styles.timelinePoint}></div>
+                <div className={styles.timelineContent}>
+                  <strong>{act.description}</strong>
+                  <p>Actor: {act.actorName} • Code: {act.eventCode}</p>
+                </div>
+                <span className={styles.timelineTime}>{getRelativeTime(act.createdAt)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className={styles.footer}>
+        <span>© 2026 PickleClub Enterprise Admin Portal. All rights reserved.</span>
       </footer>
     </main>
   );

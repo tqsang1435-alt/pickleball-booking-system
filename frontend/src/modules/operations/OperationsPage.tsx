@@ -206,7 +206,7 @@ export default function OperationsPage() {
       {/* ── Auto no-show banner ── */}
       {data?.autoNoShowCount ? (
         <div className={styles.autoBanner}>
-          🤖 Hệ thống đã tự động đánh dấu <strong>{data.autoNoShowCount}</strong> booking quá hạn là No-show.
+          Hệ thống đã tự động đánh dấu <strong>{data.autoNoShowCount}</strong> booking quá hạn là No-show.
         </div>
       ) : null}
 
@@ -264,7 +264,7 @@ export default function OperationsPage() {
         <SkeletonRows />
       ) : error ? (
         <div className={styles.errorBox}>
-          <span>⚠️ {error}</span>
+          <span>Lỗi: {error}</span>
           <button className={styles.retryBtn} onClick={() => load(false)}>Thử lại</button>
         </div>
       ) : sorted.length === 0 ? (
@@ -309,14 +309,14 @@ export default function OperationsPage() {
                     {/* Mã + giờ */}
                     <td>
                       <span className={styles.bookingCode}>{b.bookingCode}</span>
-                      <div className={styles.bookingTime}>⏱ {b.startTime} – {b.endTime}</div>
+                      <div className={styles.bookingTime}>{b.startTime} – {b.endTime}</div>
                     </td>
 
                     {/* Khách */}
                     <td>
                       <div className={styles.customerName}>{b.customerName}</div>
                       <div className={styles.customerContact}>
-                        {b.customerPhone && <span>📱 {b.customerPhone}</span>}
+                        {b.customerPhone && <span>SĐT: {b.customerPhone}</span>}
                         {b.customerEmail && !b.customerPhone && <span>{b.customerEmail}</span>}
                       </div>
                     </td>
@@ -324,7 +324,7 @@ export default function OperationsPage() {
                     {/* Sân */}
                     <td>
                       <div className={styles.courtName}>
-                        {b.courtName ? `🏟 ${b.courtName}` : "—"}
+                        {b.courtName ? `Sân: ${b.courtName}` : "—"}
                       </div>
                       <div className={styles.bookingDate}>
                         {new Date(b.bookingDate + "T00:00:00").toLocaleDateString("vi-VN")}
@@ -336,7 +336,7 @@ export default function OperationsPage() {
                       <StatusBadge status={b.status} />
                       {b.checkInTime && (
                         <div className={styles.checkInTime}>
-                          Check-in lúc {new Date(b.checkInTime).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                          Nhận sân lúc {new Date(b.checkInTime).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
                         </div>
                       )}
                     </td>
@@ -349,10 +349,10 @@ export default function OperationsPage() {
                             <button
                               className={styles.btnCheckIn}
                               disabled={isActioning}
-                              title="Check-in khách"
+                              title="Nhận sân"
                               onClick={() => openConfirm(b, "checkin")}
                             >
-                              ✅ Check-in
+                              Nhận sân
                             </button>
                             <button
                               className={styles.btnNoShow}
@@ -360,7 +360,7 @@ export default function OperationsPage() {
                               title="Ghi nhận vắng mặt"
                               onClick={() => openConfirm(b, "noshow")}
                             >
-                              ❌ No-show
+                              Báo vắng
                             </button>
                           </>
                         )}
@@ -371,7 +371,7 @@ export default function OperationsPage() {
                             title="Xác nhận khách đã chơi xong"
                             onClick={() => openConfirm(b, "complete")}
                           >
-                            🏁 Hoàn thành
+                            Hoàn thành
                           </button>
                         )}
                         {isCheckedIn && isStaff && (
@@ -380,8 +380,9 @@ export default function OperationsPage() {
                         <button
                           className={styles.btnLog}
                           onClick={() => openLogs(b)}
+                          title="Lịch sử thao tác"
                         >
-                          📜
+                          Lịch sử
                         </button>
                       </div>
                     </td>
@@ -399,9 +400,9 @@ export default function OperationsPage() {
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h3 className={styles.modalTitle}>
-                {confirm.type === "checkin"  && "✅ Xác nhận Check-in"}
-                {confirm.type === "complete" && "🏁 Xác nhận Hoàn thành"}
-                {confirm.type === "noshow"   && "❌ Ghi nhận Vắng mặt"}
+                {confirm.type === "checkin"  && "Xác nhận Nhận sân"}
+                {confirm.type === "complete" && "Xác nhận Hoàn thành"}
+                {confirm.type === "noshow"   && "Ghi nhận Vắng mặt (No-show)"}
               </h3>
               <button className={styles.modalClose} onClick={() => setConfirm(null)} disabled={confirmLoading}>×</button>
             </div>
@@ -410,10 +411,10 @@ export default function OperationsPage() {
                 <div className={styles.bookingCardCode}>{confirm.booking.bookingCode}</div>
                 <div className={styles.bookingCardName}>{confirm.booking.customerName}</div>
                 {confirm.booking.customerPhone && (
-                  <div className={styles.bookingCardSub}>📱 {confirm.booking.customerPhone}</div>
+                  <div className={styles.bookingCardSub}>SĐT: {confirm.booking.customerPhone}</div>
                 )}
                 <div className={styles.bookingCardSub}>
-                  🏟 {confirm.booking.courtName ?? "—"} &nbsp;·&nbsp; ⏱ {confirm.booking.startTime} – {confirm.booking.endTime}
+                  Sân: {confirm.booking.courtName ?? "—"} &nbsp;·&nbsp; Giờ: {confirm.booking.startTime} – {confirm.booking.endTime}
                 </div>
               </div>
 
@@ -433,7 +434,7 @@ export default function OperationsPage() {
                   <textarea
                     className={styles.formTextarea}
                     rows={3}
-                    placeholder="VD: Khách không đến sau 15 phút kể từ giờ bắt đầu..."
+                    placeholder="Ví dụ: Khách không đến sau 15 phút kể từ giờ bắt đầu..."
                     value={noShowNote}
                     onChange={e => { setNoShowNote(e.target.value); setConfirmError(""); }}
                     disabled={confirmLoading}
@@ -441,7 +442,7 @@ export default function OperationsPage() {
                 </div>
               )}
 
-              {confirmError && <div className={styles.modalError}>⚠️ {confirmError}</div>}
+              {confirmError && <div className={styles.modalError}>Lỗi: {confirmError}</div>}
             </div>
             <div className={styles.modalFooter}>
               <button className={styles.btnCancel} onClick={() => setConfirm(null)} disabled={confirmLoading}>
@@ -464,7 +465,7 @@ export default function OperationsPage() {
         <div className={styles.modalOverlay} onClick={() => setLogsBooking(null)}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>📜 Lịch sử — {logsBooking.bookingCode}</h3>
+              <h3 className={styles.modalTitle}>Lịch sử thao tác — {logsBooking.bookingCode}</h3>
               <button className={styles.modalClose} onClick={() => setLogsBooking(null)}>×</button>
             </div>
             <div className={styles.modalBody}>

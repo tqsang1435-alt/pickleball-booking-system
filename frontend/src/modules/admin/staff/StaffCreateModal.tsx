@@ -74,7 +74,6 @@ export default function StaffCreateModal({ token, onClose, onSuccess }: Props) {
 
         {success ? (
           <div className={styles.successBox}>
-            <span className={styles.successIcon}>✅</span>
             <div>
               <p className={styles.successTitle}>Tạo tài khoản thành công!</p>
               <p className={styles.successSub}>Nhân viên có thể đăng nhập ngay bây giờ.</p>
@@ -149,10 +148,10 @@ export default function StaffCreateModal({ token, onClose, onSuccess }: Props) {
             </div>
 
             <div className={styles.passwordHint}>
-              🔒 Mật khẩu sẽ được mã hóa an toàn. Nhân viên nên đổi mật khẩu sau lần đăng nhập đầu tiên.
+              Mật khẩu sẽ được mã hóa an toàn. Nhân viên nên đổi mật khẩu sau lần đăng nhập đầu tiên.
             </div>
 
-            {error && <div className={styles.errorText}>⚠️ {error}</div>}
+            {error && <div className={styles.errorText}>{error}</div>}
 
             <div className={styles.modalActions}>
               <button

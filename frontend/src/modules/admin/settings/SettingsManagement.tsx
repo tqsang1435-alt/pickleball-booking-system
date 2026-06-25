@@ -144,17 +144,17 @@ export default function SettingsManagement() {
               className={styles.btnSecondary}
               onClick={() => void runSeed(false)}
               disabled={seedLoading}
-              title="Thêm các key mới chưa có vào DB"
+              title="Thêm các cấu hình mới chưa có vào cơ sở dữ liệu"
             >
-              {seedLoading ? "Đang seed..." : "Seed Data"}
+              {seedLoading ? "Đang đồng bộ..." : "Đồng bộ cài đặt"}
             </button>
             <button
               className={styles.btnDangerSoft}
               onClick={() => setShowResetConfirm(true)}
               disabled={seedLoading}
-              title="Reset tất cả về giá trị mặc định"
+              title="Đặt lại toàn bộ cài đặt về giá trị mặc định"
             >
-              Reset Default
+              Đặt lại mặc định
             </button>
           </div>
         )}
@@ -184,8 +184,8 @@ export default function SettingsManagement() {
           <div>
             <h3>Chưa có dữ liệu cấu hình</h3>
             <p>
-              Bảng SystemSettings trống ({seedStatus.count}/{seedStatus.total}).
-              Chạy Seed để tạo các cấu hình mặc định.
+              Bảng cài đặt hệ thống đang trống ({seedStatus.count}/{seedStatus.total}).
+              Khởi chạy đồng bộ để tạo các cấu hình mặc định ban đầu.
             </p>
           </div>
           <button
@@ -193,7 +193,7 @@ export default function SettingsManagement() {
             onClick={() => void runSeed(false)}
             disabled={seedLoading}
           >
-            {seedLoading ? "Đang seed..." : "Chạy Seed"}
+            {seedLoading ? "Đang đồng bộ..." : "Khởi chạy đồng bộ"}
           </button>
         </div>
       )}
@@ -223,9 +223,6 @@ export default function SettingsManagement() {
                     }`}
                     onClick={() => setActiveGroup(group)}
                   >
-                    <span className={styles.navIcon} style={{ color: meta.color }}>
-                      {meta.icon}
-                    </span>
                     <span className={styles.navLabel}>{meta.label}</span>
                     <span className={styles.navCount}>{settings.length}</span>
                     {changed && <span className={styles.navDirty} />}
@@ -312,9 +309,6 @@ function GroupPanel({
     <div className={styles.panel}>
       <div className={styles.panelHeader}>
         <div className={styles.panelTitle}>
-          <span className={styles.panelIcon} style={{ color: meta.color }}>
-            {meta.icon}
-          </span>
           <div>
             <h2>{meta.label}</h2>
             <p>{allSettings.length} cấu hình trong nhóm này</p>
@@ -497,7 +491,7 @@ function ResetConfirmModal({
             Hủy
           </button>
           <button className={styles.btnDanger} onClick={onConfirm} disabled={loading}>
-            {loading ? "Đang reset..." : "Xác nhận Reset"}
+            {loading ? "Đang đặt lại..." : "Xác nhận đặt lại"}
           </button>
         </div>
       </div>

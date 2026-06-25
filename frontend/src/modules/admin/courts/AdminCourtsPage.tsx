@@ -7,6 +7,7 @@ import { getToken, getUser } from "@/utils/authStorage";
 import type { Court } from "@/types/court";
 import StateBox from "@/components/common/StateBox";
 import SlotManager from "./SlotManager";
+import ConfirmModal from "@/modules/staff/shared/ConfirmModal";
 import styles from "./AdminCourtsPage.module.css";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { getImageUrl } from "@/utils/image";
@@ -19,6 +20,11 @@ export default function AdminCourtsPage() {
   const [token, setToken] = useState<string | null>(null);
   const [isStaff, setIsStaff] = useState(false);
 
+  // Search & Filter State
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [typeFilter, setTypeFilter] = useState("All");
+
   // Modal & Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCourt, setEditingCourt] = useState<Court | null>(null);
@@ -26,6 +32,14 @@ export default function AdminCourtsPage() {
   const [formError, setFormError] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [selectedCourtForSlot, setSelectedCourtForSlot] = useState<Court | null>(null);
+
+  // Custom confirm state
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: "danger" | "warning" | "info";
+  } | null>(null);
 
   // File Upload State
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -197,13 +211,17 @@ export default function AdminCourtsPage() {
     }
   }
 
-  async function handleDelete(court: Court) {
-    if (!token) return;
-    const confirmed = window.confirm(
-      `Bạn có chắc muốn xóa sân "${court.CourtName}" không?\nSân sẽ bị ẩn khỏi hệ thống (xóa mềm) và không thể đặt lịch.`
-    );
-    if (!confirmed) return;
+  function handleDelete(court: Court) {
+    setConfirmConfig({
+      title: "Xác nhận xóa Sân Pickleball",
+      message: `Bạn có chắc muốn xóa sân "${court.CourtName}" không?\nSân sẽ bị ẩn khỏi hệ thống (xóa mềm) và không thể đặt lịch.`,
+      variant: "danger",
+      onConfirm: () => executeDelete(court),
+    });
+  }
 
+  async function executeDelete(court: Court) {
+    if (!token) return;
     try {
       setDeletingId(court.CourtID);
       await deleteCourt(token, court.CourtID);
@@ -260,103 +278,156 @@ export default function AdminCourtsPage() {
     setFileError("");
   }
 
+  const filteredCourts = courts.filter((court) => {
+    const matchesSearch =
+      court.CourtName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      court.CourtCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (court.Location || "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "All" || court.Status === statusFilter;
+    const matchesType = typeFilter === "All" || court.CourtType === typeFilter;
+    return matchesSearch && matchesStatus && matchesType;
+  });
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.titleArea}>
-          <h1>Quản lý Sân</h1>
+          <h1>Quản lý Sân Pickleball</h1>
           <p>Danh sách sân pickleball của hệ thống và thiết lập giờ mở cửa, bảng giá.</p>
         </div>
         {!isStaff && (
           <button onClick={handleOpenAdd} className={styles.addButton}>
-            ➕ Thêm sân mới
+            Thêm Sân Mới
           </button>
         )}
       </header>
 
+      {/* Toolbar tìm kiếm & lọc */}
+      <div className={styles.toolbar}>
+        <div className={styles.searchWrapper}>
+          <input
+            type="text"
+            placeholder="Tìm kiếm sân theo tên, mã hoặc địa chỉ..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={styles.toolbarInput}
+          />
+        </div>
+        <div className={styles.filterWrapper}>
+          <div className={styles.filterGroup}>
+            <label>Trạng thái:</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className={styles.toolbarSelect}
+            >
+              <option value="All">Tất cả trạng thái</option>
+              <option value="Available">Đang hoạt động</option>
+              <option value="Maintenance">Đang bảo trì</option>
+              <option value="Inactive">Tạm ngưng</option>
+            </select>
+          </div>
+          <div className={styles.filterGroup}>
+            <label>Loại sân:</label>
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className={styles.toolbarSelect}
+            >
+              <option value="All">Tất cả loại sân</option>
+              <option value="Indoor">Trong nhà</option>
+              <option value="Outdoor">Ngoài trời</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       {loading ? (
-        <StateBox variant="loading" title="Đang tải danh sách sân" />
+        <StateBox variant="loading" title="Đang tải danh sách sân..." />
       ) : error ? (
         <StateBox variant="error" title="Lỗi hệ thống" description={error} />
-      ) : courts.length === 0 ? (
-        <StateBox variant="empty" title="Chưa có sân nào trên hệ thống" description="Bấm nút 'Thêm sân mới' để khởi tạo." />
+      ) : filteredCourts.length === 0 ? (
+        <StateBox variant="empty" title="Không tìm thấy sân nào" description="Thử thay đổi từ khóa hoặc bộ lọc của bạn." />
       ) : (
-        <div className={styles.tablePanel}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Thông tin sân</th>
-                <th>Vị trí</th>
-                <th>Giờ hoạt động</th>
-                <th>Giá thuê / Giờ</th>
-                <th>Trạng thái</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
-            <tbody>
-              {courts.map((court) => (
-                <tr key={court.CourtID}>
-                  <td>
-                    <div className={styles.courtInfo}>
-                      <img
-                        src={getImageUrl(court.CourtImage, "/images/home/court-placeholder.jpg")}
-                        alt={court.CourtName}
-                        className={styles.courtThumb}
-                      />
-                      <div className={styles.courtMeta}>
-                        <span className={styles.courtName}>{court.CourtName}</span>
-                        <span className={styles.courtCode}>{court.CourtCode} • {court.CourtType === "Indoor" ? "Trong nhà" : "Ngoài trời"}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td>{court.Location || "Chưa thiết lập"}</td>
-                  <td>⏱️ {court.OpenTime} - {court.CloseTime}</td>
-                  <td><strong>{formatCurrency(court.PricePerHour)}</strong></td>
-                  <td>
-                    <span
-                      className={`${styles.badge} ${
-                        court.Status === "Available"
-                          ? styles.badgeAvailable
-                          : court.Status === "Maintenance"
-                          ? styles.badgeMaintenance
-                          : styles.badgeInactive
-                      }`}
-                    >
-                      {court.Status === "Available"
-                        ? "Hoạt động"
-                        : court.Status === "Maintenance"
-                        ? "Bảo trì"
-                        : "Khóa/Ngưng"}
+        <div className={styles.courtCardGrid}>
+          {filteredCourts.map((court) => (
+            <div key={court.CourtID} className={styles.courtCard}>
+              <div className={styles.cardImageWrapper}>
+                <img
+                  src={getImageUrl(court.CourtImage, "/images/home/court-placeholder.jpg")}
+                  alt={court.CourtName}
+                  className={styles.cardImage}
+                />
+                <span className={`${styles.cardBadge} ${court.CourtType === "Indoor" ? styles.badgeIndoor : styles.badgeOutdoor}`}>
+                  {court.CourtType === "Indoor" ? "Trong nhà" : "Ngoài trời"}
+                </span>
+              </div>
+              <div className={styles.cardBody}>
+                <div className={styles.cardHeader}>
+                  <h3 className={styles.cardTitle}>{court.CourtName}</h3>
+                  <span className={styles.cardSub}>{court.CourtCode}</span>
+                </div>
+                
+                <div className={styles.cardInfo}>
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Vị trí:</span>
+                    <span className={styles.infoVal} title={court.Location || "Chưa thiết lập"}>
+                      {court.Location || "Chưa thiết lập"}
                     </span>
-                  </td>
-                  <td>
-                    <div className={styles.actionCell}>
-                      {!isStaff && (
-                        <button onClick={() => handleOpenEdit(court)} className={styles.editButton}>
-                          ✏️ Sửa
-                        </button>
-                      )}
-                      <button
-                        onClick={() => setSelectedCourtForSlot(court)}
-                        className={styles.slotButton}
-                      >
-                        📅 Lịch slot
-                      </button>
-                      {!isStaff && (
-                        <button
-                          onClick={() => handleDelete(court)}
-                          className={styles.deleteButton}
-                          disabled={deletingId === court.CourtID}
-                        >
-                          {deletingId === court.CourtID ? "Đang xóa..." : "🗑️ Xóa"}
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Mở cửa:</span>
+                    <span className={styles.infoVal}>{court.OpenTime} - {court.CloseTime}</span>
+                  </div>
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Giá thuê/giờ:</span>
+                    <span className={styles.priceVal}>{formatCurrency(court.PricePerHour)}</span>
+                  </div>
+                </div>
+
+                <div className={styles.cardStatusRow}>
+                  <span
+                    className={`${styles.badge} ${
+                      court.Status === "Available"
+                        ? styles.badgeAvailable
+                        : court.Status === "Maintenance"
+                        ? styles.badgeMaintenance
+                        : styles.badgeInactive
+                    }`}
+                  >
+                    {court.Status === "Available"
+                      ? "Hoạt động"
+                      : court.Status === "Maintenance"
+                      ? "Bảo trì"
+                      : "Tạm ngưng"}
+                  </span>
+                </div>
+              </div>
+
+              <div className={styles.cardFooter}>
+                {!isStaff && (
+                  <button onClick={() => handleOpenEdit(court)} className={styles.cardEditButton}>
+                    Sửa
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelectedCourtForSlot(court)}
+                  className={styles.cardSlotButton}
+                >
+                  Lịch slot
+                </button>
+                {!isStaff && (
+                  <button
+                    onClick={() => handleDelete(court)}
+                    className={styles.cardDeleteButton}
+                    disabled={deletingId === court.CourtID}
+                  >
+                    {deletingId === court.CourtID ? "Đang xóa..." : "Xóa"}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -559,6 +630,18 @@ export default function AdminCourtsPage() {
           court={selectedCourtForSlot}
           token={token}
           onClose={() => setSelectedCourtForSlot(null)}
+        />
+      )}
+      {confirmConfig && (
+        <ConfirmModal
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          onConfirm={() => {
+            confirmConfig.onConfirm();
+            setConfirmConfig(null);
+          }}
+          onCancel={() => setConfirmConfig(null)}
+          variant={confirmConfig.variant}
         />
       )}
     </div>

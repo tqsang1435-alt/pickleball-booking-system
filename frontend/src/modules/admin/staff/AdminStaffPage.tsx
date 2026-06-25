@@ -6,6 +6,7 @@ import { adminGetAllStaff, adminUpdateUser } from "@/services/userApi";
 import { apiClient } from "@/services/apiClient";
 import type { ApiResponse } from "@/types/api";
 import { getImageUrl } from "@/utils/image";
+import { getToken, getUser } from "@/utils/authStorage";
 import StaffCreateModal from "./StaffCreateModal";
 import styles from "./AdminStaffPage.module.css";
 
@@ -51,9 +52,9 @@ function splitRoles(roles?: string | null) {
 }
 
 function formatDate(value?: string | null) {
-  if (!value) return "-";
+  if (!value) return "—";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "-";
+  if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleString("vi-VN", {
     day: "2-digit",
     month: "2-digit",
@@ -89,6 +90,18 @@ export default function AdminStaffPage({ token }: Props) {
   const [lockReason, setLockReason] = useState("");
   const [lockLoading, setLockLoading] = useState(false);
   const [lockError, setLockError] = useState("");
+
+  // Credentials for Header Initials
+  const [currentAdminName, setCurrentAdminName] = useState("Admin");
+  const [currentAdminEmail, setCurrentAdminEmail] = useState("");
+
+  useEffect(() => {
+    const admin = getUser();
+    if (admin) {
+      setCurrentAdminName(admin.FullName || admin.fullName || "Admin");
+      setCurrentAdminEmail(admin.Email || admin.email || "admin@pickleclub.vn");
+    }
+  }, []);
 
   const loadUsers = useCallback(async () => {
     try {
@@ -224,124 +237,186 @@ export default function AdminStaffPage({ token }: Props) {
     }
   }
 
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return "ST";
+    return parts.map(n => n[0]).join("").slice(0, 2).toUpperCase();
+  };
+
+  const adminInitials = useMemo(() => {
+    return getInitials(currentAdminName);
+  }, [currentAdminName]);
+
   return (
-    <div className={styles.page}>
-      <div className={styles.pageHeader}>
-        <div>
-          <h1 className={styles.pageTitle}>Quản lý nhân viên</h1>
-          <p className={styles.pageSub}>
-            Admin/Manager quản lý tài khoản Staff, trạng thái và vai trò vận hành.
-          </p>
+    <div className={styles.wrapper}>
+      {/* ── Sticky Top Header Bar ── */}
+      <header className={styles.headerBar}>
+        <div className={styles.headerLeft}>
+          <div className={styles.breadcrumbs}>
+            <span>Quản trị</span>
+            <span className={styles.chevron}>/</span>
+            <span className={styles.currentCrumb}>Quản lý nhân viên</span>
+          </div>
+
+          <div className={styles.tabs} aria-label="Lọc trạng thái nhân viên">
+            {[
+              ["All", "Tất cả"],
+              ["Active", "Hoạt động"],
+              ["Locked", "Đã khóa"],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                className={`${styles.tab} ${statusFilter === value ? styles.tabActive : ""}`}
+                onClick={() => setStatusFilter(value as StaffStatusFilter)}
+                type="button"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className={styles.headerActions}>
+
+        <div className={styles.headerCenter}>
+          <div className={styles.searchBar}>
+            <svg className={styles.searchIcon} width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              placeholder="Tìm theo tên, email, số điện thoại..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              className={styles.searchInput}
+            />
+          </div>
+        </div>
+
+        <div className={styles.headerRight}>
+          {/* Mở ca trực */}
           <Link href="/staff/operations" className={styles.btnOperations}>
-            Mở màn vận hành
+            Lịch Slot
           </Link>
+
+          {/* Thêm nhân viên */}
           <button className={styles.btnCreate} onClick={() => setIsModalOpen(true)}>
-            + Thêm nhân viên
+            <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Thêm nhân viên
           </button>
-        </div>
-      </div>
 
-      <div className={styles.tabs} aria-label="Lọc trạng thái nhân viên">
-        {[
-          ["All", "Tất cả"],
-          ["Active", "Hoạt động"],
-          ["Locked", "Đã khóa"],
-        ].map(([value, label]) => (
-          <button
-            key={value}
-            className={`${styles.tab} ${statusFilter === value ? styles.tabActive : ""}`}
-            onClick={() => setStatusFilter(value as StaffStatusFilter)}
-            type="button"
-          >
-            {label}
+          {/* Refresh Page */}
+          <button className={styles.btnIcon} onClick={loadUsers} title="Tải lại dữ liệu">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M23 4v6h-6M1 20v-6h6"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
           </button>
-        ))}
-      </div>
 
-      <div className={styles.toolBar}>
-        <div className={styles.searchBar}>
-          <svg className={styles.searchIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Tìm theo tên, email, số điện thoại..."
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            className={styles.searchInput}
-          />
+          {/* Initials Avatar Admin */}
+          <div className={styles.avatar} title={`${currentAdminName} (${currentAdminEmail})`}>
+            {adminInitials}
+          </div>
         </div>
-        {!loading && !error && (
-          <span className={styles.countBadge}>{filtered.length} nhân viên</span>
+      </header>
+
+      {/* ── Main content area with gray background ── */}
+      <div className={styles.contentArea}>
+        
+        {/* Title area */}
+        <div className={styles.titleArea}>
+          <div>
+            <h1 className={styles.pageTitle}>Quản lý nhân viên</h1>
+            <p className={styles.pageSub}>Quản lý tài khoản Staff, quyền hạn vai trò, và trạng thái hoạt động.</p>
+          </div>
+          {!loading && !error && (
+            <span className={styles.countBadge}>{filtered.length} nhân viên</span>
+          )}
+        </div>
+
+        {/* Error message */}
+        {error && (
+          <div className={styles.errorBox}>
+            <span>⚠️ Lỗi tải dữ liệu: {error}</span>
+            <button className={styles.retryBtn} onClick={loadUsers} type="button">
+              Thử lại
+            </button>
+          </div>
         )}
-      </div>
 
-      {error && (
-        <div className={styles.errorBox}>
-          <span>{error}</span>
-          <button className={styles.retryBtn} onClick={loadUsers} type="button">
-            Thử lại
-          </button>
-        </div>
-      )}
+        {/* Content */}
+        {loading ? (
+          <div className={styles.skeletonCardGrid}>
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className={styles.skeletonCard} />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className={styles.emptyBox}>
+            <p>Không tìm thấy nhân viên nào</p>
+          </div>
+        ) : (
+          <div className={styles.staffCardGrid}>
+            {filtered.map((user) => {
+              const roles = splitRoles(user.Roles);
+              const isLocked = user.Status === "Locked";
+              const sInitials = getInitials(user.FullName);
+              const coverIndex = user.UserID % 5;
 
-      {loading ? (
-        <SkeletonTable />
-      ) : filtered.length === 0 ? (
-        <div className={styles.emptyBox}>
-          <p>Không tìm thấy nhân viên nào</p>
-        </div>
-      ) : (
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Nhân viên</th>
-                <th>Số điện thoại</th>
-                <th>Vai trò</th>
-                <th>Trạng thái</th>
-                <th style={{ textAlign: "right" }}>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((user) => {
-                const roles = splitRoles(user.Roles);
-                const isLocked = user.Status === "Locked";
-
-                return (
-                  <tr key={user.UserID}>
-                    <td>
-                      <div className={styles.coachCell}>
-                        <div className={styles.avatarCircle}>
-                          {user.AvatarURL ? (
-                            <img src={getImageUrl(user.AvatarURL)} alt={user.FullName} className={styles.coachAvatar} />
-                          ) : (
-                            <span>{user.FullName?.charAt(0)?.toUpperCase() ?? "?"}</span>
-                          )}
-                        </div>
-                        <div>
-                          <div className={styles.coachName}>{user.FullName}</div>
-                          <div className={styles.coachEmail}>{user.Email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className={styles.tdMuted}>{user.PhoneNumber || "-"}</td>
-                    <td>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                        {roles.length > 0 ? (
-                          roles.map((role) => (
-                            <span key={role} className={styles.skillBadge}>
-                              {ROLE_LABELS[role] || role}
-                            </span>
-                          ))
+              return (
+                <div key={user.UserID} className={styles.staffCard}>
+                  {/* Banner cover with color shift */}
+                  <div className={`${styles.cardCover} ${styles[`cover_${coverIndex}`]}`}>
+                    {/* Avatar initials wrap */}
+                    <div className={styles.playerAvatarWrap}>
+                      <div className={styles.avatarCircle}>
+                        {user.AvatarURL ? (
+                          <img src={getImageUrl(user.AvatarURL)} alt={user.FullName} className={styles.coachAvatar} />
                         ) : (
-                          <span className={styles.tdMuted}>-</span>
+                          <span>{sInitials}</span>
                         )}
                       </div>
-                    </td>
-                    <td>
+                    </div>
+                  </div>
+
+                  <div className={styles.cardBody}>
+                    <div className={styles.cardHeader}>
+                      <h3 className={styles.coachName}>{user.FullName}</h3>
+                      <span className={styles.coachEmail}>{user.Email}</span>
+                    </div>
+
+                    <div className={styles.cardInfo}>
+                      <div className={styles.infoRow}>
+                        <span className={styles.infoLabel}>Điện thoại:</span>
+                        <span className={styles.infoVal}>{user.PhoneNumber || "—"}</span>
+                      </div>
+                      
+                      {/* Roles list */}
+                      <div className={styles.infoRow} style={{ alignItems: "flex-start" }}>
+                        <span className={styles.infoLabel}>Vai trò:</span>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, justifyContent: "flex-end", maxWidth: "160px" }}>
+                          {roles.length > 0 ? (
+                            roles.map((role) => {
+                              const badgeStyle = 
+                                role === "Admin" ? styles.badgeAdmin :
+                                role === "Manager" ? styles.badgeManager :
+                                role === "Coach" ? styles.badgeCoach :
+                                styles.badgeStaff;
+                              return (
+                                <span key={role} className={`${styles.skillBadge} ${badgeStyle}`}>
+                                  {ROLE_LABELS[role] || role}
+                                </span>
+                              );
+                            })
+                          ) : (
+                            <span className={styles.tdMuted}>—</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={styles.cardStatusRow}>
                       <span
                         className={`${styles.statusBadge} ${
                           isLocked
@@ -353,43 +428,42 @@ export default function AdminStaffPage({ token }: Props) {
                       >
                         {STATUS_LABELS[user.Status] || user.Status}
                       </span>
-                    </td>
-                    <td>
-                      <div className={styles.actions}>
-                        <button className={styles.btnInactive} onClick={() => setDetailTarget(user)} type="button">
-                          Chi tiết
-                        </button>
-                        <button className={styles.btnApprove} onClick={() => openEdit(user)} type="button">
-                          Sửa
-                        </button>
-                        <button
-                          className={styles.btnApprove}
-                          style={{ background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE" }}
-                          onClick={() => openRoleAssign(user)}
-                          type="button"
-                        >
-                          Phân quyền
-                        </button>
-                        <button
-                          className={isLocked ? styles.btnApprove : styles.btnReject}
-                          onClick={() => {
-                            setLockTarget(user);
-                            setLockReason("");
-                            setLockError("");
-                          }}
-                          type="button"
-                        >
-                          {isLocked ? "Mở khóa" : "Khóa"}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+                    </div>
+                  </div>
+
+                  {/* Card footer actions */}
+                  <div className={styles.cardFooter}>
+                    <button className={styles.btnApprove} onClick={() => setDetailTarget(user)} type="button">
+                      Chi tiết
+                    </button>
+                    <button className={styles.btnApprove} onClick={() => openEdit(user)} type="button">
+                      Sửa
+                    </button>
+                    <button
+                      className={styles.btnInactive}
+                      onClick={() => openRoleAssign(user)}
+                      type="button"
+                    >
+                      Quyền
+                    </button>
+                    <button
+                      className={isLocked ? styles.btnInactive : styles.btnReject}
+                      onClick={() => {
+                        setLockTarget(user);
+                        setLockReason("");
+                        setLockError("");
+                      }}
+                      type="button"
+                    >
+                      {isLocked ? "Mở" : "Khóa"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {isModalOpen && (
         <StaffCreateModal
@@ -461,14 +535,14 @@ export default function AdminStaffPage({ token }: Props) {
 
       {roleTarget && (
         <div className={styles.modalOverlay} onClick={() => setRoleTarget(null)}>
-          <div className={styles.modalContent} onClick={(event) => event.stopPropagation()}>
+          <div className={styles.modalContent} onClick={(event) => event.stopPropagation()} style={{ maxWidth: "420px" }}>
             <div className={styles.modalTitleRow}>
               <h2>Phân quyền - {roleTarget.FullName}</h2>
               <button className={styles.modalCloseBtn} onClick={() => setRoleTarget(null)} type="button">
                 ×
               </button>
             </div>
-            <p style={{ fontSize: 13, color: "#6B7280", margin: "0 0 16px" }}>
+            <p style={{ fontSize: 13, color: "#64748b", margin: "0 0 16px" }}>
               Chọn các vai trò phù hợp với nhân viên này.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
@@ -480,7 +554,7 @@ export default function AdminStaffPage({ token }: Props) {
                     alignItems: "center",
                     gap: 12,
                     padding: "11px 14px",
-                    border: `1.5px solid ${selectedRoleIds.includes(role.RoleID) ? "var(--primary, #4CAF50)" : "#E5E7EB"}`,
+                    border: `1.5px solid ${selectedRoleIds.includes(role.RoleID) ? "#2563eb" : "#E5E7EB"}`,
                     borderRadius: 10,
                     cursor: "pointer",
                     background: selectedRoleIds.includes(role.RoleID) ? "#F0FDF4" : "#fff",
@@ -491,13 +565,13 @@ export default function AdminStaffPage({ token }: Props) {
                     checked={selectedRoleIds.includes(role.RoleID)}
                     onChange={() => toggleRole(role.RoleID)}
                     disabled={roleLoading}
-                    style={{ accentColor: "var(--primary, #4CAF50)", width: 16, height: 16 }}
+                    style={{ accentColor: "#2563eb", width: 16, height: 16 }}
                   />
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#1e293b" }}>
                       {ROLE_LABELS[role.RoleName] || role.RoleName}
                     </div>
-                    <div style={{ fontSize: 12, color: "#9CA3AF" }}>{role.RoleName}</div>
+                    <div style={{ fontSize: 12, color: "#94a3b8" }}>{role.RoleName}</div>
                   </div>
                 </label>
               ))}
@@ -531,13 +605,14 @@ export default function AdminStaffPage({ token }: Props) {
             </p>
             {lockTarget.Status !== "Locked" && (
               <div className={styles.formGroup}>
-                <label>Lý do khóa</label>
+                <label>Lý do khóa tài khoản *</label>
                 <textarea
                   rows={3}
                   placeholder="Nhập lý do khóa tài khoản..."
                   value={lockReason}
                   onChange={(event) => setLockReason(event.target.value)}
                   disabled={lockLoading}
+                  className={styles.formTextarea}
                 />
               </div>
             )}
@@ -578,14 +653,14 @@ function StaffDetailModal({ user, onClose }: { user: StaffUser; onClose: () => v
             ×
           </button>
         </div>
-        <div className={styles.form}>
+        <div className={styles.form} style={{ gap: 12 }}>
           <DetailRow label="Nhân viên" value={user.FullName} />
           <DetailRow label="Email" value={user.Email} />
-          <DetailRow label="Số điện thoại" value={user.PhoneNumber || "-"} />
-          <DetailRow label="Vai trò" value={roles.map((role) => ROLE_LABELS[role] || role).join(", ") || "-"} />
+          <DetailRow label="Số điện thoại" value={user.PhoneNumber || "—"} />
+          <DetailRow label="Vai trò" value={roles.map((role) => ROLE_LABELS[role] || role).join(", ") || "—"} />
           <DetailRow label="Trạng thái" value={STATUS_LABELS[user.Status] || user.Status} />
           <DetailRow label="Ngày tạo" value={formatDate(user.CreatedAt)} />
-          <DetailRow label="Cập nhật lần cuối" value={formatDate(user.UpdatedAt)} />
+          <DetailRow label="Cập nhật cuối" value={formatDate(user.UpdatedAt)} />
         </div>
         <div className={styles.modalActions}>
           <button className={styles.btnSubmit} onClick={onClose} type="button">
@@ -599,46 +674,9 @@ function StaffDetailModal({ user, onClose }: { user: StaffUser; onClose: () => v
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: 12, fontSize: 14 }}>
-      <strong style={{ color: "#6B7280" }}>{label}</strong>
-      <span style={{ color: "#111827" }}>{value}</span>
-    </div>
-  );
-}
-
-function SkeletonTable() {
-  return (
-    <div className={styles.tableWrap}>
-      <table className={styles.table}>
-        <thead>
-          <tr>
-            <th>Nhân viên</th>
-            <th>Số điện thoại</th>
-            <th>Vai trò</th>
-            <th>Trạng thái</th>
-            <th>Thao tác</th>
-          </tr>
-        </thead>
-        <tbody>
-          {[...Array(5)].map((_, index) => (
-            <tr key={index} className={styles.skeletonRow}>
-              <td>
-                <div className={styles.coachCell}>
-                  <div className={styles.skeletonAvatar} />
-                  <div>
-                    <div className={styles.skeletonLine} style={{ width: 120 }} />
-                    <div className={styles.skeletonLine} style={{ width: 160, marginTop: 6 }} />
-                  </div>
-                </div>
-              </td>
-              <td><div className={styles.skeletonLine} style={{ width: 90 }} /></td>
-              <td><div className={styles.skeletonPill} /></td>
-              <td><div className={styles.skeletonPill} /></td>
-              <td><div className={styles.skeletonPill} /></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div style={{ display: "grid", gridTemplateColumns: "130px 1fr", gap: 12, fontSize: 13.5 }}>
+      <strong style={{ color: "#64748b" }}>{label}:</strong>
+      <span style={{ color: "#1e293b", fontWeight: 600 }}>{value}</span>
     </div>
   );
 }

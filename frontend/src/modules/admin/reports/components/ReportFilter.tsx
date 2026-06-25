@@ -253,7 +253,7 @@ export default function ReportFilter({
         </p>
 
         <button type="submit" disabled={loading} className={styles.submitBtn}>
-          {loading ? "Đang tạo báo cáo..." : "📥 Xuất báo cáo"}
+          {loading ? "Đang tạo báo cáo..." : "Xuất báo cáo"}
         </button>
       </div>
     </form>

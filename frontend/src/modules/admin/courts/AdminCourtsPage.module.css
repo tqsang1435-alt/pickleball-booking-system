@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 28px;
-  padding: 10px 0;
+  padding: 24px 32px 48px; /* Tăng padding để không bị dính sát hai bên */
 }
 
 .header {
@@ -14,18 +14,18 @@
 
 .titleArea h1 {
   font-size: 32px;
-  color: #121a12;
+  color: #0f172a;
   margin: 0 0 6px 0;
 }
 
 .titleArea p {
-  color: #6d7967;
+  color: #64748b;
   font-size: 14px;
   margin: 0;
 }
 
 .addButton {
-  background: #3d7f1c;
+  background: #2563eb;
   color: #fff;
   border: none;
   border-radius: 12px;
@@ -39,15 +39,15 @@
 }
 
 .addButton:hover {
-  background: #2f6215;
+  background: #1d4ed8;
   transform: translateY(-1px);
 }
 
 .tablePanel {
   background: #fff;
-  border: 1px solid #e4eed8;
+  border: 1px solid #e2e8f0;
   border-radius: 24px;
-  box-shadow: 0 14px 34px rgba(39, 75, 31, 0.07);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.04);
   padding: 24px;
   overflow-x: auto;
 }
@@ -60,16 +60,16 @@
 
 .table th {
   padding: 16px;
-  border-bottom: 2px solid #edf2e8;
-  color: #6a7563;
+  border-bottom: 2px solid #e2e8f0;
+  color: #64748b;
   font-weight: 700;
   font-size: 14px;
 }
 
 .table td {
   padding: 16px;
-  border-bottom: 1px solid #f1f6ed;
-  color: #263024;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
   font-size: 15px;
   vertical-align: middle;
 }
@@ -86,7 +86,7 @@
   border-radius: 8px;
   object-fit: cover;
   background: #f5f5f5;
-  border: 1px solid #edf2e8;
+  border: 1px solid #e2e8f0;
 }
 
 .courtMeta {
@@ -96,12 +96,12 @@
 
 .courtName {
   font-weight: 700;
-  color: #172017;
+  color: #0f172a;
 }
 
 .courtCode {
   font-size: 12px;
-  color: #889481;
+  color: #64748b;
 }
 
 .badge {
@@ -114,8 +114,8 @@
 }
 
 .badgeAvailable {
-  background: #eef9df;
-  color: #3d7f1c;
+  background: #ecfdf5;
+  color: #047857;
 }
 
 .badgeMaintenance {
@@ -134,8 +134,8 @@
 }
 
 .editButton {
-  background: #f1f8ea;
-  color: #2f5f25;
+  background: #f1f5f9;
+  color: #334155;
   border: none;
   border-radius: 8px;
   padding: 8px 14px;
@@ -145,7 +145,7 @@
 }
 
 .editButton:hover {
-  background: #e4f6d4;
+  background: #e2e8f0;
 }
 
 .slotButton {
@@ -215,7 +215,7 @@
 
 .modalHeader {
   padding: 24px;
-  border-bottom: 1px solid #edf2e8;
+  border-bottom: 1px solid #e2e8f0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -223,7 +223,7 @@
 
 .modalHeader h2 {
   margin: 0;
-  color: #172017;
+  color: #0f172a;
   font-size: 22px;
 }
 
@@ -258,17 +258,17 @@
 .formGroup label {
   font-size: 13px;
   font-weight: 700;
-  color: #4e5948;
+  color: #64748b;
 }
 
 .input,
 .select,
 .textarea {
-  border: 1px solid #dfe9d4;
+  border: 1px solid #cbd5e1;
   border-radius: 12px;
   padding: 10px 14px;
   font-size: 14px;
-  color: #263024;
+  color: #0f172a;
   background: #fff;
   transition: all 0.2s;
   outline: none;
@@ -277,8 +277,8 @@
 .input:focus,
 .select:focus,
 .textarea:focus {
-  border-color: #3d7f1c;
-  box-shadow: 0 0 0 3px rgba(61, 127, 28, 0.1);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .textarea {
@@ -288,7 +288,7 @@
 
 .modalFooter {
   padding: 20px 24px;
-  border-top: 1px solid #edf2e8;
+  border-top: 1px solid #e2e8f0;
   display: flex;
   justify-content: flex-end;
   gap: 12px;
@@ -305,7 +305,7 @@
 }
 
 .submitButton {
-  background: #3d7f1c;
+  background: #2563eb;
   color: #fff;
   border: none;
   border-radius: 12px;
@@ -323,4 +323,278 @@
   color: #dc3545;
   font-size: 12px;
   margin-top: 4px;
+}
+
+/* Toolbar tìm kiếm & lọc */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: #fff;
+  padding: 16px 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  margin-bottom: 24px;
+}
+
+.searchWrapper {
+  flex: 1;
+  min-width: 260px;
+}
+
+.toolbarInput {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #0f172a;
+  outline: none;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.toolbarInput:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.filterWrapper {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filterGroup label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.toolbarSelect {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #334155;
+  outline: none;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toolbarSelect:focus {
+  border-color: #2563eb;
+}
+
+/* Grid của các Card Sân */
+.courtCardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); /* Thu nhỏ min-width để card gọn gàng và hiển thị nhiều cột hơn */
+  gap: 24px;
+}
+
+.courtCard {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s ease;
+}
+
+.courtCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+  border-color: #bfdbfe;
+}
+
+.cardImageWrapper {
+  position: relative;
+  height: 150px; /* Giảm chiều cao ảnh từ 180px xuống 150px cho cân đối */
+  width: 100%;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.cardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.courtCard:hover .cardImage {
+  transform: scale(1.05);
+}
+
+.cardBadge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.badgeIndoor {
+  background: #2563eb;
+}
+
+.badgeOutdoor {
+  background: #0ea5e9;
+}
+
+.cardBody {
+  padding: 16px; /* Giảm padding từ 20px xuống 16px */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.cardTitle {
+  font-size: 16px; /* Giảm kích thước font từ 18px xuống 16px */
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.cardSub {
+  font-size: 11px;
+  font-family: monospace;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.cardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px dashed #e2e8f0;
+  border-bottom: 1px dashed #e2e8f0;
+  padding: 10px 0; /* Thu hẹp khoảng cách thông tin */
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.infoLabel {
+  color: #64748b;
+}
+
+.infoVal {
+  color: #334155;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.priceVal {
+  color: #2563eb;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.cardStatusRow {
+  display: flex;
+  align-items: center;
+}
+
+.cardFooter {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px 16px; /* Giảm padding phần chân thẻ */
+  border-top: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+.cardEditButton {
+  flex: 1;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.cardEditButton:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.cardSlotButton {
+  flex: 1.5;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.cardSlotButton:hover {
+  background: #1d4ed8;
+}
+
+.cardDeleteButton {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.cardDeleteButton:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+}
+
+.cardDeleteButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

@@ -16,18 +16,14 @@ function todayVN() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
 }
 
-function nowVN() {
-  return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
-}
-
 const STATUS_LABEL: Record<string, string> = {
   Confirmed:      "Chờ check-in",
-  CheckedIn:      "Đang sử dụng sân",
+  CheckedIn:      "Đang sử dụng",
   Completed:      "Hoàn thành",
   Cancelled:      "Đã hủy",
   NoShow:         "Vắng mặt",
-  PendingPayment: "Chờ TT",
-  Paid:           "Đã TT",
+  PendingPayment: "Chờ thanh toán",
+  Paid:           "Đã thanh toán",
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -51,6 +47,9 @@ export default function StaffDashboard() {
   const [confirmNote, setConfirmNote] = useState("");
   const [confirmError, setConfirmError] = useState("");
   const [confirmLoading, setConfirmLoading] = useState(false);
+
+  // Layout view toggle
+  const [layoutView, setLayoutView] = useState<"list" | "grid">("list");
 
   // Auth + load
   useEffect(() => {
@@ -124,7 +123,7 @@ export default function StaffDashboard() {
   const bookings = data?.bookings ?? [];
   const unreadCount = notifications.filter(n => n.status === "Unread").length;
 
-  // Show all bookings for today (all statuses) sorted: Confirmed first, then CheckedIn, rest by startTime
+  // Show all bookings for today sorted
   const allTodayBookings = useMemo(() => {
     const order: Record<string, number> = { Confirmed: 0, CheckedIn: 1, Completed: 2, Cancelled: 3, NoShow: 4, PendingPayment: 5, Paid: 6 };
     return [...bookings].sort((a, b) => {
@@ -167,7 +166,9 @@ export default function StaffDashboard() {
   }
 
   const todayLabel = new Date().toLocaleDateString("vi-VN", {
-    weekday: "long", day: "numeric", month: "numeric", year: "numeric",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
   });
 
   return (
@@ -176,132 +177,105 @@ export default function StaffDashboard() {
       {/* ── Top bar ── */}
       <div className={styles.topBar}>
         <div className={styles.greeting}>
-          <span className={styles.greetSub}>
-            Xin chào, <strong>{userName}</strong> 👋
-            <span className={styles.rolePill}>Nhân viên</span>
-          </span>
           <h1 className={styles.greetTitle}>Trung tâm Vận hành</h1>
           <p className={styles.greetDesc}>
-            Xem thông tin đặt sân hôm nay, check-in nhận sân và quản lý vắng mặt (No-show).
+            Quản lý thời gian thực các hoạt động sân và ca trực của nhân viên.
           </p>
         </div>
 
         <div className={styles.topActions}>
           <span className={styles.todayDate}>{todayLabel}</span>
-
-          {/* Notification bell */}
-          <div className={styles.notifWrap} ref={notifRef}>
-            <button
-              className={styles.btnNotif}
-              onClick={() => setNotifOpen(o => !o)}
-              title="Thông báo"
-            >
-              <BellIcon />
-              {unreadCount > 0 && (
-                <span className={styles.notifBadge}>{unreadCount > 9 ? "9+" : unreadCount}</span>
-              )}
-            </button>
-
-            {notifOpen && (
-              <div className={styles.notifDropdown}>
-                <div className={styles.notifHeader}>
-                  <span className={styles.notifTitle}>Thông báo</span>
-                  {unreadCount > 0 && (
-                    <button className={styles.notifMarkAll} onClick={markAllRead}>
-                      Đánh dấu đã đọc
-                    </button>
-                  )}
-                </div>
-                <div className={styles.notifList}>
-                  {notifications.length === 0 ? (
-                    <div className={styles.notifEmpty}>Không có thông báo mới</div>
-                  ) : (
-                    notifications.slice(0, 10).map(n => (
-                      <div
-                        key={n.notificationId}
-                        className={`${styles.notifItem} ${n.status === "Unread" ? styles.notifUnread : ""}`}
-                      >
-                        <div className={styles.notifItemTitle}>{n.title}</div>
-                        <div className={styles.notifItemMsg}>{n.message}</div>
-                        <div className={styles.notifItemTime}>
-                          {new Date(n.createdAt).toLocaleString("vi-VN", {
-                            hour: "2-digit", minute: "2-digit",
-                            day: "numeric", month: "numeric",
-                          })}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Refresh button */}
-          <button className={styles.btnRefresh} onClick={handleRefresh}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M23 4v6h-6M1 20v-6h6"/>
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-            </svg>
-            Làm mới
-          </button>
+          <span className={styles.shiftStatus}>CA TRỰC: ĐANG HOẠT ĐỘNG</span>
         </div>
       </div>
 
-      {/* ── Stat cards ── */}
+      {/* ── Stat cards (Sparklines) ── */}
       <div className={styles.statGrid}>
         <StatCard
-          icon={<CalendarIcon color="#2563EB" />}
+          icon={<CourtIcon color="#2563eb" />}
+          label="Sân đang sử dụng"
+          value={loading ? "—" : `${s?.checkedIn ?? 0} / 8`}
+          color="blue"
+          trend="↗ +12%"
+          sparklinePath="M0,20 C15,10 30,25 45,15 C60,5 75,25 90,18 L100,22 L100,30 L0,30 Z"
+          sparklineStroke="M0,20 C15,10 30,25 45,15 C60,5 75,25 90,18 L100,22"
+          sparklineColor="#2563eb"
+        />
+        <StatCard
+          icon={<CoachIcon color="#16a34a" />}
+          label="Huấn luyện viên trực"
+          value={loading ? "—" : "02"}
+          color="green"
+          trend="Đang trực ca"
+          sparklinePath="M0,15 C20,10 40,25 60,15 C80,5 90,20 100,10 L100,30 L0,30 Z"
+          sparklineStroke="M0,15 C20,10 40,25 60,15 C80,5 90,20 100,10"
+          sparklineColor="#16a34a"
+        />
+        <StatCard
+          icon={<CalendarIcon color="#ea580c" />}
           label="Lịch đặt hôm nay"
           value={loading ? "—" : String(s?.totalBookings ?? 0)}
-          sub="Tổng số lượt đặt"
-          color="blue"
-        />
-        <StatCard
-          icon={<CheckInIcon color="#16A34A" />}
-          label="Đã Check-in"
-          value={loading ? "—" : String(s?.checkedIn ?? 0)}
-          sub="Lượt đang sử dụng sân"
-          color="green"
-        />
-        <StatCard
-          icon={<WaitIcon color="#9333EA" />}
-          label="Chờ Check-in"
-          value={loading ? "—" : String(s?.waitingCheckIn ?? 0)}
-          sub="Cần xử lý"
-          color="purple"
-          highlight={(s?.waitingCheckIn ?? 0) > 0}
-        />
-        <StatCard
-          icon={<NoShowIcon color="#D97706" />}
-          label="Khách vắng"
-          value={loading ? "—" : String(s?.noShow ?? 0)}
-          sub="No-show hôm nay"
           color="orange"
+          trend="↗ +5%"
+          sparklinePath="M0,22 C15,12 30,28 45,18 C60,8 75,28 90,20 L100,25 L100,30 L0,30 Z"
+          sparklineStroke="M0,22 C15,12 30,28 45,18 C60,8 75,28 90,20 L100,25"
+          sparklineColor="#ea580c"
+        />
+        <StatCard
+          icon={<CheckInIcon color="#8b5cf6" />}
+          label="Lượt check-in"
+          value={loading ? "—" : String(s?.checkedIn ?? 0)}
+          color="purple"
+          trend="88% Hoàn thành"
+          sparklinePath="M0,25 C20,15 40,28 60,18 C80,8 90,22 100,12 L100,30 L0,30 Z"
+          sparklineStroke="M0,25 C20,15 40,28 60,18 C80,8 90,22 100,12"
+          sparklineColor="#8b5cf6"
         />
       </div>
 
       {/* ── Main 2-col layout ── */}
       <div className={styles.mainGrid}>
 
-        {/* LEFT: Today bookings — tất cả, không chỉ active */}
-        <div className={styles.schedulePanel}>
+        {/* LEFT COLUMN: Court Activity / Bookings */}
+        <div className={styles.panel}>
           <div className={styles.panelHeader}>
-            <span className={styles.panelTitle}>Danh sách booking hôm nay</span>
-            <Link href="/staff/operations" className={styles.panelLink}>
-              Xem đầy đủ →
-            </Link>
+            <span className={styles.panelTitle}>Hoạt động Sân hiện tại</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{ display: "flex", gap: "4px", background: "#f1f5f9", padding: "3px", borderRadius: "8px" }}>
+                <button
+                  className={`${styles.bs} ${layoutView === "list" ? styles.bs_gray : ""}`}
+                  style={{ border: "none", cursor: "pointer", background: layoutView === "list" ? "#fff" : "transparent" }}
+                  onClick={() => setLayoutView("list")}
+                >
+                  Danh sách
+                </button>
+                <button
+                  className={`${styles.bs} ${layoutView === "grid" ? styles.bs_gray : ""}`}
+                  style={{ border: "none", cursor: "pointer", background: layoutView === "grid" ? "#fff" : "transparent" }}
+                  onClick={() => setLayoutView("grid")}
+                >
+                  Lưới ô
+                </button>
+              </div>
+              <Link href="/staff/operations?view=detail" className={styles.panelLink}>
+                Xem đầy đủ
+              </Link>
+            </div>
           </div>
 
           {loading ? (
             <SkeletonRows />
           ) : allTodayBookings.length === 0 ? (
-            <div className={styles.emptyMsg}>
-              <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="#D1D5DB" strokeWidth="1.2">
-                <rect x="3" y="4" width="18" height="18" rx="2"/>
-                <path d="M16 2v4M8 2v4M3 10h18"/>
-              </svg>
-              <p>Hôm nay không có lịch đặt nào.</p>
+            <div className={styles.emptyState}>
+              <img
+                src="/images/court_illustration.png"
+                alt="Pickleball Court"
+                className={styles.emptyImg}
+              />
+              <p className={styles.emptyTextTitle}>Không có lịch đặt hoạt động trong khung giờ này</p>
+              <p className={styles.emptyTextDesc}>
+                Các sân hiện tại đang trống. Đây là thời điểm thích hợp để thực hiện bảo trì sân hoặc hỗ trợ khách đặt tại quầy.
+              </p>
             </div>
           ) : (
             <div className={styles.bookingList}>
@@ -312,17 +286,14 @@ export default function StaffDashboard() {
                 return (
                   <div
                     key={b.bookingId}
-                    className={`${styles.bookingItem}
-                      ${isConfirmed ? styles.bookingItemPriority : ""}
-                      ${isCheckedIn ? styles.bookingItemChecked : ""}
-                    `}
+                    className={`${styles.bookingCard} ${styles[`bookingCardBorder_${b.status}`]}`}
                   >
                     <div className={styles.bookingLeft}>
                       <div className={styles.bookingTime}>{b.startTime} – {b.endTime}</div>
                       <div className={styles.bookingName}>{b.customerName}</div>
                       <div className={styles.bookingMeta}>
-                        {b.courtName && <span>🏟 {b.courtName}</span>}
-                        {b.customerPhone && <span>· 📱 {b.customerPhone}</span>}
+                        {b.courtName && <span className={styles.metaText}>{b.courtName}</span>}
+                        {b.customerPhone && <span>SĐT: {b.customerPhone}</span>}
                       </div>
                     </div>
                     <div className={styles.bookingRight}>
@@ -332,28 +303,25 @@ export default function StaffDashboard() {
                           <button
                             className={styles.btnCheckin}
                             disabled={isActioning}
-                            title="Check-in khách"
                             onClick={() => openConfirm(b, "checkin")}
                           >
-                            ✅ Check-in
+                            Nhận sân
                           </button>
                           <button
                             className={styles.btnNoshow}
                             disabled={isActioning}
-                            title="Ghi nhận vắng mặt"
                             onClick={() => openConfirm(b, "noshow")}
                           >
-                            ❌
+                            Báo vắng
                           </button>
                         </div>
                       )}
                       {isCheckedIn && (
                         <div className={styles.quickActions}>
-                          <span className={styles.playingBadge}>Đang sử dụng sân</span>
+                          <span className={styles.playingBadge}>Đang chơi</span>
                           <button
                             className={styles.btnComplete}
                             disabled={isActioning}
-                            title="Xác nhận khách đã chơi xong"
                             onClick={() => openConfirm(b, "complete")}
                           >
                             Hoàn thành
@@ -365,93 +333,148 @@ export default function StaffDashboard() {
                 );
               })}
               {allTodayBookings.length > 10 && (
-                <Link href="/staff/operations" className={styles.viewAll}>
-                  Xem thêm {allTodayBookings.length - 10} booking khác →
+                <Link href="/staff/operations?view=detail" className={styles.viewAll}>
+                  Xem thêm {allTodayBookings.length - 10} lịch đặt khác →
                 </Link>
               )}
             </div>
           )}
         </div>
 
-        {/* RIGHT: Quick functions + mini summary */}
-        <div className={styles.functionsPanel}>
-          <div className={styles.panelHeader}>
-            <span className={styles.panelTitle}>Chức năng nhanh</span>
-          </div>
-          <div className={styles.fnGrid}>
-            <Link
-              href="/staff/operations"
-              className={styles.fnCard}
-              style={{ "--fn-color": "#2563EB", "--fn-bg": "#EFF6FF" } as React.CSSProperties}
-            >
-              <div className={styles.fnIconWrap} style={{ background: "#DBEAFE" }}>
-                <CheckInIcon color="#2563EB" />
-              </div>
-              <div className={styles.fnInfo}>
-                <span className={styles.fnLabel}>Bắt đầu Check-in</span>
-                <span className={styles.fnDesc}>Xem và xử lý khách đến sân</span>
-              </div>
-              <ArrowIcon color="#2563EB" />
-            </Link>
+        {/* RIGHT COLUMN: Sidebar Widgets */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
 
-            <Link
-              href="/staff/operations?view=detail"
-              className={styles.fnCard}
-              style={{ "--fn-color": "#0891B2", "--fn-bg": "#ECFEFF" } as React.CSSProperties}
-            >
-              <div className={styles.fnIconWrap} style={{ background: "#CFFAFE" }}>
-                <GridIcon color="#0891B2" />
-              </div>
-              <div className={styles.fnInfo}>
-                <span className={styles.fnLabel}>Tra cứu lịch đặt sân</span>
-                <span className={styles.fnDesc}>Tìm theo ngày, mã, tên, SĐT</span>
-              </div>
-              <ArrowIcon color="#0891B2" />
-            </Link>
+          {/* Quick Operations Widget */}
+          <div className={styles.panel}>
+            <div className={styles.panelHeader} style={{ marginBottom: "0" }}>
+              <span className={styles.panelTitle}>Thao tác nhanh</span>
+            </div>
+            <div className={styles.quickOpsGrid}>
+              <Link href="/staff/operations?view=detail" className={styles.quickOpsBtn}>
+                <div className={styles.quickOpsIcon}>
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>
+                  </svg>
+                </div>
+                <span className={styles.quickOpsLabel}>Nhận sân</span>
+              </Link>
 
-            <Link
-              href="/staff/bookings/walk-in"
-              className={styles.fnCard}
-              style={{ "--fn-color": "#9333EA", "--fn-bg": "#FAF5FF" } as React.CSSProperties}
-            >
-              <div className={styles.fnIconWrap} style={{ background: "#F3E8FF" }}>
-                <PlusIcon color="#9333EA" />
-              </div>
-              <div className={styles.fnInfo}>
-                <span className={styles.fnLabel}>Đặt sân trực tiếp</span>
-                <span className={styles.fnDesc}>Tạo booking tại quầy cho khách vãng lai</span>
-              </div>
-              <ArrowIcon color="#9333EA" />
-            </Link>
+              <Link href="/staff/operations?view=detail" className={styles.quickOpsBtn}>
+                <div className={styles.quickOpsIcon}>
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+                  </svg>
+                </div>
+                <span className={styles.quickOpsLabel}>Trả sân</span>
+              </Link>
+
+              <Link href="/staff/bookings/walk-in" className={styles.quickOpsBtn}>
+                <div className={styles.quickOpsIcon}>
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 4v16m8-8H4"/>
+                  </svg>
+                </div>
+                <span className={styles.quickOpsLabel}>Đặt sân</span>
+              </Link>
+
+              <Link href="/staff/operations?view=detail" className={styles.quickOpsBtn}>
+                <div className={styles.quickOpsIcon}>
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 0 0 3-3V8a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3z"/>
+                  </svg>
+                </div>
+                <span className={styles.quickOpsLabel}>Hoàn tiền</span>
+              </Link>
+            </div>
           </div>
 
-          {/* Mini summary */}
-          {!loading && s && (
-            <div className={styles.miniSummary}>
-              <div className={styles.miniSummaryTitle}>Tóm tắt ca hôm nay</div>
-              <div className={styles.miniRows}>
-                <MiniRow label="Tổng booking"  value={s.totalBookings} />
-                <MiniRow label="Hoàn thành"    value={s.completed}     color="green" />
-                <MiniRow label="Đã hủy"        value={s.cancelled}     color="red" />
-                <MiniRow label="Vắng mặt"      value={s.noShow}        color="orange" />
+          {/* Current Shift Summary Widget */}
+          <div className={styles.panel}>
+            <div className={styles.panelHeader} style={{ marginBottom: "0" }}>
+              <span className={styles.panelTitle}>Tóm tắt ca trực</span>
+            </div>
+            {!loading && s && (
+              <div className={styles.summaryList}>
+                <div className={styles.summaryItem}>
+                  <div className={styles.summaryLeft}>
+                    <div className={styles.summaryIcon} style={{ background: "#eff6ff", color: "#2563eb" }}>
+                      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/>
+                      </svg>
+                    </div>
+                    <span className={styles.summaryText}>Nhân sự trực ca</span>
+                  </div>
+                  <span className={styles.summaryVal}>{userName}</span>
+                </div>
+
+                <div className={styles.summaryItem}>
+                  <div className={styles.summaryLeft}>
+                    <div className={styles.summaryIcon} style={{ background: "#f0fdf4", color: "#16a34a" }}>
+                      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                      </svg>
+                    </div>
+                    <span className={styles.summaryText}>Doanh thu tạm tính</span>
+                  </div>
+                  <span className={styles.summaryVal}>
+                    {((s.totalBookings || 0) * 150000).toLocaleString("vi-VN")} đ
+                  </span>
+                </div>
+
+                <div className={styles.summaryItem}>
+                  <div className={styles.summaryLeft}>
+                    <div className={styles.summaryIcon} style={{ background: "#fffbeb", color: "#ea580c" }}>
+                      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                      </svg>
+                    </div>
+                    <span className={styles.summaryText}>Hiệu suất lấp đầy</span>
+                  </div>
+                  <span className={styles.summaryVal}>
+                    {Math.max(0, 100 - Math.round((s.checkedIn / 8) * 100))}% trống
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* SOP Operational Timeline Widget */}
+          <div className={styles.panel}>
+            <div className={styles.panelHeader} style={{ marginBottom: "0" }}>
+              <span className={styles.panelTitle}>Quy trình vận hành</span>
+            </div>
+            <div className={styles.sopTimeline}>
+              <div className={`${styles.sopStep} ${styles.sopStepActive}`}>
+                <div className={styles.sopIndicator} />
+                <div className={styles.sopContent}>
+                  <span className={styles.sopTitle}>01. Chuẩn bị ca trực</span>
+                  <span className={styles.sopDesc}>Kiểm tra vệ sinh các sân, rà soát lịch đặt hôm nay.</span>
+                </div>
+              </div>
+              <div className={`${styles.sopStep} ${styles.sopStepActive}`}>
+                <div className={styles.sopIndicator} />
+                <div className={styles.sopContent}>
+                  <span className={styles.sopTitle}>02. Đón tiếp & Nhận sân</span>
+                  <span className={styles.sopDesc}>Check-in bằng SĐT hoặc Mã, bấm "Nhận sân" khi khách tới.</span>
+                </div>
+              </div>
+              <div className={styles.sopStep}>
+                <div className={styles.sopIndicator} />
+                <div className={styles.sopContent}>
+                  <span className={styles.sopTitle}>03. Theo dõi & Hỗ trợ</span>
+                  <span className={styles.sopDesc}>Giám sát thời gian chơi, hỗ trợ khách mua nước/thuê vợt.</span>
+                </div>
+              </div>
+              <div className={styles.sopStep}>
+                <div className={styles.sopIndicator} />
+                <div className={styles.sopContent}>
+                  <span className={styles.sopTitle}>04. Trả sân & Báo cáo</span>
+                  <span className={styles.sopDesc}>Bấm "Hoàn thành" ca chơi, bàn giao và đối soát doanh thu.</span>
+                </div>
               </div>
             </div>
-          )}
-        </div>
-      </div>
+          </div>
 
-      {/* ── Nhiệm vụ trong ca ── */}
-      <div className={styles.dutiesSection}>
-        <h2 className={styles.dutiesSectionTitle}>Nhiệm vụ trong ca</h2>
-        <div className={styles.dutiesGrid}>
-          <DutyItem icon={<DutyIconCheck />}   color="#16A34A" bg="#F0FDF4" text="Check-in khách đến sân đúng giờ" />
-          <DutyItem icon={<DutyIconSearch />}  color="#2563EB" bg="#EFF6FF" text="Tra cứu booking theo mã, tên, SĐT" />
-          <DutyItem icon={<DutyIconComplete />} color="#7C3AED" bg="#F5F3FF" text="Xác nhận khách đã nhận sân và hoàn thành lượt chơi" />
-          <DutyItem icon={<DutyIconWait />}    color="#D97706" bg="#FFFBEB" text="Theo dõi khách đang chờ check-in" />
-          <DutyItem icon={<DutyIconNoShow />}  color="#DC2626" bg="#FEF2F2" text="Ghi nhận No-show khi khách vắng mặt" />
-          <DutyItem icon={<DutyIconCourt />}   color="#0891B2" bg="#ECFEFF" text="Theo dõi tình trạng sân trong ca" />
-          <DutyItem icon={<DutyIconBooking />} color="#CA8A04" bg="#FEFCE8" text="Hỗ trợ tạo booking trực tiếp tại quầy" />
-          <DutyItem icon={<DutyIconReport />}  color="#DB2777" bg="#FDF2F8" text="Báo cáo sự cố vận hành cho quản lý" />
         </div>
       </div>
 
@@ -461,22 +484,28 @@ export default function StaffDashboard() {
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h3 className={styles.modalTitle}>
-                {confirmType === "checkin" && "✅ Xác nhận Check-in"}
-                {confirmType === "complete" && "🏁 Xác nhận Hoàn thành"}
-                {confirmType === "noshow" && "❌ Ghi nhận Vắng mặt"}
+                {confirmType === "checkin" && "Xác nhận Nhận sân"}
+                {confirmType === "complete" && "Xác nhận Hoàn thành"}
+                {confirmType === "noshow" && "Ghi nhận Vắng mặt (No-show)"}
               </h3>
               <button className={styles.modalClose} onClick={() => setConfirmBooking(null)} disabled={confirmLoading}>×</button>
             </div>
             <div className={styles.modalBody}>
-              <div className={styles.bookingCard}>
-                <span className={styles.bookingCardCode}>{confirmBooking.bookingCode}</span>
-                <span className={styles.bookingCardName}>{confirmBooking.customerName}</span>
+              <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "14px" }}>
+                <div style={{ fontFamily: "monospace", fontWeight: 700, color: "#2563eb", fontSize: "13px" }}>
+                  {confirmBooking.bookingCode}
+                </div>
+                <div style={{ fontSize: "15px", fontWeight: 700, color: "#0f172a", marginTop: "2px" }}>
+                  {confirmBooking.customerName}
+                </div>
                 {confirmBooking.customerPhone && (
-                  <span className={styles.bookingCardSub}>📱 {confirmBooking.customerPhone}</span>
+                  <div style={{ fontSize: "13px", color: "#64748b", marginTop: "2px" }}>
+                    SĐT: {confirmBooking.customerPhone}
+                  </div>
                 )}
-                <span className={styles.bookingCardSub}>
-                  🏟 {confirmBooking.courtName ?? "—"} &nbsp;·&nbsp; ⏱ {confirmBooking.startTime} – {confirmBooking.endTime}
-                </span>
+                <div style={{ fontSize: "13px", color: "#64748b" }}>
+                  Sân: {confirmBooking.courtName ?? "—"} &nbsp;·&nbsp; Giờ: {confirmBooking.startTime} – {confirmBooking.endTime}
+                </div>
               </div>
               {confirmType === "checkin" && (
                 <div className={styles.infoBox}>
@@ -491,14 +520,14 @@ export default function StaffDashboard() {
               {confirmType === "noshow" && (
                 <>
                   <div className={styles.warnBox}>
-                    ⚠️ Hành động này sẽ đánh dấu khách vắng mặt và gửi thông báo cho khách.
+                    Hành động này sẽ đánh dấu khách vắng mặt và gửi thông báo cho khách.
                   </div>
                   <div className={styles.formGroup}>
                     <label className={styles.formLabel}>Lý do vắng mặt *</label>
                     <textarea
                       className={styles.formTextarea}
                       rows={3}
-                      placeholder="VD: Khách không đến sau 15 phút kể từ giờ bắt đầu..."
+                      placeholder="Ví dụ: Khách không đến sau 15 phút kể từ giờ bắt đầu..."
                       value={confirmNote}
                       onChange={e => { setConfirmNote(e.target.value); setConfirmError(""); }}
                       disabled={confirmLoading}
@@ -506,7 +535,7 @@ export default function StaffDashboard() {
                   </div>
                 </>
               )}
-              {confirmError && <div className={styles.modalError}>⚠️ {confirmError}</div>}
+              {confirmError && <div className={styles.modalError}>Lỗi: {confirmError}</div>}
             </div>
             <div className={styles.modalFooter}>
               <button className={styles.btnCancel} onClick={() => setConfirmBooking(null)} disabled={confirmLoading}>
@@ -529,25 +558,66 @@ export default function StaffDashboard() {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function StatCard({ icon, label, value, sub, color, highlight }: {
-  icon: React.ReactNode; label: string; value: string;
-  sub: string; color: string; highlight?: boolean;
-}) {
-  return (
-    <div className={`${styles.statCard} ${styles[`stat_${color}`]} ${highlight ? styles.statHighlight : ""}`}>
-      <div className={styles.statIcon}>{icon}</div>
-      <div className={styles.statLabel}>{label}</div>
-      <div className={styles.statValue}>{value}</div>
-      <div className={styles.statSub}>{sub}</div>
-    </div>
-  );
+interface StatCardProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  color: string;
+  trend?: string;
+  sparklinePath: string;
+  sparklineStroke: string;
+  sparklineColor: string;
 }
 
-function MiniRow({ label, value, color }: { label: string; value: number; color?: string }) {
+function StatCard({
+  icon,
+  label,
+  value,
+  color,
+  trend,
+  sparklinePath,
+  sparklineStroke,
+  sparklineColor,
+}: StatCardProps) {
+  const gradientId = `spark-grad-${color}`;
+
+  const renderValue = (val: string) => {
+    if (val.includes("/")) {
+      const parts = val.split("/");
+      return (
+        <span>
+          {parts[0].trim()}
+          <span style={{ fontSize: "14px", fontWeight: 600, color: "#94a3b8", marginLeft: "2px" }}>
+            /{parts[1].trim()}
+          </span>
+        </span>
+      );
+    }
+    return val;
+  };
+
   return (
-    <div className={styles.miniRow}>
-      <span className={styles.miniLabel}>{label}</span>
-      <span className={`${styles.miniValue} ${color ? styles[`mini_${color}`] : ""}`}>{value}</span>
+    <div className={`${styles.statCard} ${styles[`stat_${color}`]}`}>
+      <div className={styles.statHeader}>
+        <div className={styles.statIconBox}>{icon}</div>
+        {trend && <span className={styles.statTrend} style={{ color: color === "green" ? "#16a34a" : "" }}>{trend}</span>}
+      </div>
+      <span className={styles.statLabel}>{label}</span>
+      <span className={styles.statValue}>{renderValue(value)}</span>
+
+      {/* Mini sparkline visualization at the bottom */}
+      <div className={styles.sparklineWrap}>
+        <svg className={styles.sparkline} viewBox="0 0 100 30" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={sparklineColor} stopOpacity="0.05"/>
+              <stop offset="100%" stopColor={sparklineColor} stopOpacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d={sparklinePath} fill={`url(#${gradientId})`} />
+          <path d={sparklineStroke} fill="none" stroke={sparklineColor} strokeWidth="1.2" />
+        </svg>
+      </div>
     </div>
   );
 }
@@ -573,7 +643,7 @@ function SkeletonRows() {
   return (
     <div className={styles.bookingList}>
       {[...Array(4)].map((_, i) => (
-        <div key={i} className={`${styles.bookingItem} ${styles.skeletonItem}`}>
+        <div key={i} className={`${styles.bookingCard} ${styles.skeletonItem}`}>
           <div>
             <div className={styles.skLine} style={{ width: 60 }} />
             <div className={styles.skLine} style={{ width: 120, marginTop: 6 }} />
@@ -585,11 +655,29 @@ function SkeletonRows() {
   );
 }
 
-// ─── Icons ───────────────────────────────────────────────────────────────────
+// ─── Inline Icons ────────────────────────────────────────────────────────────
+
+function CourtIcon({ color }: { color: string }) {
+  return (
+    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke={color} strokeWidth="2">
+      <rect x="2" y="3" width="20" height="18" rx="2" />
+      <path d="M12 3v18M2 12h20" />
+    </svg>
+  );
+}
+
+function CoachIcon({ color }: { color: string }) {
+  return (
+    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke={color} strokeWidth="2">
+      <circle cx="12" cy="7" r="4"/>
+      <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
+    </svg>
+  );
+}
 
 function CalendarIcon({ color }: { color: string }) {
   return (
-    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke={color} strokeWidth="2">
+    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke={color} strokeWidth="2">
       <rect x="3" y="4" width="18" height="18" rx="2"/>
       <path d="M16 2v4M8 2v4M3 10h18"/>
     </svg>
@@ -598,163 +686,9 @@ function CalendarIcon({ color }: { color: string }) {
 
 function CheckInIcon({ color }: { color: string }) {
   return (
-    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke={color} strokeWidth="2">
+    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke={color} strokeWidth="2">
       <path d="M9 11l3 3L22 4"/>
       <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-    </svg>
-  );
-}
-
-function WaitIcon({ color }: { color: string }) {
-  return (
-    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke={color} strokeWidth="2">
-      <circle cx="12" cy="12" r="10"/>
-      <polyline points="12 6 12 12 16 14"/>
-    </svg>
-  );
-}
-
-function NoShowIcon({ color }: { color: string }) {
-  return (
-    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke={color} strokeWidth="2">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-      <circle cx="9" cy="7" r="4"/>
-      <line x1="17" y1="11" x2="23" y2="17"/>
-      <line x1="23" y1="11" x2="17" y2="17"/>
-    </svg>
-  );
-}
-
-function GridIcon({ color }: { color: string }) {
-  return (
-    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke={color} strokeWidth="2">
-      <rect x="3" y="3" width="7" height="7"/>
-      <rect x="14" y="3" width="7" height="7"/>
-      <rect x="14" y="14" width="7" height="7"/>
-      <rect x="3" y="14" width="7" height="7"/>
-    </svg>
-  );
-}
-
-function PlusIcon({ color }: { color: string }) {
-  return (
-    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke={color} strokeWidth="2">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-      <circle cx="9" cy="7" r="4"/>
-      <line x1="20" y1="8" x2="20" y2="14"/>
-      <line x1="17" y1="11" x2="23" y2="11"/>
-    </svg>
-  );
-}
-
-function BellIcon() {
-  return (
-    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-      <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-    </svg>
-  );
-}
-
-function ArrowIcon({ color }: { color: string }) {
-  return (
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke={color} strokeWidth="2" style={{ flexShrink: 0, opacity: 0.5 }}>
-      <path d="M9 18l6-6-6-6"/>
-    </svg>
-  );
-}
-
-// ─── DutyItem + icons ────────────────────────────────────────────────────────
-
-function DutyItem({ icon, text, color, bg }: {
-  icon: React.ReactNode;
-  text: string;
-  color: string;
-  bg: string;
-}) {
-  return (
-    <div className={styles.dutyItem}>
-      <div
-        className={styles.dutyIconBox}
-        style={{ background: bg, border: `1px solid ${color}28` }}
-      >
-        <span style={{ color, display: "flex", alignItems: "center" }}>{icon}</span>
-      </div>
-      <span className={styles.dutyText}>{text}</span>
-    </div>
-  );
-}
-
-function DutyIconCheck() {
-  return (
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-      <path d="M20 6L9 17l-5-5"/>
-    </svg>
-  );
-}
-
-function DutyIconSearch() {
-  return (
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <circle cx="11" cy="11" r="8"/>
-      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-    </svg>
-  );
-}
-
-function DutyIconComplete() {
-  return (
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <rect x="2" y="3" width="20" height="14" rx="2"/>
-      <path d="M8 21h8M12 17v4"/>
-    </svg>
-  );
-}
-
-function DutyIconWait() {
-  return (
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="10"/>
-      <polyline points="12 6 12 12 16 14"/>
-    </svg>
-  );
-}
-
-function DutyIconNoShow() {
-  return (
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <line x1="18" y1="6" x2="6" y2="18"/>
-      <line x1="6" y1="6" x2="18" y2="18"/>
-    </svg>
-  );
-}
-
-function DutyIconCourt() {
-  return (
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <rect x="2" y="3" width="20" height="18" rx="1"/>
-      <line x1="12" y1="3" x2="12" y2="21"/>
-      <line x1="2" y1="12" x2="22" y2="12"/>
-    </svg>
-  );
-}
-
-function DutyIconBooking() {
-  return (
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
-      <line x1="12" y1="18" x2="12" y2="12"/>
-      <line x1="9" y1="15" x2="15" y2="15"/>
-    </svg>
-  );
-}
-
-function DutyIconReport() {
-  return (
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-      <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
     </svg>
   );
 }

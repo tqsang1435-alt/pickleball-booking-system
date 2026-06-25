@@ -11,6 +11,7 @@ import {
 } from "@/services/courtApi";
 import type { Court } from "@/types/court";
 import { formatCurrency } from "@/utils/formatCurrency";
+import ConfirmModal from "@/modules/staff/shared/ConfirmModal";
 import styles from "./SlotManager.module.css";
 
 const AUTO_REFRESH_SEC = 30;
@@ -57,6 +58,14 @@ export default function SlotManager({ court, token, onClose }: Props) {
 
   // Single action
   const [actioningId, setActioningId] = useState<number | null>(null);
+
+  // Custom confirm state
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: "danger" | "warning" | "info";
+  } | null>(null);
 
   // ─── Load slots ─────────────────────────────────────────────
   const loadSlots = useCallback(async (silent = false) => {
@@ -133,8 +142,16 @@ export default function SlotManager({ court, token, onClose }: Props) {
   }
 
   // ─── Delete slot ─────────────────────────────────────────────
-  async function handleDeleteSlot(slotId: number) {
-    if (!window.confirm("Bạn có chắc muốn xóa slot này không?")) return;
+  function handleDeleteSlot(slotId: number) {
+    setConfirmConfig({
+      title: "Xác nhận xóa slot",
+      message: "Bạn có chắc muốn xóa slot này không?",
+      variant: "danger",
+      onConfirm: () => executeDeleteSlot(slotId),
+    });
+  }
+
+  async function executeDeleteSlot(slotId: number) {
     try {
       setActioningId(slotId);
       await deleteSlot(token, slotId);
@@ -162,10 +179,18 @@ export default function SlotManager({ court, token, onClose }: Props) {
     );
   }
 
-  async function handleBulkStatus(newStatus: string) {
+  function handleBulkStatus(newStatus: string) {
     if (selectedIds.size === 0) return;
     const label = { Available: "mở", Blocked: "khóa", Maintenance: "bảo trì" }[newStatus] ?? newStatus;
-    if (!window.confirm(`Bạn muốn ${label} ${selectedIds.size} slot đã chọn?`)) return;
+    setConfirmConfig({
+      title: `Xác nhận ${label === "mở" ? "mở" : label === "khóa" ? "khóa" : "bảo trì"} slot`,
+      message: `Bạn muốn ${label} ${selectedIds.size} slot đã chọn?`,
+      variant: newStatus === "Available" ? "info" : "warning",
+      onConfirm: () => executeBulkStatus(newStatus),
+    });
+  }
+
+  async function executeBulkStatus(newStatus: string) {
     try {
       setBulkActing(true);
       await Promise.all(
@@ -224,7 +249,7 @@ export default function SlotManager({ court, token, onClose }: Props) {
         durationMinutes: genData.durationMinutes, price: genData.price,
       });
       setGenSuccess(
-        `✅ Đã tạo ${res.created} slot mới` +
+        `Đã tạo ${res.created} slot mới` +
         (res.skipped > 0 ? `, bỏ qua ${res.skipped} slot đã tồn tại` : ".")
       );
       await loadSlots(true);
@@ -244,12 +269,12 @@ export default function SlotManager({ court, token, onClose }: Props) {
         {/* Header */}
         <div className={styles.panelHeader}>
           <div>
-            <h2 className={styles.panelTitle}>📅 Quản lý Slot — {court.CourtName}</h2>
+            <h2 className={styles.panelTitle}>Quản lý Slot — {court.CourtName}</h2>
             <p className={styles.panelSub}>{court.CourtCode} · {court.OpenTime} – {court.CloseTime}</p>
           </div>
           <div className={styles.headerRight}>
             <span className={styles.refreshBadge} title="Tự động làm mới">
-              🔄 {countdown}s
+              {countdown}s
             </span>
             <button onClick={onClose} className={styles.closeBtn}>×</button>
           </div>
@@ -270,13 +295,13 @@ export default function SlotManager({ court, token, onClose }: Props) {
               onClick={() => { setShowGenerate(!showGenerate); setShowForm(false); setGenError(""); setGenSuccess(""); }}
               className={styles.generateBtn}
             >
-              {showGenerate ? "✕ Đóng" : "⚡ Sinh slot loạt"}
+              {showGenerate ? "Đóng" : "Sinh slot loạt"}
             </button>
             <button
               onClick={() => { setShowForm(!showForm); setShowGenerate(false); setFormError(""); }}
               className={styles.addSlotBtn}
             >
-              {showForm ? "✕ Đóng" : "＋ Thêm slot"}
+              {showForm ? "Đóng" : "Thêm slot"}
             </button>
           </div>
         </div>
@@ -285,7 +310,7 @@ export default function SlotManager({ court, token, onClose }: Props) {
         {showGenerate && (
           <form onSubmit={handleGenerate} className={styles.addForm}>
             <div className={styles.genHeader}>
-              <span className={styles.genTitle}>⚡ Sinh slot hàng loạt</span>
+              <span className={styles.genTitle}>Sinh slot hàng loạt</span>
               <span className={styles.genHint}>Sân mở {court.OpenTime} – {court.CloseTime}</span>
             </div>
             {genError && <div className={styles.formError}>{genError}</div>}
@@ -321,7 +346,7 @@ export default function SlotManager({ court, token, onClose }: Props) {
                 Đóng
               </button>
               <button type="submit" className={styles.generateSubmitBtn} disabled={generating}>
-                {generating ? "Đang sinh..." : "⚡ Sinh tất cả slot"}
+                {generating ? "Đang sinh..." : "Sinh tất cả slot"}
               </button>
             </div>
           </form>
@@ -355,7 +380,7 @@ export default function SlotManager({ court, token, onClose }: Props) {
               <button type="button" className={styles.cancelFormBtn}
                 onClick={() => { setShowForm(false); setFormError(""); }}>Hủy</button>
               <button type="submit" className={styles.submitBtn} disabled={submitting}>
-                {submitting ? "Đang tạo..." : "✓ Tạo slot"}
+                {submitting ? "Đang tạo..." : "Tạo slot"}
               </button>
             </div>
           </form>
@@ -367,16 +392,16 @@ export default function SlotManager({ court, token, onClose }: Props) {
             <span className={styles.bulkCount}>Đã chọn {selectedIds.size} slot</span>
             <div className={styles.bulkActions}>
               <button onClick={() => handleBulkStatus("Available")} disabled={bulkActing} className={styles.bulkBtnOpen}>
-                🔓 Mở
+                Mở
               </button>
               <button onClick={() => handleBulkStatus("Blocked")} disabled={bulkActing} className={styles.bulkBtnLock}>
-                🔒 Khóa
+                Khóa
               </button>
               <button onClick={() => handleBulkStatus("Maintenance")} disabled={bulkActing} className={styles.bulkBtnMaint}>
-                🔧 Bảo trì
+                Bảo trì
               </button>
               <button onClick={() => setSelectedIds(new Set())} disabled={bulkActing} className={styles.bulkBtnClear}>
-                ✕ Bỏ chọn
+                Hủy chọn
               </button>
             </div>
           </div>
@@ -388,7 +413,7 @@ export default function SlotManager({ court, token, onClose }: Props) {
             <div className={styles.emptyMsg}>Đang tải...</div>
           ) : visibleSlots.length === 0 ? (
             <div className={styles.emptyMsg}>
-              Chưa có slot nào trong ngày này. Bấm <strong>⚡ Sinh slot loạt</strong> để tạo nhanh.
+              Chưa có slot nào trong ngày này. Bấm <strong>Sinh slot loạt</strong> để tạo nhanh.
             </div>
           ) : (
             <>
@@ -442,7 +467,7 @@ export default function SlotManager({ court, token, onClose }: Props) {
                             disabled={isActioning || bulkActing}
                             className={styles.btnUnlock}
                           >
-                            {isActioning ? "..." : "🔓 Mở"}
+                            {isActioning ? "..." : "Mở"}
                           </button>
                         )}
                         {slot.Status !== "Blocked" && (
@@ -451,7 +476,7 @@ export default function SlotManager({ court, token, onClose }: Props) {
                             disabled={isActioning || bulkActing}
                             className={styles.btnLock}
                           >
-                            {isActioning ? "..." : "🔒 Khóa"}
+                            {isActioning ? "..." : "Khóa"}
                           </button>
                         )}
                         {slot.Status !== "Maintenance" && (
@@ -460,7 +485,7 @@ export default function SlotManager({ court, token, onClose }: Props) {
                             disabled={isActioning || bulkActing}
                             className={styles.btnMaintenance}
                           >
-                            {isActioning ? "..." : "🔧"}
+                            {isActioning ? "..." : "Bảo trì"}
                           </button>
                         )}
                         <button
@@ -469,7 +494,7 @@ export default function SlotManager({ court, token, onClose }: Props) {
                           className={styles.btnDeleteSlot}
                           title="Xóa slot"
                         >
-                          {isActioning ? "..." : "🗑️"}
+                          {isActioning ? "..." : "Xóa"}
                         </button>
                       </div>
                     )}
@@ -480,6 +505,18 @@ export default function SlotManager({ court, token, onClose }: Props) {
           )}
         </div>
       </div>
+      {confirmConfig && (
+        <ConfirmModal
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          onConfirm={() => {
+            confirmConfig.onConfirm();
+            setConfirmConfig(null);
+          }}
+          onCancel={() => setConfirmConfig(null)}
+          variant={confirmConfig.variant}
+        />
+      )}
     </div>
   );
 }

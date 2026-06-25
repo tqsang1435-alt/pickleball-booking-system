@@ -37,17 +37,17 @@
 
 .datePicker {
   padding: 9px 13px;
-  border: 1.5px solid var(--primary-border, #D4EDBA);
+  border: 1.5px solid #E5E7EB;
   border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
   color: var(--text, #374151);
   outline: none;
-  background: #fafff5;
+  background: #fff;
   transition: border-color 0.15s;
 }
 
-.datePicker:focus { border-color: var(--primary, #4CAF50); }
+.datePicker:focus { border-color: #2563eb; }
 
 .btnRefresh {
   display: inline-flex;
@@ -55,9 +55,9 @@
   gap: 6px;
   padding: 9px 16px;
   border-radius: 10px;
-  background: var(--primary-soft, #EAF7DC);
-  border: 1.5px solid var(--primary-border, #D4EDBA);
-  color: var(--primary-dark, #2E7D32);
+  background: #F3F4F6;
+  border: 1.5px solid #E5E7EB;
+  color: #374151;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -65,8 +65,7 @@
 }
 
 .btnRefresh:hover {
-  background: var(--primary, #4CAF50);
-  color: #fff;
+  background: #E5E7EB;
 }
 
 /* ─── Auto banner ─── */
@@ -92,7 +91,7 @@
 
 .summaryCard {
   background: #fff;
-  border: 1.5px solid var(--primary-border, #D4EDBA);
+  border: 1.5px solid #E5E7EB;
   border-radius: 14px;
   padding: 16px;
   display: flex;
@@ -146,7 +145,7 @@
   gap: 12px;
   align-items: center;
   background: #fff;
-  border: 1px solid var(--primary-border, #D4EDBA);
+  border: 1px solid #E5E7EB;
   border-radius: 14px;
   padding: 14px 16px;
 }
@@ -171,16 +170,16 @@
 .searchInput {
   width: 100%;
   padding: 9px 36px 9px 36px;
-  border: 1.5px solid var(--primary-border, #D4EDBA);
+  border: 1.5px solid #E5E7EB;
   border-radius: 10px;
   font-size: 14px;
   font-family: inherit;
   outline: none;
-  background: #fafff5;
+  background: #fff;
   transition: border-color 0.15s;
 }
 
-.searchInput:focus { border-color: var(--primary, #4CAF50); }
+.searchInput:focus { border-color: #2563eb; }
 
 .searchClear {
   position: absolute;
@@ -207,7 +206,7 @@
   border-radius: 20px;
   font-size: 12px;
   font-weight: 700;
-  border: 1.5px solid var(--primary-border, #D4EDBA);
+  border: 1.5px solid #E5E7EB;
   background: transparent;
   color: var(--muted, #6B7280);
   cursor: pointer;
@@ -215,12 +214,12 @@
   white-space: nowrap;
 }
 
-.statusTab:hover { background: var(--primary-soft, #EAF7DC); color: var(--primary-dark, #2E7D32); }
+.statusTab:hover { background: #F3F4F6; color: #111827; }
 
 .statusTabActive {
-  background: var(--primary, #4CAF50) !important;
+  background: #2563eb !important;
   color: #fff !important;
-  border-color: var(--primary, #4CAF50) !important;
+  border-color: #2563eb !important;
 }
 
 /* ─── Error / Empty ─── */
@@ -253,7 +252,7 @@
   justify-content: center;
   gap: 10px;
   padding: 64px 0;
-  border: 1px solid var(--primary-border, #D4EDBA);
+  border: 1px solid #E5E7EB;
   border-radius: 16px;
   background: #fff;
   color: var(--muted, #9CA3AF);
@@ -269,22 +268,22 @@
 .clearFilter {
   padding: 7px 18px;
   border-radius: 8px;
-  border: 1.5px solid var(--primary-border, #D4EDBA);
+  border: 1.5px solid #E5E7EB;
   background: transparent;
-  color: var(--primary-dark, #2E7D32);
+  color: #374151;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s;
 }
 
-.clearFilter:hover { background: var(--primary-soft, #EAF7DC); }
+.clearFilter:hover { background: #F3F4F6; }
 
 /* ─── Table ─── */
 .tableWrap {
   overflow-x: auto;
   border-radius: 16px;
-  border: 1px solid var(--primary-border, #D4EDBA);
+  border: 1px solid #E5E7EB;
   box-shadow: 0 2px 12px rgba(0,0,0,0.04);
   background: #fff;
 }
@@ -303,8 +302,8 @@
   color: var(--muted, #6B7280);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  background: #F8FCF3;
-  border-bottom: 1.5px solid var(--primary-border, #D4EDBA);
+  background: #F9FAFB;
+  border-bottom: 1.5px solid #E5E7EB;
   white-space: nowrap;
 }
 
@@ -317,7 +316,7 @@
 .table tbody tr:last-child td { border-bottom: none; }
 
 .tableRow { transition: background 0.12s; }
-.tableRow:hover { background: #FAFFF5; }
+.tableRow:hover { background: #FAFAFA; }
 
 /* Priority row — Confirmed (chờ check-in) */
 .rowPriority {
@@ -402,9 +401,9 @@
 }
 
 .btnCheckIn, .btnNoShow, .btnComplete, .btnLog {
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 8px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s;
@@ -433,9 +432,8 @@
 
 .btnLog {
   background: #F3F4F6;
-  color: #6B7280;
-  padding: 6px 10px;
-  font-size: 14px;
+  color: #374151;
+  border: 1.5px solid #E5E7EB;
 }
 .btnLog:hover { background: #E5E7EB; }
 
@@ -546,8 +544,8 @@
 
 /* Booking summary card inside modal */
 .bookingCard {
-  background: #F8FCF3;
-  border: 1.5px solid var(--primary-border, #D4EDBA);
+  background: #EFF6FF;
+  border: 1.5px solid #BFDBFE;
   border-radius: 12px;
   padding: 14px 16px;
   display: flex;

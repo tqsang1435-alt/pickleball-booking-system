@@ -9,9 +9,9 @@ interface ReportHistoryTableProps {
 }
 
 const REPORT_LABELS: Record<ReportType, { label: string; badgeClass: string; icon: string }> = {
-  revenue:      { label: "Doanh thu",    badgeClass: styles.badgeRevenue,  icon: "💰" },
-  bookings:     { label: "Đặt sân",      badgeClass: styles.badgeBookings, icon: "🏸" },
-  coach_income: { label: "Thu nhập HLV", badgeClass: styles.badgeCoach,    icon: "👨‍🏫" },
+  revenue:      { label: "Doanh thu",    badgeClass: styles.badgeRevenue,  icon: "" },
+  bookings:     { label: "Đặt sân",      badgeClass: styles.badgeBookings, icon: "" },
+  coach_income: { label: "Thu nhập HLV", badgeClass: styles.badgeCoach,    icon: "" },
 };
 
 export default function ReportHistoryTable({ history, loading }: ReportHistoryTableProps) {
@@ -67,7 +67,7 @@ export default function ReportHistoryTable({ history, loading }: ReportHistoryTa
                 <td className={styles.td}>
                   <div className={styles.timeCell}>
                     <span className={styles.timeDate}>{datePart}</span>
-                    <span className={styles.timeClock}>🕐 {timePart}</span>
+                    <span className={styles.timeClock}>{timePart}</span>
                   </div>
                 </td>
 
@@ -92,7 +92,7 @@ export default function ReportHistoryTable({ history, loading }: ReportHistoryTa
                 {/* Định dạng */}
                 <td className={styles.td}>
                   <span className={`${styles.badge} ${item.format === "xlsx" ? styles.badgeXlsx : styles.badgeCsv}`}>
-                    {item.format === "xlsx" ? "📊" : "📄"} {item.format.toUpperCase()}
+                    {item.format.toUpperCase()}
                   </span>
                 </td>
 

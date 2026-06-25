@@ -16,7 +16,7 @@
 }
 
 .eyebrow {
-  color: #059669;
+  color: #2563eb;
   font-size: 12px;
   font-weight: 850;
   letter-spacing: 0.5px;
@@ -118,8 +118,8 @@
 }
 
 .navItemActive {
-  background: #ecfdf5;
-  color: #047857;
+  background: #eff6ff;
+  color: #2563eb;
   font-weight: 800;
 }
 
@@ -227,8 +227,8 @@
 .inputText:focus,
 .inputNumber:focus,
 .inputTextarea:focus {
-  border-color: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.14);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
 }
 
 .panelBody {
@@ -339,7 +339,7 @@
 }
 
 .toggleTrackOn {
-  background: #10b981;
+  background: #2563eb;
 }
 
 .toggleThumb {
@@ -414,12 +414,12 @@
 }
 
 .btnPrimary {
-  background: #059669;
+  background: #2563eb;
   color: #ffffff;
 }
 
 .btnPrimary:hover {
-  background: #047857;
+  background: #1d4ed8;
   transform: translateY(-1px);
 }
 

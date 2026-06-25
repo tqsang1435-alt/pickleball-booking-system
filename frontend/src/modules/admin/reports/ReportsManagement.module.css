@@ -146,7 +146,7 @@
 }
 
 .sectionEyebrow {
-  color: #059669;
+  color: #2563eb;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -183,8 +183,8 @@
 }
 
 .secondaryRefreshBtn:hover {
-  border-color: #10B981;
-  color: #059669;
+  border-color: #2563eb;
+  color: #1d4ed8;
 }
 
 .secondaryRefreshBtn:disabled {
@@ -204,14 +204,14 @@
 }
 
 .revenueKpiCard {
-  background: linear-gradient(135deg, #F0FDF4 0%, #ECFDF5 100%);
-  border: 1px solid #BBF7D0;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #bfdbfe;
   border-radius: 16px;
   padding: 20px;
 }
 
 .revenueKpiCard p {
-  color: #047857;
+  color: #2563eb;
   font-size: 14px;
   font-weight: 700;
   margin: 0 0 10px 0;
@@ -219,7 +219,7 @@
 }
 
 .revenueKpiCard strong {
-  color: #064E3B;
+  color: #1e3a8a;
   display: block;
   font-size: 32px;
   font-weight: 800;
@@ -310,16 +310,16 @@
 }
 
 .courtRevenueTop span:last-child {
-  color: #047857;
+  color: #2563eb;
   font-size: 14px;
   font-weight: 800;
   white-space: nowrap;
 }
 
 .courtRank {
-  background: #D1FAE5;
+  background: #dbeafe;
   border-radius: 999px;
-  color: #047857;
+  color: #2563eb;
   flex-shrink: 0;
   font-size: 12px;
   font-weight: 800;
@@ -341,7 +341,7 @@
 }
 
 .courtProgress div {
-  background: linear-gradient(90deg, #10B981 0%, #059669 100%);
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
   border-radius: inherit;
   height: 100%;
 }

@@ -155,7 +155,7 @@ export default function AIChatbot() {
                 {msg.actionType === "LOGIN_REQUIRED" && (
                   <div style={{ marginTop: "10px", width: "100%" }}>
                     <Link 
-                      href="/auth/login" 
+                      href="/login" 
                       style={{ 
                         display: "block", 
                         background: "#3b82f6", 

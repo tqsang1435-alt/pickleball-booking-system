@@ -65,10 +65,7 @@ export default function ReportsManagement() {
       {/* Header */}
       <header className={styles.header}>
         <div className={styles.headerTop}>
-          <div className={styles.headerIcon}>
-            <ChartIcon />
-          </div>
-          <h1 className={styles.headerTitle}>📊 Thống kê và xuất báo cáo</h1>
+          <h1 className={styles.headerTitle}>Thống kê và xuất báo cáo</h1>
         </div>
         <p className={styles.headerSubtitle}>
           Lọc dữ liệu theo khoảng thời gian, xuất báo cáo CSV hoặc Excel và theo dõi lịch sử xuất báo cáo. 
@@ -79,22 +76,12 @@ export default function ReportsManagement() {
       {/* Stats Grid */}
       <section className={styles.statsGrid}>
         <div className={styles.statCard}>
-          <div className={styles.statCardHeader}>
-            <div className={`${styles.statCardIcon} ${styles.blue}`}>
-              <FileIcon />
-            </div>
-          </div>
           <p className={styles.statCardLabel}>Tổng số lần xuất</p>
           <h2 className={styles.statCardValue}>{history.length}</h2>
           <p className={styles.statCardDescription}>Tổng báo cáo đã tạo</p>
         </div>
 
         <div className={styles.statCard}>
-          <div className={styles.statCardHeader}>
-            <div className={`${styles.statCardIcon} ${styles.green}`}>
-              <CheckIcon />
-            </div>
-          </div>
           <p className={styles.statCardLabel}>Xuất thành công</p>
           <h2 className={styles.statCardValue}>{successCount}</h2>
           <p className={styles.statCardDescription}>
@@ -103,22 +90,12 @@ export default function ReportsManagement() {
         </div>
 
         <div className={styles.statCard}>
-          <div className={styles.statCardHeader}>
-            <div className={`${styles.statCardIcon} ${styles.red}`}>
-              <XIcon />
-            </div>
-          </div>
           <p className={styles.statCardLabel}>Xuất thất bại</p>
           <h2 className={styles.statCardValue}>{failedCount}</h2>
           <p className={styles.statCardDescription}>Báo cáo gặp lỗi</p>
         </div>
 
         <div className={styles.statCard}>
-          <div className={styles.statCardHeader}>
-            <div className={`${styles.statCardIcon} ${styles.purple}`}>
-              <DatabaseIcon />
-            </div>
-          </div>
           <p className={styles.statCardLabel}>Tổng số dòng</p>
           <h2 className={styles.statCardValue}>{totalRows.toLocaleString()}</h2>
           <p className={styles.statCardDescription}>Dữ liệu đã xuất</p>
@@ -191,7 +168,7 @@ export default function ReportsManagement() {
                       formatter={(value) => [formatCurrency(Number(value ?? 0)), "Doanh thu"]}
                       labelFormatter={(label) => `Ngày ${formatDate(String(label))}`}
                     />
-                    <Bar dataKey="revenue" fill="#10B981" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="revenue" fill="#2563eb" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -252,9 +229,6 @@ export default function ReportsManagement() {
       {/* Filter Panel */}
       <section className={styles.panel}>
         <div className={styles.panelHeader}>
-          <div className={styles.panelHeaderIcon}>
-            <FilterIcon />
-          </div>
           <div className={styles.panelHeaderText}>
             <h2>Xuất báo cáo mới</h2>
             <p>Chọn loại báo cáo, định dạng và khoảng thời gian</p>
@@ -267,9 +241,6 @@ export default function ReportsManagement() {
       <section className={styles.historySection}>
         <div className={styles.historyHeader}>
           <div className={styles.historyHeaderLeft}>
-            <div className={styles.historyHeaderIcon}>
-              <ClockIcon />
-            </div>
             <div className={styles.historyHeaderText}>
               <h2>Lịch sử xuất báo cáo</h2>
               <p>Theo dõi người xuất, loại báo cáo, bộ lọc và trạng thái xử lý</p>

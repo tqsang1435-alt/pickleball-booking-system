@@ -21,9 +21,14 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     setUser(getUser());
+    const stored = localStorage.getItem("admin-sidebar-collapsed");
+    if (stored === "true") {
+      setIsCollapsed(true);
+    }
   }, []);
 
   const role = String(user?.RoleName || user?.role || user?.roles?.[0] || "").toLowerCase();
@@ -50,60 +55,125 @@ export default function AdminLayout({
   const userName = user?.FullName || user?.fullName || "Admin";
   const userEmail = user?.Email || user?.email || "admin@pickleclub.vn";
 
-  const navItems = [
-    { href: "/admin", label: "Tổng quan", icon: <DashboardIcon />, hideForStaff: true },
-    { href: "/admin/courts", label: "Sân", icon: <CourtIcon />, hideForStaff: true },
-    { href: "/admin/bookings", label: "Quản lý Booking", icon: <CalendarIcon /> },
-    { href: "/admin/refunds", label: "Quản lý Hoàn tiền", icon: <RevenueIcon />, hideForStaff: true },
-    { href: "/staff/operations", label: "Vận hành hôm nay", icon: <OperationsIcon /> },
-    { href: "/staff/bookings/walk-in", label: "Đặt sân trực tiếp", icon: <CalendarIcon />, staffOnly: true },
-    { href: "/admin/combos", label: "Combo", icon: <ComboIcon />, hideForStaff: true },
-    { href: "/admin/players", label: "Người chơi", icon: <PlayerIcon />, hideForStaff: true },
-    { href: "/admin/coaches", label: "Coach", icon: <CoachIcon />, hideForStaff: true },
-    { href: "/admin/staff", label: "Nhân viên", icon: <StaffIcon />, hideForStaff: true },
-    { href: "/admin/events", label: "Sự kiện", icon: <CalendarIcon />, hideForStaff: true },
-    { href: "/admin/revenue", label: "Doanh thu", icon: <RevenueIcon />, hideForStaff: true },
-    { href: "/admin/reports", label: "Thống kê", icon: <BarChartIcon />, hideForStaff: true },
-    { href: "/admin/promotions", label: "Khuyến mãi", icon: <PromotionIcon />, hideForStaff: true },
-    { href: "/admin/permissions", label: "Phân quyền", icon: <CheckShieldIcon />, hideForStaff: true },
-    { href: "/admin/settings", label: "Cài đặt hệ thống", icon: <SettingsIcon />, hideForStaff: true },
+  const navSections = [
+    {
+      title: "OVERVIEW",
+      items: [
+        { href: "/admin", label: "Dashboard", icon: <DashboardIcon />, hideForStaff: true },
+        { href: "/admin/reports", label: "Reports", icon: <BarChartIcon />, hideForStaff: true },
+      ]
+    },
+    {
+      title: "COURTS",
+      items: [
+        { href: "/admin/courts", label: "Courts", icon: <CourtIcon />, hideForStaff: true },
+        { href: "/staff/operations", label: "Court Schedule", icon: <OperationsIcon /> },
+      ]
+    },
+    {
+      title: "BOOKINGS",
+      items: [
+        { href: "/admin/bookings", label: "Bookings", icon: <CalendarIcon /> },
+        { href: "/admin/refunds", label: "Refunds", icon: <RevenueIcon />, hideForStaff: true },
+      ]
+    },
+    {
+      title: "PEOPLE",
+      items: [
+        { href: "/admin/players", label: "Players", icon: <PlayerIcon />, hideForStaff: true },
+        { href: "/admin/coaches", label: "Coaches", icon: <CoachIcon />, hideForStaff: true },
+        { href: "/admin/staff", label: "Staff", icon: <StaffIcon />, hideForStaff: true },
+      ]
+    },
+    {
+      title: "EVENTS",
+      items: [
+        { href: "/admin/events", label: "Tournaments", icon: <CalendarIcon />, hideForStaff: true },
+        { href: "/admin/promotions", label: "Promotions", icon: <PromotionIcon />, hideForStaff: true },
+        { href: "/admin/settings", label: "Settings", icon: <SettingsIcon />, hideForStaff: true },
+      ]
+    }
   ];
 
   return (
-    <div className={styles.admin}>
-      <aside className={styles.sidebar}>
+    <div className={`${styles.admin} ${isCollapsed ? styles.adminCollapsed : ""}`}>
+      <aside className={`${styles.sidebar} ${isCollapsed ? styles.sidebarCollapsed : ""}`}>
         <div className={styles.logo}>
-          <div className={styles.logoIcon}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M7 9a5 5 0 0 1 5-5h0a5 5 0 0 1 5 5v3a5 5 0 0 1-5 5h0a5 5 0 0 1-5-5V9z" fill="currentColor" opacity="0.2" />
-              <path d="M7 9a5 5 0 0 1 5-5h0a5 5 0 0 1 5 5v3a5 5 0 0 1-5 5h0a5 5 0 0 1-5-5V9z" />
-              <path d="M12 17v5" strokeWidth="3.5" />
-              <path d="M10 22h4" />
-              <circle cx="18" cy="6" r="2.5" fill="currentColor" stroke="none" />
-            </svg>
+          <div className={styles.logoMain}>
+            <div className={styles.logoIcon}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M7 9a5 5 0 0 1 5-5h0a5 5 0 0 1 5 5v3a5 5 0 0 1-5 5h0a5 5 0 0 1-5-5V9z" fill="currentColor" opacity="0.2" />
+                <path d="M7 9a5 5 0 0 1 5-5h0a5 5 0 0 1 5 5v3a5 5 0 0 1-5 5h0a5 5 0 0 1-5-5V9z" />
+                <path d="M12 17v5" strokeWidth="3.5" />
+                <path d="M10 22h4" />
+                <circle cx="18" cy="6" r="2.5" fill="currentColor" stroke="none" />
+              </svg>
+            </div>
+            <div className={styles.logoTextWrapper}>
+              <Link href="/" className={styles.logoTitle}>
+                PickleClub
+              </Link>
+              <span className={styles.logoSubtitle}>ENTERPRISE ADMIN</span>
+            </div>
           </div>
-          <Link href="/" style={{ color: "inherit", textDecoration: "none" }}>
-            PickleClub
-          </Link>
+          <button
+            type="button"
+            className={styles.toggleBtn}
+            onClick={() => {
+              setIsCollapsed((prev) => {
+                const next = !prev;
+                localStorage.setItem("admin-sidebar-collapsed", String(next));
+                return next;
+              });
+            }}
+            title={isCollapsed ? "Mở rộng sidebar" : "Thu gọn sidebar"}
+          >
+            {isCollapsed ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="13 17 18 12 13 7"></polyline>
+                <polyline points="6 17 11 12 6 7"></polyline>
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="11 17 6 12 11 7"></polyline>
+                <polyline points="18 17 13 12 18 7"></polyline>
+              </svg>
+            )}
+          </button>
         </div>
 
-
         <nav className={styles.nav}>
-          {navItems.map((item) => {
-            if (item.hideForStaff && isStaff) return null;
-            if (item.staffOnly && !isStaff) return null;
+          {navSections.map((section) => {
+            // Filter items based on user role
+            const visibleItems = section.items.filter((item) => {
+              if (item.hideForStaff && isStaff) return false;
+              // @ts-ignore
+              if (item.staffOnly && !isStaff) return false;
+              return true;
+            });
 
-            const isActive = pathname === item.href;
+            if (visibleItems.length === 0) return null;
 
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={isActive ? styles.active : ""}
-              >
-                {item.icon}
-                {item.label}
-              </Link>
+              <div key={section.title} className={styles.navSection}>
+                <h3 className={styles.sectionHeader}>{section.title}</h3>
+                <div className={styles.sectionList}>
+                  {visibleItems.map((item) => {
+                    const isActive = pathname === item.href;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={isActive ? styles.active : ""}
+                        title={isCollapsed ? item.label : ""}
+                      >
+                        {item.icon}
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </nav>
