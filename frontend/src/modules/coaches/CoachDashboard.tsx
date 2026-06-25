@@ -557,7 +557,7 @@ export default function CoachDashboard({ token }: Props) {
                   <img
                     src={avatarPreview || getImageUrl(coach?.AvatarURL)}
                     alt="Avatar Preview"
-                    style={{ width: "100px", height: "100px", borderRadius: "50%", objectFit: "cover", border: "1px solid #ddd" }}
+                    style={{ width: "100px", height: "100px", borderRadius: "50%", objectFit: "cover", border: "1px solid var(--pcs-neutral-300)" }}
                   />
                   {avatarPreview && (
                     <button
@@ -722,7 +722,7 @@ export default function CoachDashboard({ token }: Props) {
                   <img
                     src={certPreview || getImageUrl(expertiseForm.certifications)}
                     alt="Certificate Preview"
-                    style={{ maxWidth: "200px", maxHeight: "150px", borderRadius: "6px", objectFit: "contain", border: "1px solid #ddd" }}
+                    style={{ maxWidth: "200px", maxHeight: "150px", borderRadius: "6px", objectFit: "contain", border: "1px solid var(--pcs-neutral-300)" }}
                   />
                   {certPreview && (
                     <button
@@ -747,7 +747,7 @@ export default function CoachDashboard({ token }: Props) {
               )}
               
               {expertiseForm.certifications && !expertiseForm.certifications.startsWith("/uploads") && !certPreview && (
-                <p style={{ marginTop: "5px", fontSize: "0.9rem", color: "#666" }}>
+                <p style={{ marginTop: "5px", fontSize: "0.9rem", color: "var(--pcs-neutral-600)" }}>
                   Hiện tại: <strong>{expertiseForm.certifications}</strong>
                 </p>
               )}
@@ -1126,40 +1126,40 @@ export default function CoachDashboard({ token }: Props) {
             ) : (
               <div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
-                  <div style={{ padding: "1.5rem", background: "#f8f9fa", borderRadius: "8px", border: "1px solid #e9ecef" }}>
-                    <div style={{ color: "#6c757d", fontSize: "0.9rem", marginBottom: "0.5rem" }}>Tổng buổi dạy</div>
-                    <div style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#212529" }}>{incomeData.summary.completedSessions}</div>
+                  <div style={{ padding: "1.5rem", background: "var(--pcs-neutral-50)", borderRadius: "var(--pcs-radius-md)", border: "1px solid var(--pcs-neutral-200)" }}>
+                    <div style={{ color: "var(--pcs-neutral-600)", fontSize: "0.9rem", marginBottom: "0.5rem" }}>Tổng buổi dạy</div>
+                    <div style={{ fontSize: "1.5rem", fontWeight: "bold", color: "var(--pcs-neutral-900)" }}>{incomeData.summary.completedSessions}</div>
                   </div>
-                  <div style={{ padding: "1.5rem", background: "#f8f9fa", borderRadius: "8px", border: "1px solid #e9ecef" }}>
-                    <div style={{ color: "#6c757d", fontSize: "0.9rem", marginBottom: "0.5rem" }}>Tổng giờ dạy</div>
-                    <div style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#212529" }}>{incomeData.summary.totalWorkingHours} giờ</div>
+                  <div style={{ padding: "1.5rem", background: "var(--pcs-neutral-50)", borderRadius: "var(--pcs-radius-md)", border: "1px solid var(--pcs-neutral-200)" }}>
+                    <div style={{ color: "var(--pcs-neutral-600)", fontSize: "0.9rem", marginBottom: "0.5rem" }}>Tổng giờ dạy</div>
+                    <div style={{ fontSize: "1.5rem", fontWeight: "bold", color: "var(--pcs-neutral-900)" }}>{incomeData.summary.totalWorkingHours} giờ</div>
                   </div>
-                  <div style={{ padding: "1.5rem", background: "#e8f5e9", borderRadius: "8px", border: "1px solid #c8e6c9" }}>
-                    <div style={{ color: "#2e7d32", fontSize: "0.9rem", marginBottom: "0.5rem" }}>Tổng thu nhập</div>
-                    <div style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#1b5e20" }}>{formatCurrency(incomeData.summary.totalIncome)}</div>
+                  <div style={{ padding: "1.5rem", background: "var(--pcs-brand-primary-light)", borderRadius: "var(--pcs-radius-md)", border: "1px solid var(--pcs-brand-primary-light)" }}>
+                    <div style={{ color: "var(--pcs-brand-primary)", fontSize: "0.9rem", marginBottom: "0.5rem" }}>Tổng thu nhập</div>
+                    <div style={{ fontSize: "1.5rem", fontWeight: "bold", color: "var(--pcs-brand-primary-hover)" }}>{formatCurrency(incomeData.summary.totalIncome)}</div>
                   </div>
                 </div>
 
                 <div style={{ marginBottom: "2rem" }}>
-                  <h3 style={{ fontSize: "1.2rem", marginBottom: "1rem", color: "#343a40" }}>Thu nhập theo tháng</h3>
+                  <h3 style={{ fontSize: "1.2rem", marginBottom: "1rem", color: "var(--pcs-neutral-900)" }}>Thu nhập theo tháng</h3>
                   {incomeData.monthlyIncome.length > 0 ? (
                     <div style={{ overflowX: "auto" }}>
                       <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "600px" }}>
                         <thead>
-                          <tr style={{ background: "#f8f9fa", borderBottom: "2px solid #dee2e6" }}>
-                            <th style={{ padding: "12px", textAlign: "left", color: "#495057" }}>Tháng</th>
-                            <th style={{ padding: "12px", textAlign: "left", color: "#495057" }}>Số buổi</th>
-                            <th style={{ padding: "12px", textAlign: "left", color: "#495057" }}>Số giờ</th>
-                            <th style={{ padding: "12px", textAlign: "right", color: "#495057" }}>Thu nhập</th>
+                          <tr style={{ background: "var(--pcs-neutral-50)", borderBottom: "2px solid var(--pcs-neutral-300)" }}>
+                            <th style={{ padding: "12px", textAlign: "left", color: "var(--pcs-neutral-700)" }}>Tháng</th>
+                            <th style={{ padding: "12px", textAlign: "left", color: "var(--pcs-neutral-700)" }}>Số buổi</th>
+                            <th style={{ padding: "12px", textAlign: "left", color: "var(--pcs-neutral-700)" }}>Số giờ</th>
+                            <th style={{ padding: "12px", textAlign: "right", color: "var(--pcs-neutral-700)" }}>Thu nhập</th>
                           </tr>
                         </thead>
                         <tbody>
                           {incomeData.monthlyIncome.map((m: any) => (
-                            <tr key={m.month} style={{ borderBottom: "1px solid #e9ecef" }}>
+                            <tr key={m.month} style={{ borderBottom: "1px solid var(--pcs-neutral-200)" }}>
                               <td style={{ padding: "12px" }}>{m.month}</td>
                               <td style={{ padding: "12px" }}>{m.sessions}</td>
                               <td style={{ padding: "12px" }}>{m.workingHours}</td>
-                              <td style={{ padding: "12px", textAlign: "right", fontWeight: "500", color: "#2e7d32" }}>
+                              <td style={{ padding: "12px", textAlign: "right", fontWeight: "500", color: "var(--pcs-brand-primary)" }}>
                                 {formatCurrency(m.income)}
                               </td>
                             </tr>
@@ -1168,12 +1168,12 @@ export default function CoachDashboard({ token }: Props) {
                       </table>
                     </div>
                   ) : (
-                    <p style={{ color: "#6c757d", fontStyle: "italic" }}>Chưa có thu nhập theo tháng.</p>
+                    <p style={{ color: "var(--pcs-neutral-600)", fontStyle: "italic" }}>Chưa có thu nhập theo tháng.</p>
                   )}
                 </div>
 
                 <div>
-                  <h3 style={{ fontSize: "1.2rem", marginBottom: "1rem", color: "#343a40" }}>Chi tiết buổi dạy đã hoàn thành</h3>
+                  <h3 style={{ fontSize: "1.2rem", marginBottom: "1rem", color: "var(--pcs-neutral-900)" }}>Chi tiết buổi dạy đã hoàn thành</h3>
                   {incomeData.sessions.length > 0 ? (
                     <div className={styles.scheduleList}>
                       {incomeData.sessions.map((s: any) => (
@@ -1188,14 +1188,14 @@ export default function CoachDashboard({ token }: Props) {
                           <div style={{ marginTop: 10, fontSize: "0.95rem" }}>
                             <strong>Loại:</strong> {s.bookingType} <br />
                             <strong>Học viên:</strong> {s.playerName} <br />
-                            <strong>Thu nhập:</strong> <span style={{ color: "#2e7d32", fontWeight: "bold" }}>{formatCurrency(s.coachFee)}</span> <br />
+                            <strong>Thu nhập:</strong> <span style={{ color: "var(--pcs-brand-primary)", fontWeight: "bold" }}>{formatCurrency(s.coachFee)}</span> <br />
                             <strong>Trạng thái:</strong> {s.status}
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p style={{ color: "#6c757d", fontStyle: "italic" }}>Danh sách buổi dạy rỗng.</p>
+                    <p style={{ color: "var(--pcs-neutral-600)", fontStyle: "italic" }}>Danh sách buổi dạy rỗng.</p>
                   )}
                 </div>
               </div>

@@ -148,7 +148,7 @@ export default function TeammatesTab({ token, userProfile, showToast }: Teammate
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
         <div>
           <h3 style={{ fontSize: "20px", fontWeight: "700", margin: 0 }}>Tìm kiếm đồng đội & Đối thủ</h3>
-          <p style={{ fontSize: "14px", color: "#64748b", marginTop: "0.25rem" }}>Kết nối, ghép cặp và thách đấu bằng công cụ thông minh AI của Pickle Club.</p>
+          <p style={{ fontSize: "14px", color: "var(--pcs-neutral-600)", marginTop: "0.25rem" }}>Kết nối, ghép cặp và thách đấu bằng công cụ thông minh AI của Pickle Club.</p>
         </div>
       </div>
 
@@ -156,7 +156,7 @@ export default function TeammatesTab({ token, userProfile, showToast }: Teammate
 
       {/* AI Loading State */}
       {isAiLoading && (
-        <div style={{ padding: "1.5rem", textAlign: "center", border: "1px dashed #cbd5e1", borderRadius: "10px", backgroundColor: "#f8fafc", marginBottom: "1.5rem" }}>
+        <div style={{ padding: "1.5rem", textAlign: "center", border: "1px dashed var(--pcs-neutral-300)", borderRadius: "10px", backgroundColor: "var(--pcs-neutral-50)", marginBottom: "1.5rem" }}>
           <div className={styles.loadingInner} style={{ fontSize: "15px", color: "#4f46e5", padding: 0 }}>
             🤖 AI đang phân tích hồ sơ và tìm đồng đội phù hợp...
           </div>
@@ -166,11 +166,11 @@ export default function TeammatesTab({ token, userProfile, showToast }: Teammate
       {/* Section: AI Indicator Badge */}
       {!isAiLoading && aiTeammateResults.length > 0 && (
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "1rem" }}>
-          <span style={{ fontSize: "12px", backgroundColor: "#f5f3ff", border: "1px solid #ddd6fe", color: "#6d28d9", padding: "0.25rem 0.625rem", borderRadius: "20px", fontWeight: "600" }}>
+          <span style={{ fontSize: "12px", backgroundColor: "var(--pcs-brand-primary-light)", border: "1px solid var(--pcs-brand-primary-light)", color: "var(--pcs-brand-primary-hover)", padding: "0.25rem 0.625rem", borderRadius: "20px", fontWeight: "600" }}>
             ✨ Đã tối ưu hóa danh sách bằng AI
           </span>
           {aiTeammateFallback && (
-            <span style={{ fontSize: "11px", backgroundColor: "#fff7ed", border: "1px solid #ffedd5", color: "#c2410c", padding: "0.25rem 0.5rem", borderRadius: "6px", fontWeight: "600" }} title={aiTeammateFallbackReason}>
+            <span style={{ fontSize: "11px", backgroundColor: "var(--pcs-status-warning-bg, #fffbeb)", border: "1px solid var(--pcs-status-warning-border, #fef3c7)", color: "var(--pcs-status-warning)", padding: "0.25rem 0.5rem", borderRadius: "6px", fontWeight: "600" }} title={aiTeammateFallbackReason}>
               ⚠️ Gợi ý nội bộ (AI Offline)
             </span>
           )}
@@ -179,10 +179,10 @@ export default function TeammatesTab({ token, userProfile, showToast }: Teammate
 
       {/* Default Match List Title */}
       <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
-        <h4 style={{ fontSize: "16px", fontWeight: "700", margin: 0, color: "#334155" }}>
+        <h4 style={{ fontSize: "16px", fontWeight: "700", margin: 0, color: "var(--pcs-neutral-700)" }}>
           👥 Đồng đội phù hợp (Mặc định)
         </h4>
-        <p style={{ fontSize: "13px", color: "#64748b", marginTop: "0.15rem" }}>
+        <p style={{ fontSize: "13px", color: "var(--pcs-neutral-600)", marginTop: "0.15rem" }}>
           Danh sách đề xuất dựa trên khung giờ rảnh và trình độ cơ bản của bạn.
         </p>
       </div>
@@ -211,7 +211,7 @@ export default function TeammatesTab({ token, userProfile, showToast }: Teammate
               <div 
                 className={styles.card} 
                 key={player.PlayerProfileID} 
-                style={aiResult ? { border: "1px solid #c084fc", boxShadow: "0 4px 6px -1px rgba(168, 85, 247, 0.1)" } : undefined}
+                style={aiResult ? { border: "1px solid var(--pcs-brand-primary)", boxShadow: "0 4px 6px -1px rgba(168, 85, 247, 0.1)" } : undefined}
               >
                 <div>
                   <div className={styles.cardHeader}>
@@ -219,7 +219,7 @@ export default function TeammatesTab({ token, userProfile, showToast }: Teammate
                       {player.AvatarURL ? (
                         <img src={player.AvatarURL} alt={player.FullName} className={styles.avatar} />
                       ) : (
-                        <div className={styles.avatarPlaceholder} style={aiResult ? { backgroundColor: "#ddd6fe", color: "#6d28d9" } : undefined}>
+                        <div className={styles.avatarPlaceholder} style={aiResult ? { backgroundColor: "var(--pcs-brand-primary-light)", color: "var(--pcs-brand-primary-hover)" } : undefined}>
                           {player.FullName ? player.FullName.charAt(0).toUpperCase() : "P"}
                         </div>
                       )}
@@ -229,9 +229,9 @@ export default function TeammatesTab({ token, userProfile, showToast }: Teammate
                           {aiResult && (
                             <span style={{ 
                               fontSize: "10px", 
-                              backgroundColor: "#f5f3ff", 
-                              color: "#6d28d9", 
-                              border: "1px solid #ddd6fe", 
+                              backgroundColor: "var(--pcs-brand-primary-light)",
+                              color: "var(--pcs-brand-primary-hover)",
+                              border: "1px solid var(--pcs-brand-primary-light)",
                               padding: "0.15rem 0.35rem", 
                               borderRadius: "4px", 
                               fontWeight: "600",
@@ -242,23 +242,23 @@ export default function TeammatesTab({ token, userProfile, showToast }: Teammate
                             </span>
                           )}
                         </div>
-                        <span className={styles.cardTag} style={aiResult ? { backgroundColor: "#f5f3ff", color: "#6d28d9" } : undefined}>
+                        <span className={styles.cardTag} style={aiResult ? { backgroundColor: "var(--pcs-brand-primary-light)", color: "var(--pcs-brand-primary-hover)" } : undefined}>
                           {player.PlayingRole}
                         </span>
                       </div>
                     </div>
                     {hasScore && (
-                      <div className={styles.scoreBadge} style={aiResult ? { backgroundColor: "#f5f3ff", borderColor: "#c084fc" } : undefined}>
-                        <span className={styles.scoreVal} style={aiResult ? { color: "#6d28d9" } : undefined}>{scoreVal}%</span>
-                        <span className={styles.scoreText} style={aiResult ? { color: "#7c3aed" } : undefined}>Match</span>
+                      <div className={styles.scoreBadge} style={aiResult ? { backgroundColor: "var(--pcs-brand-primary-light)", borderColor: "var(--pcs-brand-primary)" } : undefined}>
+                        <span className={styles.scoreVal} style={aiResult ? { color: "var(--pcs-brand-primary-hover)" } : undefined}>{scoreVal}%</span>
+                        <span className={styles.scoreText} style={aiResult ? { color: "var(--pcs-brand-primary-hover)" } : undefined}>Match</span>
                       </div>
                     )}
                   </div>
 
                   {/* Progress Bar for AI scores */}
                   {aiResult && scoreVal !== null && (
-                    <div style={{ width: "100%", height: "6px", backgroundColor: "#e2e8f0", borderRadius: "3px", overflow: "hidden", marginBottom: "1rem", marginTop: "-0.5rem" }}>
-                      <div style={{ width: `${scoreVal}%`, height: "100%", backgroundColor: scoreVal >= 80 ? "#10b981" : scoreVal >= 60 ? "#f59e0b" : "#ef4444" }} />
+                    <div style={{ width: "100%", height: "6px", backgroundColor: "var(--pcs-neutral-200)", borderRadius: "3px", overflow: "hidden", marginBottom: "1rem", marginTop: "-0.5rem" }}>
+                      <div style={{ width: `${scoreVal}%`, height: "100%", backgroundColor: scoreVal >= 80 ? "#10b981" : scoreVal >= 60 ? "#f59e0b" : "var(--pcs-status-error)" }} />
                     </div>
                   )}
 
@@ -273,22 +273,22 @@ export default function TeammatesTab({ token, userProfile, showToast }: Teammate
                     </div>
                     <div className={styles.cardMetaItem}>
                       <strong>Khung giờ rảnh:</strong>
-                      <span style={{ color: "#16a34a", fontWeight: "600" }}>
+                      <span style={{ color: "var(--pcs-brand-primary-hover)", fontWeight: "600" }}>
                         {formatTime(player.AvailableStartTime)} - {formatTime(player.AvailableEndTime)}
                       </span>
                     </div>
                     {player.PlayStyle && (
                       <div className={styles.cardMetaItem} style={{ flexDirection: "column", gap: "0.125rem", marginTop: "0.25rem" }}>
                         <strong>Phong cách chơi:</strong>
-                        <span style={{ color: "#475569", fontSize: "13px" }}>{player.PlayStyle}</span>
+                        <span style={{ color: "var(--pcs-neutral-600)", fontSize: "13px" }}>{player.PlayStyle}</span>
                       </div>
                     )}
 
                     {/* AI Reasons & Explanation */}
                     {aiResult && aiResult.reasons && aiResult.reasons.length > 0 && (
-                      <div style={{ marginTop: "0.75rem", padding: "0.5rem 0.75rem", backgroundColor: "#f9f5ff", borderRadius: "8px", border: "1px dashed #e9d5ff" }}>
-                        <strong style={{ fontSize: "12px", color: "#7c3aed", display: "block", marginBottom: "0.25rem" }}>🤖 Phân tích từ AI:</strong>
-                        <ul style={{ margin: 0, paddingLeft: "1.1rem", fontSize: "12px", color: "#5b21b6", lineHeight: "1.4" }}>
+                      <div style={{ marginTop: "0.75rem", padding: "0.5rem 0.75rem", backgroundColor: "var(--pcs-neutral-50)", borderRadius: "8px", border: "1px dashed var(--pcs-brand-primary-light)" }}>
+                        <strong style={{ fontSize: "12px", color: "var(--pcs-brand-primary-hover)", display: "block", marginBottom: "0.25rem" }}>🤖 Phân tích từ AI:</strong>
+                        <ul style={{ margin: 0, paddingLeft: "1.1rem", fontSize: "12px", color: "var(--pcs-brand-primary-hover)", lineHeight: "1.4" }}>
                           {aiResult.reasons.map((r, idx) => (
                             <li key={idx}>{r}</li>
                           ))}
@@ -323,7 +323,7 @@ export default function TeammatesTab({ token, userProfile, showToast }: Teammate
                   <button
                     onClick={() => setSelectedPlayer(player)}
                     className={styles.primaryBtn}
-                    style={{ width: "100%", background: aiResult ? "#6d28d9" : undefined }}
+                    style={{ width: "100%", background: aiResult ? "var(--pcs-brand-primary-hover)" : undefined }}
                   >
                     Ghép cặp
                   </button>
@@ -349,7 +349,7 @@ export default function TeammatesTab({ token, userProfile, showToast }: Teammate
                   value={selectedPlayer.FullName}
                   disabled
                   className={styles.input}
-                  style={{ backgroundColor: "#f8fafc" }}
+                  style={{ backgroundColor: "var(--pcs-neutral-50)" }}
                 />
               </div>
               <div className={styles.formGroup}>

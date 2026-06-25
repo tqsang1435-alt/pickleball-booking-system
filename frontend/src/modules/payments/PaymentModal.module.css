@@ -61,19 +61,19 @@
 .header h2 {
   font-size: 22px;
   font-weight: 800;
-  color: #171a2a;
+  color: var(--pcs-neutral-900);
   margin-bottom: 4px;
 }
 
 .header p {
-  color: #667064;
+  color: var(--pcs-neutral-500);
   font-size: 14px;
 }
 
 /* ── Info card ── */
 .infoCard {
-  background: #f8fdf3;
-  border: 1.5px solid #dff5c7;
+  background: var(--pcs-brand-primary-light);
+  border: 1.5px solid var(--pcs-brand-primary-border);
   border-radius: 14px;
   padding: 18px 20px;
   margin-bottom: 16px;
@@ -90,27 +90,27 @@
 }
 
 .infoLabel {
-  color: #667064;
+  color: var(--pcs-neutral-500);
   font-size: 14px;
   white-space: nowrap;
 }
 
 .infoValue {
   font-weight: 600;
-  color: #171a2a;
+  color: var(--pcs-neutral-900);
   font-size: 14px;
   text-align: right;
 }
 
 .price {
-  color: #6fbd00;
+  color: var(--pcs-brand-primary);
   font-size: 18px;
   font-weight: 800;
 }
 
 .bookingCode {
   font-family: monospace;
-  background: #f0f9e0;
+  background: var(--pcs-brand-primary-light);
   padding: 4px 10px;
   border-radius: 8px;
   font-size: 13px;
@@ -125,7 +125,7 @@
 .payMethodLabel {
   font-size: 13px;
   font-weight: 600;
-  color: #667064;
+  color: var(--pcs-neutral-500);
   margin-bottom: 10px;
 }
 
@@ -141,13 +141,13 @@
   align-items: center;
   gap: 6px;
   padding: 16px 14px;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--pcs-neutral-200);
   border-radius: 14px;
   cursor: pointer;
   transition: all 0.18s ease;
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  color: var(--pcs-neutral-800);
   position: relative;
 }
 
@@ -156,14 +156,14 @@
 }
 
 .payMethodCard:hover {
-  border-color: #8bd80f;
-  background: #f8fdf3;
+  border-color: var(--pcs-brand-primary);
+  background: var(--pcs-brand-primary-light);
 }
 
 .payMethodActive {
-  border-color: #6fbd00 !important;
-  background: #f3ffe4 !important;
-  color: #3a6800 !important;
+  border-color: var(--pcs-brand-primary) !important;
+  background: var(--pcs-brand-primary-light) !important;
+  color: var(--pcs-brand-primary) !important;
 }
 
 .payMethodActive::after {
@@ -173,7 +173,7 @@
   right: 10px;
   font-size: 11px;
   font-weight: 800;
-  color: #6fbd00;
+  color: var(--pcs-brand-primary);
 }
 
 .payMethodIcon {
@@ -187,7 +187,7 @@
 
 .payMethodDesc {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--pcs-neutral-500);
   font-weight: 400;
   text-align: center;
 }
@@ -198,7 +198,7 @@
   top: -8px;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(135deg, #6fbd00, #4e9900);
+  background: var(--pcs-brand-primary), var(--pcs-brand-primary));
   color: #fff;
   font-size: 10px;
   font-weight: 700;
@@ -213,13 +213,13 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  background: #f0fdf4;
-  border: 1.5px solid #bbf7d0;
+  background: var(--pcs-status-success-bg);
+  border: 1.5px solid var(--pcs-status-success-border);
   border-radius: 10px;
   padding: 12px 14px;
   margin-bottom: 20px;
   font-size: 13px;
-  color: #166534;
+  color: var(--pcs-status-success);
 }
 
 .payosHint span {
@@ -236,13 +236,13 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  background: #fffbeb;
-  border: 1.5px solid #fde68a;
+  background: var(--pcs-status-warning-bg);
+  border: 1.5px solid var(--pcs-status-warning-border);
   border-radius: 10px;
   padding: 12px 14px;
   margin-bottom: 20px;
   font-size: 13px;
-  color: #78350f;
+  color: var(--pcs-status-warning);
 }
 
 .notice span {
@@ -264,24 +264,24 @@
   flex: 1;
   padding: 13px;
   border-radius: 12px;
-  border: 1.5px solid #e5e7eb;
+  border: 1.5px solid var(--pcs-neutral-200);
   background: #fff;
-  color: #374151;
+  color: var(--pcs-neutral-800);
   font-size: 14px;
   font-weight: 600;
   transition: all 0.18s;
 }
 
 .btnCancel:hover:not(:disabled) {
-  background: #f9fafb;
-  border-color: #d1d5db;
+  background: var(--pcs-neutral-100);
+  border-color: var(--pcs-neutral-300);
 }
 
 .btnPay {
   flex: 2;
   padding: 13px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #8bd80f, #6fbd00);
+  background: var(--pcs-brand-primary), var(--pcs-brand-primary));
   color: #fff;
   font-size: 14px;
   font-weight: 700;
@@ -294,7 +294,7 @@
 }
 
 .btnPay:hover:not(:disabled) {
-  background: linear-gradient(135deg, #9de820, #7dce0f);
+  background: var(--pcs-brand-primary), #7dce0f);
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(111, 189, 0, 0.4);
 }
@@ -322,8 +322,8 @@
 
 /* ── Error state ── */
 .errorBox {
-  background: #fef2f2;
-  border: 1.5px solid #fecaca;
+  background: var(--pcs-status-error-bg);
+  border: 1.5px solid var(--pcs-status-error-border);
   border-radius: 12px;
   padding: 14px 16px;
   margin-bottom: 16px;
@@ -331,7 +331,7 @@
 }
 
 .errorBox p {
-  color: #991b1b;
+  color: var(--pcs-status-error);
   font-size: 14px;
   line-height: 1.5;
 }

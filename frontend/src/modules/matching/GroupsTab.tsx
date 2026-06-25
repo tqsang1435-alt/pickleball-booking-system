@@ -220,7 +220,7 @@ export default function GroupsTab({ token, userProfile, showToast }: GroupsTabPr
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
         <div>
           <h3 style={{ fontSize: "20px", fontWeight: "700", margin: 0 }}>Nhóm chơi bóng</h3>
-          <p style={{ fontSize: "14px", color: "#64748b", marginTop: "0.25rem" }}>Quản lý hoặc tham gia các nhóm chơi bóng để cùng luyện tập và thi đấu.</p>
+          <p style={{ fontSize: "14px", color: "var(--pcs-neutral-600)", marginTop: "0.25rem" }}>Quản lý hoặc tham gia các nhóm chơi bóng để cùng luyện tập và thi đấu.</p>
         </div>
         <button className={styles.primaryBtn} onClick={() => setShowCreateModal(true)}>
           + Tạo nhóm mới
@@ -242,15 +242,15 @@ export default function GroupsTab({ token, userProfile, showToast }: GroupsTabPr
                   <div className={styles.cardHeader}>
                     <div>
                       <h4 className={styles.cardName}>{group.GroupName}</h4>
-                      <span className={styles.cardTag} style={{ backgroundColor: "#dcfce7", color: "#15803d" }}>
+                      <span className={styles.cardTag} style={{ backgroundColor: "var(--pcs-brand-primary-light)", color: "var(--pcs-brand-primary-hover)" }}>
                         Trưởng nhóm: {isLeader ? "Tôi" : (group.CreatorName || "Ẩn danh")}
                       </span>
                     </div>
                     <span
                       className={styles.cardTag}
                       style={{
-                        backgroundColor: group.Status === "Open" ? "#dcfce7" : "#fee2e2",
-                        color: group.Status === "Open" ? "#166534" : "#991b1b",
+                        backgroundColor: group.Status === "Open" ? "var(--pcs-brand-primary-light)" : "var(--pcs-status-error-bg)",
+                        color: group.Status === "Open" ? "var(--pcs-status-success)" : "var(--pcs-status-error)",
                         fontWeight: "600",
                         whiteSpace: "nowrap",
                         display: "inline-flex",
@@ -278,7 +278,7 @@ export default function GroupsTab({ token, userProfile, showToast }: GroupsTabPr
                     {group.Description && (
                       <div className={styles.cardMetaItem} style={{ flexDirection: "column", gap: "0.125rem", marginTop: "0.5rem" }}>
                         <strong>Mô tả nhóm:</strong>
-                        <span style={{ color: "#475569", fontSize: "13px" }}>{group.Description}</span>
+                        <span style={{ color: "var(--pcs-neutral-600)", fontSize: "13px" }}>{group.Description}</span>
                       </div>
                     )}
                   </div>
@@ -296,7 +296,7 @@ export default function GroupsTab({ token, userProfile, showToast }: GroupsTabPr
                         position: "absolute",
                         top: "-8px",
                         right: "-8px",
-                        backgroundColor: "#ef4444",
+                        backgroundColor: "var(--pcs-status-error)",
                         color: "white",
                         fontSize: "11px",
                         fontWeight: "bold",
@@ -321,7 +321,7 @@ export default function GroupsTab({ token, userProfile, showToast }: GroupsTabPr
                     <button
                       onClick={() => handleLeaveGroup(group.GroupID)}
                       className={styles.secondaryBtn}
-                      style={{ flex: 1, color: "#ef4444", borderColor: "#fecaca" }}
+                      style={{ flex: 1, color: "var(--pcs-status-error)", borderColor: "var(--pcs-status-error-border, #fecaca)" }}
                     >
                       Rời nhóm
                     </button>
@@ -490,9 +490,9 @@ export default function GroupsTab({ token, userProfile, showToast }: GroupsTabPr
               <button className={styles.closeBtn} onClick={() => setChatGroup(null)}>×</button>
             </div>
 
-            <div style={{ flex: 1, overflowY: "auto", padding: "1rem", backgroundColor: "#f8fafc", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <div style={{ flex: 1, overflowY: "auto", padding: "1rem", backgroundColor: "var(--pcs-neutral-50)", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               {messages.length === 0 ? (
-                <div style={{ textAlign: "center", color: "#64748b", marginTop: "2rem" }}>
+                <div style={{ textAlign: "center", color: "var(--pcs-neutral-600)", marginTop: "2rem" }}>
                   Chưa có tin nhắn nào. Hãy gửi lời chào đến mọi người!
                 </div>
               ) : (
@@ -500,20 +500,20 @@ export default function GroupsTab({ token, userProfile, showToast }: GroupsTabPr
                   const isMine = msg.IsMine;
                   return (
                     <div key={msg.MessageID} style={{ display: "flex", flexDirection: "column", alignItems: isMine ? "flex-end" : "flex-start" }}>
-                      {!isMine && <span style={{ fontSize: "12px", color: "#64748b", marginBottom: "0.25rem", marginLeft: "0.25rem" }}>{msg.SenderName}</span>}
+                      {!isMine && <span style={{ fontSize: "12px", color: "var(--pcs-neutral-600)", marginBottom: "0.25rem", marginLeft: "0.25rem" }}>{msg.SenderName}</span>}
                       <div style={{
                         maxWidth: "75%",
                         padding: "0.5rem 0.75rem",
                         borderRadius: "12px",
                         backgroundColor: isMine ? "#3b82f6" : "#ffffff",
-                        color: isMine ? "#ffffff" : "#0f172a",
+                        color: isMine ? "#ffffff" : "var(--pcs-neutral-900)",
                         boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-                        border: isMine ? "none" : "1px solid #e2e8f0",
+                        border: isMine ? "none" : "1px solid var(--pcs-neutral-200)",
                         wordBreak: "break-word"
                       }}>
                         {msg.Content}
                       </div>
-                      <span style={{ fontSize: "10px", color: "#94a3b8", marginTop: "0.25rem" }}>
+                      <span style={{ fontSize: "10px", color: "var(--pcs-neutral-400)", marginTop: "0.25rem" }}>
                         {new Date(msg.CreatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
@@ -523,7 +523,7 @@ export default function GroupsTab({ token, userProfile, showToast }: GroupsTabPr
               <div ref={messagesEndRef} />
             </div>
 
-            <div style={{ padding: "1rem", borderTop: "1px solid #e2e8f0", backgroundColor: "#ffffff" }}>
+            <div style={{ padding: "1rem", borderTop: "1px solid var(--pcs-neutral-200)", backgroundColor: "#ffffff" }}>
               <form onSubmit={handleSendMessage} style={{ display: "flex", gap: "0.5rem" }}>
                 <input
                   ref={chatInputRef}

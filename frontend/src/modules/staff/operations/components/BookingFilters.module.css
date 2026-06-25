@@ -2,7 +2,7 @@
   background: #fff;
   border-radius: 16px;
   padding: 14px 18px;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--pcs-neutral-200);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -21,11 +21,11 @@
 .dateInput,
 .select {
   height: 48px;
-  border: 1.5px solid #E5E7EB;
+  border: 1.5px solid var(--pcs-neutral-200);
   border-radius: 10px;
   padding: 0 12px;
   font-size: 14px;
-  color: #111827;
+  color: var(--pcs-neutral-900);
   background: #fff;
   outline: none;
   cursor: pointer;
@@ -35,7 +35,7 @@
 
 .dateInput:focus,
 .select:focus {
-  border-color: #2563EB;
+  border-color: var(--pcs-brand-primary);
 }
 
 .dateInput { min-width: 150px; }
@@ -45,8 +45,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #F9FAFB;
-  border: 1.5px solid #E5E7EB;
+  background: var(--pcs-neutral-50);
+  border: 1.5px solid var(--pcs-neutral-200);
   border-radius: 10px;
   padding: 0 12px;
   height: 48px;
@@ -57,7 +57,7 @@
 }
 
 .searchBox:focus-within {
-  border-color: #2563EB;
+  border-color: var(--pcs-brand-primary);
   background: #fff;
 }
 
@@ -66,28 +66,28 @@
   outline: none;
   background: transparent;
   font-size: 14px;
-  color: #111827;
+  color: var(--pcs-neutral-900);
   flex: 1;
   min-width: 0;
 }
 
-.searchBox input::placeholder { color: #9CA3AF; }
+.searchBox input::placeholder { color: var(--pcs-neutral-400); }
 
 .clearBtn {
   background: none;
   border: none;
-  color: #9CA3AF;
+  color: var(--pcs-neutral-400);
   cursor: pointer;
   font-size: 18px;
   line-height: 1;
   padding: 0 2px;
 }
 
-.clearBtn:hover { color: #374151; }
+.clearBtn:hover { color: var(--pcs-neutral-600); }
 
 .countBadge {
-  background: #EFF6FF;
-  color: #2563EB;
+  background: var(--pcs-brand-primary-light);
+  color: var(--pcs-brand-primary);
   border-radius: 20px;
   padding: 6px 14px;
   font-size: 13px;

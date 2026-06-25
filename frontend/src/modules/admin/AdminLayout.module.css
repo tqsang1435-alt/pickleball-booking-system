@@ -6,13 +6,13 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: 260px 1fr;
-  background: #f8f9fa; /* Google Page Background */
+  background: var(--pcs-neutral-50);
   font-family: inherit;
 }
 
 .sidebar {
   background: #ffffff;
-  border-right: 1px solid #dadce0; /* Google Border */
+  border-right: 1px solid var(--pcs-neutral-200);
   padding: 32px 16px 24px;
   position: sticky;
   top: 0;
@@ -26,7 +26,7 @@
 .logo {
   font-size: 20px;
   font-weight: 700;
-  color: #1e1b4b; /* Tím đậm */
+  color: var(--pcs-neutral-900);
   margin-bottom: 28px;
   display: flex;
   align-items: center;
@@ -36,7 +36,7 @@
 }
 
 .logoIcon {
-  color: #7c5cfc; /* Tím màu nhấn */
+  color: var(--pcs-brand-primary);
 }
 
 .nav {
@@ -48,9 +48,9 @@
 
 .nav a {
   text-decoration: none;
-  color: #5f6368; /* Google Muted Text */
+  color: var(--pcs-neutral-600);
   padding: 10px 16px;
-  border-radius: 20px; /* Google capsule list item style */
+  border-radius: 20px;
   font-weight: 500;
   font-size: 14.5px;
   display: flex;
@@ -60,32 +60,32 @@
 }
 
 .nav a svg {
-  color: #5f6368;
+  color: var(--pcs-neutral-600);
   transition: color 0.15s ease;
 }
 
 .nav a:hover {
-  background: #f1f3f4; /* Google hover color */
-  color: #202124;
+  background: var(--pcs-neutral-100);
+  color: var(--pcs-neutral-900);
 }
 
 .nav a:hover svg {
-  color: #202124;
+  color: var(--pcs-neutral-900);
 }
 
 .nav a.active {
-  background: #f1ecff; /* Nền tím nhạt */
-  color: #7c5cfc; /* Chữ tím */
+  background: var(--pcs-brand-primary-light);
+  color: var(--pcs-brand-primary);
   font-weight: 600;
 }
 
 .nav a.active svg {
-  color: #7c5cfc;
+  color: var(--pcs-brand-primary);
 }
 
 .main {
   padding: 40px;
-  background: #f8f9fa; /* Matches page */
+  background: var(--pcs-neutral-50);
   overflow-y: auto;
 }
 
@@ -95,7 +95,7 @@
   gap: 12px;
   margin-top: 24px;
   padding-top: 20px;
-  border-top: 1px solid #dadce0;
+  border-top: 1px solid var(--pcs-neutral-200);
   padding-left: 8px;
   padding-right: 8px;
 }
@@ -104,7 +104,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: #7c5cfc; /* Tím màu nhấn */
+  background: var(--pcs-brand-primary);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -123,7 +123,7 @@
 
 .userName {
   font-weight: 600;
-  color: #202124;
+  color: var(--pcs-neutral-900);
   font-size: 13.5px;
   white-space: nowrap;
   overflow: hidden;
@@ -133,7 +133,7 @@
 
 .userEmail {
   font-size: 12px;
-  color: #5f6368;
+  color: var(--pcs-neutral-600);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -142,7 +142,7 @@
 .logoutBtn {
   background: transparent;
   border: none;
-  color: #5f6368;
+  color: var(--pcs-neutral-600);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -153,6 +153,6 @@
 }
 
 .logoutBtn:hover {
-  background: #fce8e6;
-  color: #d93025; /* Google Red */
+  background: var(--pcs-status-error-bg);
+  color: var(--pcs-status-error);
 }

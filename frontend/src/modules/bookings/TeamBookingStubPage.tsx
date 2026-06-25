@@ -11,16 +11,6 @@ import styles from "./TeamBookingStubPage.module.css";
 /**
  * UC-36: Team Booking Page
  * Frontend stub cho luồng đặt sân sau khi ghép nhóm.
- *
- * Flow đầy đủ khi PlayGroups module hoàn thiện:
- * 1. Player Matching → Nhóm được ghép → Status = 'Matched'
- * 2. Leader của nhóm vào trang này (URL: /bookings/team?groupId=xxx)
- * 3. Chọn sân + ngày + giờ → xác nhận → thanh toán
- *
- * TODO: Khi PlayerMatching module implement:
- * - Fetch group info từ /api/player-matching/groups/:groupId
- * - Hiển thị danh sách thành viên nhóm
- * - Validate leader role trước khi cho phép đặt
  */
 
 export default function TeamBookingStubPage() {
@@ -48,7 +38,7 @@ export default function TeamBookingStubPage() {
     groupId ? "form" : "info"
   );
 
-  // Selected slots state
+  // Selected slots state (Khôi phục logic multi-slot)
   const [selectedSlots, setSelectedSlots] = useState<{
     courtId: number;
     slotId: number;
@@ -80,7 +70,6 @@ export default function TeamBookingStubPage() {
   const [loadingCourts, setLoadingCourts] = useState(false);
   const [courtsError, setCourtsError] = useState("");
 
-  // Minimum date = today
   const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" });
 
   useEffect(() => {
@@ -94,7 +83,7 @@ export default function TeamBookingStubPage() {
       setCourtsError("");
       setSelectedSlots([]); // Reset selection when date changes
       try {
-        const data = await getAvailableCourts(bookingDate); // time filters are now optional and omitted
+        const data = await getAvailableCourts(bookingDate); // time filters omitted
         setCourtsData(data || []);
       } catch (err: any) {
         console.error(err);
@@ -250,7 +239,7 @@ export default function TeamBookingStubPage() {
     }
   }
 
-  // ===== Step: INFO (chưa có groupId hoặc module chưa sẵn sàng) =====
+  // ===== Step: INFO =====
   if (step === "info" && !groupId) {
     return (
       <div className={styles.page}>
@@ -264,26 +253,26 @@ export default function TeamBookingStubPage() {
           <div className={styles.flowDiagram}>
             <div className={`${styles.flowStep} ${styles.flowDone}`}>
               <div className={styles.flowIcon}>✅</div>
-              <div className={styles.flowLabel}>Đăng ký hồ sơ chơi</div>
-              <div className={styles.flowNote}>BR-94: Hồ sơ đầy đủ</div>
+              <div className={styles.flowLabel}>Đăng ký hồ sơ</div>
+              <div className={styles.flowNote}>BR-94</div>
             </div>
             <div className={styles.flowArrow}>→</div>
             <div className={`${styles.flowStep} ${styles.flowPending}`}>
               <div className={styles.flowIcon}>🤖</div>
               <div className={styles.flowLabel}>AI ghép nhóm</div>
-              <div className={styles.flowNote}>BR-93: Dựa trên trình độ, vị trí, lịch rảnh</div>
+              <div className={styles.flowNote}>BR-93</div>
             </div>
             <div className={styles.flowArrow}>→</div>
             <div className={`${styles.flowStep} ${styles.flowPending}`}>
               <div className={styles.flowIcon}>👥</div>
-              <div className={styles.flowLabel}>Xác nhận nhóm</div>
-              <div className={styles.flowNote}>BR-91: Tối đa 4 người/nhóm</div>
+              <div className={styles.flowLabel}>Xác nhận</div>
+              <div className={styles.flowNote}>BR-91</div>
             </div>
             <div className={styles.flowArrow}>→</div>
             <div className={`${styles.flowStep} ${styles.flowCurrent}`}>
               <div className={styles.flowIcon}>🏟️</div>
               <div className={styles.flowLabel}>Đặt sân nhóm</div>
-              <div className={styles.flowNote}>UC-36: Bước này</div>
+              <div className={styles.flowNote}>UC-36</div>
             </div>
           </div>
 
@@ -301,7 +290,7 @@ export default function TeamBookingStubPage() {
           <div className={styles.brList}>
             <h3>Quy định & Lưu ý khi ghép nhóm:</h3>
             <div className={styles.brItem}>
-              <span className={styles.brId}>⏱️</span>
+              <span className={styles.brId}>⏳</span>
               <span>Lời mời ghép cặp/thách đấu sẽ tự động hết hạn sau 48 giờ nếu không được phản hồi.</span>
             </div>
             <div className={styles.brItem}>
@@ -320,13 +309,10 @@ export default function TeamBookingStubPage() {
 
           <div className={styles.actions}>
             <button className={styles.btnBack} onClick={() => router.push("/courts")}>
-              🏟️ Đặt sân thường
+              Đặt sân thường
             </button>
-            <button className={styles.btnDemo} onClick={() => {
-              // Demo với groupId giả cho testing
-              setStep("form");
-            }}>
-              🧪 Demo form đặt nhóm
+            <button className={styles.btnDemo} onClick={() => setStep("form")}>
+              Demo form đặt nhóm
             </button>
           </div>
         </div>
@@ -385,18 +371,16 @@ export default function TeamBookingStubPage() {
             <div className={styles.formGroup}>
               <label>Danh sách sân khả dụng</label>
               {loadingCourts ? (
-                <div style={{ color: "#22c55e", fontSize: "0.875rem", padding: "0.5rem 0" }}>
+                <div className={styles.statusMessage}>
                   ⏳ Đang tải danh sách sân khả dụng...
                 </div>
               ) : courtsError ? (
-                <div style={{ color: "#ef4444", fontSize: "0.875rem", padding: "0.5rem 0" }}>
+                <div className={`${styles.statusMessage} ${styles.statusError}`}>
                   ⚠️ {courtsError}
                 </div>
               ) : groupedCourts.length === 0 ? (
-                <div className={styles.emptyState}>
-                  <div className={styles.emptyStateIcon}>🏜️</div>
-                  <div>Không có sân trống trong ngày đã chọn.</div>
-                  <div style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}>Vui lòng chọn ngày khác.</div>
+                <div className={`${styles.statusMessage} ${styles.statusError}`}>
+                  Không có sân trống trong ngày đã chọn. Vui lòng chọn ngày khác.
                 </div>
               ) : (
                 <div className={styles.courtGrid}>
@@ -405,10 +389,10 @@ export default function TeamBookingStubPage() {
                       <div className={styles.courtCardHeader}>
                         <div className={styles.courtName}>
                           {court.CourtName}
-                          {court.CourtCode && <span style={{ color: "#9ca3af", fontWeight: "normal", fontSize: "1rem" }}>[{court.CourtCode}]</span>}
+                          {court.CourtCode && <span className={styles.courtCode}>[{court.CourtCode}]</span>}
                         </div>
                         <div className={styles.courtLocation}>
-                          📍 {court.Location || "Chưa rõ vị trí"}
+                          {court.Location || "Chưa rõ vị trí"}
                         </div>
                       </div>
                       <div className={styles.slotGrid}>
@@ -417,7 +401,7 @@ export default function TeamBookingStubPage() {
                           return (
                             <div
                               key={slot.SlotID}
-                              className={`${styles.slotBadge} ${isSelected ? styles.selected : ""}`}
+                              className={`${styles.slotBadge} ${isSelected ? styles.slotBadgeSelected : ""}`}
                               onClick={() => handleSlotClick(slot, court.CourtName)}
                             >
                               <div className={styles.slotTime}>{slot.StartTime} - {slot.EndTime}</div>
@@ -439,8 +423,17 @@ export default function TeamBookingStubPage() {
               const durationText = durationMinutes % 60 === 0 ? `${durationMinutes / 60} giờ` : `${durationMinutes} phút`;
 
               return (
-                <div className={styles.selectedInfo}>
-                  ✅ Đã chọn sân <strong>{sortedSelectedSlots[0].courtName}</strong> lúc <strong>{sortedSelectedSlots[0].startTime} - {sortedSelectedSlots[sortedSelectedSlots.length - 1].endTime}</strong> (Thời lượng: {durationText}) - <strong>{formatCurrency(sortedSelectedSlots.reduce((sum, s) => sum + s.price, 0))}</strong>
+                <div className={styles.summaryBox}>
+                  <div className={styles.summaryTitle}>Xác nhận thông tin</div>
+                  <div className={styles.summaryDetail}>
+                    Sân: <strong>{sortedSelectedSlots[0].courtName}</strong>
+                  </div>
+                  <div className={styles.summaryDetail}>
+                    Thời gian: <strong>{sortedSelectedSlots[0].startTime} - {sortedSelectedSlots[sortedSelectedSlots.length - 1].endTime}</strong> ({durationText})
+                  </div>
+                  <div className={styles.summaryDetail}>
+                    Tổng tiền: <strong>{formatCurrency(sortedSelectedSlots.reduce((sum, s) => sum + s.price, 0))}</strong>
+                  </div>
                 </div>
               );
             })()}
@@ -448,9 +441,8 @@ export default function TeamBookingStubPage() {
             {errorMsg && <div className={styles.errorBox}>{errorMsg}</div>}
 
             <div className={styles.rules}>
-              <div className={styles.ruleItem}>⏱️ Hệ thống sẽ giữ sân trong 10 phút sau khi xác nhận.</div>
-              <div className={styles.ruleItem}>🔒 Lịch đặt được kiểm tra tự động để tránh trùng sân.</div>
-              <div className={styles.ruleItem}>📋 Vui lòng hoàn tất thanh toán trong thời gian quy định.</div>
+              <div className={styles.ruleItem}>Hệ thống sẽ giữ sân trong 10 phút sau khi xác nhận.</div>
+              <div className={styles.ruleItem}>Lịch đặt được kiểm tra tự động để tránh trùng sân.</div>
             </div>
 
             <button

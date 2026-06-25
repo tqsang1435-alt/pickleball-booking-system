@@ -79,7 +79,7 @@ export default function AdminCreatePromotionPage() {
       <div className={styles.header}>
         <div>
           <div className={styles.breadcrumb}>
-            <Link href="/admin/promotions" style={{ textDecoration: 'none', color: 'inherit' }}>Khuyến mãi</Link> / <span style={{color: '#6b7280', fontWeight: 'normal'}}>Voucher</span> / <span>Tạo mới</span>
+            <Link href="/admin/promotions" style={{ textDecoration: 'none', color: 'inherit' }}>Khuyến mãi</Link> / <span style={{color: 'var(--pcs-neutral-500)', fontWeight: 'normal'}}>Voucher</span> / <span>Tạo mới</span>
           </div>
           <h1 className={styles.title}>Tạo Voucher mới</h1>
           <p className={styles.subtitle}>Tạo và cấu hình voucher khuyến mãi cho hệ thống</p>
@@ -126,7 +126,7 @@ export default function AdminCreatePromotionPage() {
                     onChange={e => setFormData({ ...formData, promotionCode: e.target.value.toUpperCase() })} 
                     placeholder="VD: SUMMER10" 
                   />
-                  <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>Mã phải viết hoa, không dấu, không khoảng cách</p>
+                  <p style={{ fontSize: "12px", color: "var(--pcs-neutral-500)", marginTop: "4px" }}>Mã phải viết hoa, không dấu, không khoảng cách</p>
                 </div>
                 
                 <div className={styles.formGroup}>
@@ -152,7 +152,7 @@ export default function AdminCreatePromotionPage() {
                     onChange={e => setFormData({ ...formData, description: e.target.value })} 
                     placeholder="Nhập mô tả voucher (không bắt buộc)" 
                   />
-                  <p style={{ fontSize: "12px", color: "#9ca3af", textAlign: "right", marginTop: "4px" }}>
+                  <p style={{ fontSize: "12px", color: "var(--pcs-neutral-400)", textAlign: "right", marginTop: "4px" }}>
                     {(formData.description || "").length}/200
                   </p>
                 </div>
@@ -167,9 +167,9 @@ export default function AdminCreatePromotionPage() {
                         checked={formData.status === "Active"} 
                         onChange={() => setFormData({ ...formData, status: "Active" })} 
                       />
-                      <FiCheckCircle style={{ color: "#10b981", fontSize: "18px" }} />
-                      <span style={{ color: formData.status === "Active" ? "#10b981" : "inherit" }}>Đang hoạt động</span>
-                      {formData.status === "Active" && <FiCheckCircle style={{ marginLeft: "auto", color: "#10b981" }} />}
+                      <FiCheckCircle style={{ color: "var(--pcs-status-success)", fontSize: "18px" }} />
+                      <span style={{ color: formData.status === "Active" ? "var(--pcs-status-success)" : "inherit" }}>Đang hoạt động</span>
+                      {formData.status === "Active" && <FiCheckCircle style={{ marginLeft: "auto", color: "var(--pcs-status-success)" }} />}
                     </label>
                     <label className={`${styles.radioCard} ${formData.status === "Inactive" ? styles.active : ""}`}>
                       <input 
@@ -178,7 +178,7 @@ export default function AdminCreatePromotionPage() {
                         checked={formData.status === "Inactive"} 
                         onChange={() => setFormData({ ...formData, status: "Inactive" })} 
                       />
-                      <FiLock style={{ color: "#6b7280", fontSize: "18px" }} />
+                      <FiLock style={{ color: "var(--pcs-neutral-500)", fontSize: "18px" }} />
                       Tạm khóa
                     </label>
                   </div>
@@ -200,15 +200,15 @@ export default function AdminCreatePromotionPage() {
                     <label className={`${styles.radioCard} ${formData.discountType === "Percent" ? styles.active : ""}`} style={{ padding: "8px 12px" }}>
                       <input type="radio" checked={formData.discountType === "Percent"} onChange={() => setFormData({ ...formData, discountType: "Percent" })} />
                       <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                        <FiPercent style={{ fontSize: "16px", color: formData.discountType === "Percent" ? "#6d28d9" : "#6b7280" }} />
-                        <span style={{ fontSize: "11px", color: formData.discountType === "Percent" ? "#6d28d9" : "#6b7280", fontWeight: 500 }}>Phần trăm</span>
+                        <FiPercent style={{ fontSize: "16px", color: formData.discountType === "Percent" ? "var(--pcs-brand-primary)" : "var(--pcs-neutral-500)" }} />
+                        <span style={{ fontSize: "11px", color: formData.discountType === "Percent" ? "var(--pcs-brand-primary)" : "var(--pcs-neutral-500)", fontWeight: 500 }}>Phần trăm</span>
                       </div>
                     </label>
                     <label className={`${styles.radioCard} ${formData.discountType === "Fixed" ? styles.active : ""}`} style={{ padding: "8px 12px" }}>
                       <input type="radio" checked={formData.discountType === "Fixed"} onChange={() => setFormData({ ...formData, discountType: "Fixed" })} />
                       <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                        <span style={{ fontSize: "14px", fontWeight: "bold", color: formData.discountType === "Fixed" ? "#6d28d9" : "#6b7280" }}>₫</span>
-                        <span style={{ fontSize: "11px", color: formData.discountType === "Fixed" ? "#6d28d9" : "#6b7280", fontWeight: 500 }}>Số tiền VNĐ</span>
+                        <span style={{ fontSize: "14px", fontWeight: "bold", color: formData.discountType === "Fixed" ? "var(--pcs-brand-primary)" : "var(--pcs-neutral-500)" }}>₫</span>
+                        <span style={{ fontSize: "11px", color: formData.discountType === "Fixed" ? "var(--pcs-brand-primary)" : "var(--pcs-neutral-500)", fontWeight: 500 }}>Số tiền VNĐ</span>
                       </div>
                     </label>
                   </div>
@@ -226,7 +226,7 @@ export default function AdminCreatePromotionPage() {
                       onChange={e => setFormData({ ...formData, discountValue: Number(e.target.value) })} 
                       placeholder="VD: 10" 
                     />
-                    <span style={{ position: "absolute", right: "12px", top: "10px", color: "#9ca3af", fontSize: "14px", fontWeight: 600 }}>
+                    <span style={{ position: "absolute", right: "12px", top: "10px", color: "var(--pcs-neutral-400)", fontSize: "14px", fontWeight: 600 }}>
                       {formData.discountType === "Percent" ? "%" : "đ"}
                     </span>
                   </div>
@@ -243,9 +243,9 @@ export default function AdminCreatePromotionPage() {
                       onChange={e => setFormData({ ...formData, maxDiscountAmount: e.target.value ? Number(e.target.value) : null })} 
                       placeholder="VD: 50.000" 
                       disabled={formData.discountType === "Fixed"}
-                      style={formData.discountType === "Fixed" ? { backgroundColor: "#f9fafb", cursor: "not-allowed" } : {}}
+                      style={formData.discountType === "Fixed" ? { backgroundColor: "var(--pcs-neutral-100)", cursor: "not-allowed" } : {}}
                     />
-                    <span style={{ position: "absolute", right: "12px", top: "10px", color: "#9ca3af", fontSize: "14px", fontWeight: 600 }}>đ</span>
+                    <span style={{ position: "absolute", right: "12px", top: "10px", color: "var(--pcs-neutral-400)", fontSize: "14px", fontWeight: 600 }}>đ</span>
                   </div>
                 </div>
               </div>
@@ -262,7 +262,7 @@ export default function AdminCreatePromotionPage() {
                       onChange={e => setFormData({ ...formData, minBookingAmount: Number(e.target.value) })} 
                       placeholder="VD: 200.000" 
                     />
-                    <span style={{ position: "absolute", right: "12px", top: "10px", color: "#9ca3af", fontSize: "14px", fontWeight: 600 }}>đ</span>
+                    <span style={{ position: "absolute", right: "12px", top: "10px", color: "var(--pcs-neutral-400)", fontSize: "14px", fontWeight: 600 }}>đ</span>
                   </div>
                 </div>
 
@@ -276,7 +276,7 @@ export default function AdminCreatePromotionPage() {
                     onChange={e => setFormData({ ...formData, usageLimit: e.target.value ? Number(e.target.value) : null })} 
                     placeholder="VD: 100" 
                   />
-                  <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>Tổng số lượt sử dụng</p>
+                  <p style={{ fontSize: "12px", color: "var(--pcs-neutral-500)", marginTop: "4px" }}>Tổng số lượt sử dụng</p>
                 </div>
 
                 <div className={styles.formGroup}>
@@ -290,7 +290,7 @@ export default function AdminCreatePromotionPage() {
                     onChange={e => setFormData({ ...formData, perUserLimit: Number(e.target.value) })} 
                     placeholder="VD: 1" 
                   />
-                  <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>Số lượt sử dụng tối đa/người</p>
+                  <p style={{ fontSize: "12px", color: "var(--pcs-neutral-500)", marginTop: "4px" }}>Số lượt sử dụng tối đa/người</p>
                 </div>
               </div>
             </div>
@@ -307,18 +307,18 @@ export default function AdminCreatePromotionPage() {
                 <div className={styles.radioGroup}>
                   <label className={`${styles.radioCard} ${formData.applyScope === "Public" ? styles.active : ""}`}>
                     <input type="radio" checked={formData.applyScope === "Public"} onChange={() => setFormData({ ...formData, applyScope: "Public" })} />
-                    <FiGlobe style={{ fontSize: "18px", color: formData.applyScope === "Public" ? "#6d28d9" : "#6b7280" }} />
+                    <FiGlobe style={{ fontSize: "18px", color: formData.applyScope === "Public" ? "var(--pcs-brand-primary)" : "var(--pcs-neutral-500)" }} />
                     <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                       <span style={{ fontSize: "13px", fontWeight: 600 }}>Public</span>
-                      <span style={{ fontSize: "11px", color: formData.applyScope === "Public" ? "#8b5cf6" : "#6b7280" }}>Tất cả người dùng</span>
+                      <span style={{ fontSize: "11px", color: formData.applyScope === "Public" ? "var(--pcs-brand-primary)" : "var(--pcs-neutral-500)" }}>Tất cả người dùng</span>
                     </div>
                   </label>
                   <label className={`${styles.radioCard} ${formData.applyScope === "Private" ? styles.active : ""}`}>
                     <input type="radio" checked={formData.applyScope === "Private"} onChange={() => setFormData({ ...formData, applyScope: "Private" })} />
-                    <FiUser style={{ fontSize: "18px", color: formData.applyScope === "Private" ? "#6d28d9" : "#6b7280" }} />
+                    <FiUser style={{ fontSize: "18px", color: formData.applyScope === "Private" ? "var(--pcs-brand-primary)" : "var(--pcs-neutral-500)" }} />
                     <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                       <span style={{ fontSize: "13px", fontWeight: 600 }}>Người dùng cụ thể</span>
-                      <span style={{ fontSize: "11px", color: formData.applyScope === "Private" ? "#8b5cf6" : "#6b7280" }}>Chọn người dùng</span>
+                      <span style={{ fontSize: "11px", color: formData.applyScope === "Private" ? "var(--pcs-brand-primary)" : "var(--pcs-neutral-500)" }}>Chọn người dùng</span>
                     </div>
                   </label>
                 </div>
@@ -348,8 +348,8 @@ export default function AdminCreatePromotionPage() {
               </div>
 
               {formData.applyScope === "Private" && (
-                <div style={{ marginTop: "20px", borderTop: "1px dashed #e5e7eb", paddingTop: "20px" }}>
-                  <label style={{ fontSize: "13px", fontWeight: 600, display: "block", marginBottom: "12px", color: "#374151" }}>Người dùng được áp dụng</label>
+                <div style={{ marginTop: "20px", borderTop: "1px dashed var(--pcs-neutral-200)", paddingTop: "20px" }}>
+                  <label style={{ fontSize: "13px", fontWeight: 600, display: "block", marginBottom: "12px", color: "var(--pcs-neutral-800)" }}>Người dùng được áp dụng</label>
                   <UserSelectorForVoucher
                     token={getToken()!}
                     selectedUsers={selectedUsers}
@@ -367,7 +367,7 @@ export default function AdminCreatePromotionPage() {
         <div style={{ position: "sticky", top: "24px" }}>
           <div className={styles.previewSection}>
             <div className={styles.previewHeader}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{color: '#4b5563'}}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{color: 'var(--pcs-neutral-700)'}}>
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
               </svg>

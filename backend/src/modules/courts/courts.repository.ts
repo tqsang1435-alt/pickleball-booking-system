@@ -1,9 +1,9 @@
 import { getPool, sql } from "@/database/connection";
 
-export async function findAllCourts() {
+export async function findAllCourts(includeInactive = false) {
   const pool = await getPool();
 
-  const result = await pool.request().query(`
+  let query = `
     SELECT
       CourtID,
       CourtCode,
@@ -19,9 +19,15 @@ export async function findAllCourts() {
       CreatedAt,
       UpdatedAt
     FROM Courts
-    WHERE Status <> 'Inactive'
-    ORDER BY CourtID ASC
-  `);
+  `;
+
+  if (!includeInactive) {
+    query += ` WHERE Status <> 'Inactive'`;
+  }
+
+  query += ` ORDER BY CourtID ASC`;
+
+  const result = await pool.request().query(query);
 
   return result.recordset;
 }
@@ -56,8 +62,8 @@ export async function findCourtById(courtId: number) {
 
 export async function findAvailableCourts(
   bookingDate: string,
-  startTime: string,
-  endTime: string
+  startTime?: string,
+  endTime?: string
 ) {
   const pool = await getPool();
 
@@ -359,7 +365,6 @@ export async function updateCourtSlotPrice(slotId: number, price: number) {
   return result.recordset[0] ?? null;
 }
 
-
 /**
  * @deprecated Không dùng trực tiếp — sử dụng softDeleteCourtSlot để tránh lỗi foreign key
  */
@@ -469,4 +474,3 @@ export async function createCourtSlotsMany(
   }
   return created;
 }
-

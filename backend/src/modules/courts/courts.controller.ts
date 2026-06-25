@@ -5,9 +5,19 @@ import { handleError } from "@/middlewares/error";
 import { requireAuth } from "@/middlewares/auth.middleware";
 import { requireRoles } from "@/middlewares/role.middleware";
 
-export async function getAllCourtsController() {
+export async function getAllCourtsController(req: NextRequest) {
   try {
-    const result = await courtService.getAllCourts();
+    const { searchParams } = new URL(req.url);
+    const includeInactive = searchParams.get("includeInactive") === "true";
+
+    if (includeInactive) {
+      const user = requireAuth(req);
+      if (user instanceof Response) return user;
+      const forbidden = requireRoles(user, ["Admin", "Manager", "Staff"]);
+      if (forbidden) return forbidden;
+    }
+
+    const result = await courtService.getAllCourts(includeInactive);
 
     return successResponse(result, "Get courts successfully");
   } catch (error) {
@@ -351,4 +361,4 @@ export async function generateCourtSlotsController(req: NextRequest) {
   } catch (error) {
     return handleError(error);
   }
-}
+}

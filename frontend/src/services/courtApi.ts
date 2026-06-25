@@ -2,8 +2,10 @@ import { apiClient } from "@/services/apiClient";
 import type { ApiResponse } from "@/types/api";
 import type { Court } from "@/types/court";
 
-export async function getCourts(): Promise<Court[]> {
-  const response = await apiClient<ApiResponse<Court[]>>("/api/courts");
+export async function getCourts(includeInactive = false, token?: string): Promise<Court[]> {
+  const url = includeInactive ? "/api/courts?includeInactive=true" : "/api/courts";
+  const options = token ? { token } : undefined;
+  const response = await apiClient<ApiResponse<Court[]>>(url, options);
   return response.data;
 }
 
@@ -120,10 +122,9 @@ export async function getAvailableCourts(
   startTime?: string,
   endTime?: string
 ): Promise<any[]> {
-  const st = startTime || "";
-  const et = endTime || "";
-  const response = await apiClient<ApiResponse<any[]>>(
-    `/api/courts/available?bookingDate=${bookingDate}&startTime=${st}&endTime=${et}`
-  );
+  let url = `/api/courts/available?bookingDate=${bookingDate}`;
+  if (startTime) url += `&startTime=${startTime}`;
+  if (endTime) url += `&endTime=${endTime}`;
+  const response = await apiClient<ApiResponse<any[]>>(url);
   return response.data;
 }

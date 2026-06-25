@@ -21,9 +21,9 @@
   to { transform: translateY(0); opacity: 1; }
 }
 
-.success { background: #166534; color: #fff; }
-.error { background: #991b1b; color: #fff; }
-.warning { background: #854d0e; color: #fff; }
+.success { background: var(--pcs-status-success); color: #fff; }
+.error { background: var(--pcs-status-error); color: #fff; }
+.warning { background: var(--pcs-status-warning); color: #fff; }
 
 .message { flex: 1; }
 

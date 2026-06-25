@@ -65,7 +65,7 @@ function ActionMenu({
             right: 0,
             top: "calc(100% + 4px)",
             background: "white",
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--pcs-neutral-200)",
             borderRadius: "8px",
             boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
             zIndex: 50,
@@ -87,10 +87,10 @@ function ActionMenu({
               border: "none",
               cursor: "pointer",
               fontSize: "14px",
-              color: promo.Status === "Active" ? "#dc2626" : "#16a34a",
+              color: promo.Status === "Active" ? "var(--pcs-status-error)" : "var(--pcs-status-success)",
             }}
             onMouseEnter={(e) =>
-              ((e.currentTarget as HTMLElement).style.background = "#f9fafb")
+              ((e.currentTarget as HTMLElement).style.background = "var(--pcs-neutral-100)")
             }
             onMouseLeave={(e) =>
               ((e.currentTarget as HTMLElement).style.background = "none")
@@ -297,9 +297,9 @@ export default function AdminPromotionsPage() {
             borderRadius: "12px",
             padding: "48px",
             textAlign: "center",
-            color: "#6b7280",
+            color: "var(--pcs-neutral-500)",
             boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
-            border: "1px solid #f3f4f6",
+            border: "1px solid var(--pcs-neutral-100)",
           }}
         >
           <div style={{ fontSize: "2rem", marginBottom: "12px" }}>⏳</div>
@@ -346,7 +346,7 @@ export default function AdminPromotionsPage() {
                       <Link href={`/admin/promotions/${p.PromotionID}`} className={styles.btnText}>
                         Chi tiết
                       </Link>
-                      <Link href={`/admin/promotions/${p.PromotionID}/edit`} className={styles.btnText} style={{ color: "#0284c7" }}>
+                      <Link href={`/admin/promotions/${p.PromotionID}/edit`} className={styles.btnText} style={{ color: "var(--pcs-status-info)" }}>
                         Sửa
                       </Link>
                       <ActionMenu promo={p} onToggle={handleToggleStatus} />
@@ -407,7 +407,7 @@ export default function AdminPromotionsPage() {
                           display: "flex",
                           alignItems: "center",
                           padding: "0 4px",
-                          color: "#9ca3af",
+                          color: "var(--pcs-neutral-400)",
                         }}
                       >
                         …
