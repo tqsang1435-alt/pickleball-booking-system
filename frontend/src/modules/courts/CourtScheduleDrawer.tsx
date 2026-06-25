@@ -210,6 +210,7 @@ export function CourtScheduleDrawer({
           courtName={court.CourtName}
           slot={bookingSlot}
           bookingDate={date}
+          courtType={court.CourtType}
           onClose={() => setBookingSlot(null)}
           onSuccess={() => {
             setBookingSlot(null);

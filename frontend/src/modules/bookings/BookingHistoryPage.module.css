@@ -4,7 +4,7 @@
   min-height: 100vh;
   padding: var(--pcs-spacing-xl) 0;
   background: var(--pcs-neutral-50);
-  font-family: "Inter", "Segoe UI", sans-serif;
+  font-family: inherit;
   color: var(--pcs-neutral-900);
 }
 

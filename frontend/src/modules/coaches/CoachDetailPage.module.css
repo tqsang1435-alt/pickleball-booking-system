@@ -3,7 +3,7 @@
 .page {
   min-height: 100vh;
   background-color: var(--pcs-neutral-50);
-  font-family: "Inter", sans-serif;
+  font-family: inherit;
   padding: 0 0 60px;
 }
 

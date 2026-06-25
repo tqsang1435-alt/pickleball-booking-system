@@ -198,7 +198,7 @@
   top: -8px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--pcs-brand-primary), var(--pcs-brand-primary));
+  background: var(--pcs-brand-primary);
   color: #fff;
   font-size: 10px;
   font-weight: 700;
@@ -281,12 +281,12 @@
   flex: 2;
   padding: 13px;
   border-radius: 12px;
-  background: var(--pcs-brand-primary), var(--pcs-brand-primary));
+  background: var(--pcs-brand-primary);
   color: #fff;
   font-size: 14px;
   font-weight: 700;
   transition: all 0.18s;
-  box-shadow: 0 4px 12px rgba(111, 189, 0, 0.35);
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -294,9 +294,9 @@
 }
 
 .btnPay:hover:not(:disabled) {
-  background: var(--pcs-brand-primary), #7dce0f);
+  background: var(--pcs-brand-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(111, 189, 0, 0.4);
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.35);
 }
 
 .btnPay:disabled {

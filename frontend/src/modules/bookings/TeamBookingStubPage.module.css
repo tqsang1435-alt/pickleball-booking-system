@@ -5,7 +5,7 @@
   align-items: flex-start;
   justify-content: center;
   padding: var(--pcs-spacing-xl) var(--pcs-spacing-md);
-  font-family: "Inter", "Segoe UI", sans-serif;
+  font-family: inherit;
   color: var(--pcs-neutral-900);
 }
 

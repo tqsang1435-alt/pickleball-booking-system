@@ -47,19 +47,19 @@
 
 /* ── Color variants (gradient backgrounds matching the screenshot) ── */
 .blue {
-  background: var(--pcs-brand-primary-light) 0%, var(--pcs-brand-primary-light) 100%);
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
 }
 
 .teal {
-  background: var(--pcs-brand-primary-light) 0%, var(--pcs-brand-primary-light) 100%);
+  background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
 }
 
 .purple {
-  background: var(--pcs-brand-primary-light) 100%);
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
 }
 
 .green {
-  background: var(--pcs-brand-primary-light) 0%, var(--pcs-status-success-bg) 100%);
+  background: linear-gradient(135deg, var(--pcs-brand-primary-light) 0%, var(--pcs-brand-primary-border) 100%);
 }
 
 /* ── Icon wrapper ── */

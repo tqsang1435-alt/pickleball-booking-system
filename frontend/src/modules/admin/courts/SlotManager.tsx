@@ -165,6 +165,14 @@ export default function SlotManager({ court, token, onClose }: Props) {
         try {
           setActioningId(slotId);
           await updateSlotStatus(token, slotId, newStatus);
+          
+          const successMessage = {
+            Available: "Đã mở thành công",
+            Blocked: "Đã khóa thành công",
+            Maintenance: "Đã chuyển sang bảo trì thành công"
+          }[newStatus] || "Cập nhật thành công";
+          showToast(successMessage);
+          
           await loadSlots(true);
           resetCountdown();
         } catch (err: any) {
@@ -188,6 +196,7 @@ export default function SlotManager({ court, token, onClose }: Props) {
         try {
           setActioningId(slotId);
           await deleteSlot(token, slotId);
+          showToast("Đã xóa slot thành công");
           await loadSlots(true);
           resetCountdown();
         } catch (err: any) {
@@ -259,6 +268,15 @@ export default function SlotManager({ court, token, onClose }: Props) {
               updateSlotStatus(token, id, newStatus).catch(() => null)
             )
           );
+          
+          const successMessage = {
+            Available: `Đã mở ${slotsToUpdate.length} slot thành công`,
+            Blocked: `Đã khóa ${slotsToUpdate.length} slot thành công`,
+            Maintenance: `Đã chuyển ${slotsToUpdate.length} slot sang bảo trì thành công`
+          }[newStatus] || "Cập nhật thành công";
+          showToast(successMessage);
+          
+          setSelectedIds(new Set());
           await loadSlots(true);
           resetCountdown();
         } finally {
@@ -288,6 +306,7 @@ export default function SlotManager({ court, token, onClose }: Props) {
       });
       setShowForm(false);
       setFormData({ startTime: "06:00", endTime: "07:00", price: court.PricePerHour });
+      showToast("Đã tạo slot thành công");
       await loadSlots(true);
       resetCountdown();
     } catch (err: any) {

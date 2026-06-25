@@ -480,6 +480,7 @@ export default function CourtDetailPage({ courtId }: { courtId: string }) {
           courtName={court.CourtName}
           slot={bookingSlot}
           bookingDate={date}
+          courtType={court.CourtType}
           onClose={() => setBookingSlot(null)}
           onSuccess={() => {
             setBookingSlot(null);

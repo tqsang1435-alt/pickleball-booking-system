@@ -435,3 +435,305 @@
     border-radius: var(--pcs-radius-lg);
   }
 }
+
+/* Redesigned confirm step CSS classes */
+.closeBtnTop {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  font-size: 28px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: color 0.2s;
+  line-height: 1;
+}
+.closeBtnTop:hover {
+  color: #475569;
+}
+
+.headerTitleRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  text-align: left;
+  margin-bottom: 24px;
+}
+
+.headerIconWrapper {
+  background: #f0fdf4;
+  color: #16a34a;
+  padding: 12px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.headerIconSvg {
+  width: 24px;
+  height: 24px;
+}
+
+.headerTitleArea {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.headerTitleArea h2 {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.statusBadge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #2563eb;
+  background: #eff6ff;
+  padding: 2px 8px;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+
+.headerTitleArea p {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.gridContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 520px) {
+  .gridContainer {
+    grid-template-columns: 1fr;
+  }
+}
+
+.gridBox {
+  border: 1px solid #f1f5f9;
+  background: #fafaf9;
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.boxLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 0.05em;
+}
+
+.boxContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.courtBadge {
+  background: #e0e7ff;
+  color: #3730a3;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  align-self: flex-start;
+}
+
+.courtTypeSub {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.boxContentUser {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.userAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.userName {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.userRole {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.appointmentDate {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.appointmentTime {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.boxContentPrice {
+  display: flex;
+  align-items: baseline;
+}
+
+.totalPriceVal {
+  font-size: 20px;
+  font-weight: 800;
+  color: #2563eb;
+}
+
+.holdingAlert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #fff7ed;
+  border: 1px solid #ffedd5;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-size: 12px;
+  color: #9a3412;
+  line-height: 1.5;
+}
+
+.alertIconWrapper {
+  color: #ea580c;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.policyRow {
+  margin-bottom: 20px;
+}
+
+.checkboxContainer {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: #64748b;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkboxContainer input {
+  margin-top: 3px;
+  cursor: pointer;
+  accent-color: #16a34a;
+}
+
+.policyText {
+  line-height: 1.4;
+  text-align: left;
+}
+
+.policyLink {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.policyLink:hover {
+  text-decoration: underline;
+}
+
+.validationErrorMsg {
+  color: #dc2626;
+  font-size: 12px;
+  margin-bottom: 12px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.actionsRow {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btnCancelNew {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btnCancelNew:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.btnConfirmGreen {
+  flex: 2;
+  padding: 12px;
+  border-radius: 12px;
+  background: #10b981; /* Green color theme */
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.btnConfirmGreen:hover:not(:disabled) {
+  background: #059669;
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+  transform: translateY(-1px);
+}
+
+.btnConfirmGreen:disabled {
+  background: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
