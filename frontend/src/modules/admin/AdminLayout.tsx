@@ -53,10 +53,16 @@ export default function AdminLayout({
     hideForStaff?: boolean;
     staffOnly?: boolean;
   };
+
+  type NavSection = {
+    title: string;
+    items: NavItem[];
+  };
+
   const userName = user?.FullName || user?.fullName || "Admin";
   const userEmail = user?.Email || user?.email || "admin@pickleclub.vn";
 
-  const navSections = [
+  const navSections: NavSection[] = [
     {
       title: "OVERVIEW",
       items: [
@@ -96,7 +102,7 @@ export default function AdminLayout({
     }
   ];
 
-  const staffNavSections = [
+  const staffNavSections: NavSection[] = [
     {
       title: "TỔNG QUAN",
       items: [
@@ -192,7 +198,6 @@ export default function AdminLayout({
             // Filter items based on user role
             const visibleItems = section.items.filter((item) => {
               if (item.hideForStaff && isStaff) return false;
-              // @ts-ignore
               if (item.staffOnly && !isStaff) return false;
               return true;
             });
