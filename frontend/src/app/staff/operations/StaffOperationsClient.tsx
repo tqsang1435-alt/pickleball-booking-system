@@ -19,6 +19,18 @@ export default function StaffOperationsClient() {
   const [view, setView] = useState<View>(initial);
   const effectiveView: View = searchParams?.get("view") === "detail" ? "detail" : view;
 
+  useEffect(() => {
+    const viewParam = searchParams?.get("view");
+    if (viewParam === "detail" || viewParam === "dashboard") {
+      setView(viewParam);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (newView: View) => {
+    setView(newView);
+    router.push(`/staff/operations?view=${newView}`);
+  };
+
   const [token, setToken] = useState<string | null>(null);
   const [userName, setUserName] = useState("Nhân viên");
   const [userEmail, setUserEmail] = useState("");
@@ -93,13 +105,13 @@ export default function StaffOperationsClient() {
           <div className={styles.tabs}>
             <button
               className={`${styles.tab} ${effectiveView === "dashboard" ? styles.tabActive : ""}`}
-              onClick={() => setView("dashboard")}
+              onClick={() => handleTabChange("dashboard")}
             >
               Tổng quan ca
             </button>
             <button
               className={`${styles.tab} ${effectiveView === "detail" ? styles.tabActive : ""}`}
-              onClick={() => setView("detail")}
+              onClick={() => handleTabChange("detail")}
             >
               Chi tiết & Lọc ngày
             </button>
@@ -179,7 +191,7 @@ export default function StaffOperationsClient() {
           {/* Quick Actions Blue Button */}
           <button
             className={styles.btnQuickActions}
-            onClick={() => setView(effectiveView === "dashboard" ? "detail" : "dashboard")}
+            onClick={() => handleTabChange(effectiveView === "dashboard" ? "detail" : "dashboard")}
           >
             <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
               <path d="M12 5v14M5 12h14"/>

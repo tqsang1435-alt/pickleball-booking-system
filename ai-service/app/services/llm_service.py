@@ -130,7 +130,8 @@ def pydantic_to_gemini_schema(model_class):
     schema_dict = model_class.model_json_schema()
     defs = schema_dict.get("$defs", {})
     
-    def clean_schema(node):
+    from typing import Any
+    def clean_schema(node: Any) -> Any:
         if not isinstance(node, dict):
             return node
         

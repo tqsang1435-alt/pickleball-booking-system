@@ -171,10 +171,59 @@ export default function OperationsPage() {
   // ── Summary ──
   const s = data?.summary;
 
-  // ── Time validation helpers — không giới hạn time window ──
-  function canCheckIn(_b: OperationBooking) { return true; }
-  function canNoShow(_b: OperationBooking)  { return true; }
-  function canComplete(_b: OperationBooking) { return true; }
+  // ── Time validation helpers based on Business Rules (BR-30, BR-31, BR-32) ──
+  function canCheckIn(b: OperationBooking) {
+    if (b.status !== "Confirmed" && b.status !== "Paid") return false;
+    
+    // Check-in only allowed on the day of booking
+    const today = todayVN();
+    if (b.bookingDate !== today) return false;
+    
+    if (!b.startTime) return false;
+    const [startH, startM] = b.startTime.split(":").map(Number);
+    
+    const start = nowVN();
+    start.setHours(startH, startM, 0, 0);
+    
+    const now = nowVN();
+    const earliest = new Date(start.getTime() - 30 * 60 * 1000);
+    const latest = new Date(start.getTime() + 15 * 60 * 1000);
+    
+    return now >= earliest && now <= latest;
+  }
+
+  function canNoShow(b: OperationBooking) {
+    if (b.status !== "Confirmed" && b.status !== "Paid") return false;
+    
+    // Only allowed on the day of booking
+    const today = todayVN();
+    if (b.bookingDate !== today) return false;
+    
+    if (!b.startTime) return false;
+    const [startH, startM] = b.startTime.split(":").map(Number);
+    
+    const start = nowVN();
+    start.setHours(startH, startM, 0, 0);
+    
+    const now = nowVN();
+    return now >= start;
+  }
+
+  function canComplete(b: OperationBooking) {
+    if (b.status !== "CheckedIn") return false;
+    
+    // Must end for at least 30 minutes (BR-32)
+    if (!b.endTime) return false;
+    const [endH, endM] = b.endTime.split(":").map(Number);
+    
+    const end = nowVN();
+    end.setHours(endH, endM, 0, 0);
+    
+    const now = nowVN();
+    const completionTime = new Date(end.getTime() + 30 * 60 * 1000);
+    
+    return now >= completionTime;
+  }
 
   // ── Render ──
   return (
@@ -348,16 +397,22 @@ export default function OperationsPage() {
                           <>
                             <button
                               className={styles.btnCheckIn}
-                              disabled={isActioning}
-                              title="Nhận sân"
+                              disabled={isActioning || !canCheckIn(b)}
+                              title={!canCheckIn(b) 
+                                ? "Chỉ được check-in trong khoảng [Giờ bắt đầu - 30p, Giờ bắt đầu + 15p] của ngày hôm nay." 
+                                : "Nhận sân"
+                              }
                               onClick={() => openConfirm(b, "checkin")}
                             >
                               Nhận sân
                             </button>
                             <button
                               className={styles.btnNoShow}
-                              disabled={isActioning}
-                              title="Ghi nhận vắng mặt"
+                              disabled={isActioning || !canNoShow(b)}
+                              title={!canNoShow(b) 
+                                ? "Chỉ có thể báo vắng sau khi đã đến giờ bắt đầu của ngày hôm nay." 
+                                : "Ghi nhận vắng mặt"
+                              }
                               onClick={() => openConfirm(b, "noshow")}
                             >
                               Báo vắng
@@ -367,8 +422,11 @@ export default function OperationsPage() {
                         {isCheckedIn && !isStaff && (
                           <button
                             className={styles.btnComplete}
-                            disabled={isActioning}
-                            title="Xác nhận khách đã chơi xong"
+                            disabled={isActioning || !canComplete(b)}
+                            title={!canComplete(b) 
+                              ? "Chỉ có thể hoàn thành sau khi ca chơi kết thúc được ít nhất 30 phút." 
+                              : "Xác nhận khách đã chơi xong"
+                            }
                             onClick={() => openConfirm(b, "complete")}
                           >
                             Hoàn thành

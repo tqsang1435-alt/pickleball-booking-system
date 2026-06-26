@@ -1,6 +1,13 @@
 import { sql, getPool } from "@/database/connection";
 import { OperationBooking } from "./operations.type";
 
+function toUtcFromLocalDb(date: Date | null | undefined): Date | null {
+  if (!date) return null;
+  // Subtract 7 hours (7 * 3600 * 1000 ms) because SQL Server stored GETDATE() in local time (UTC+7),
+  // but tedious parsed it as UTC, causing it to be shifted +7 hours in the browser.
+  return new Date(date.getTime() - 7 * 60 * 60 * 1000);
+}
+
 export async function repoGetTodayOperations(targetDate: string): Promise<OperationBooking[]> {
   const pool = await getPool();
 
@@ -66,7 +73,10 @@ export async function repoGetTodayOperations(targetDate: string): Promise<Operat
     endTime: row.endTime || '',
     status: row.status,
     paymentStatus: row.paymentStatus,
-    checkInTime: row.checkInTime ? row.checkInTime.toISOString() : null,
+    checkInTime: (() => {
+      const utcDate = toUtcFromLocalDb(row.checkInTime);
+      return utcDate ? utcDate.toISOString() : null;
+    })(),
   }));
 }
 
@@ -100,7 +110,7 @@ export async function repoUpdateBookingStatus(
   await request.query(query);
 }
 
-export async function repoGetBookingStatus(bookingId: number): Promise<{ Status: string, BookingCode: string, BookingDate: Date, StartTime: Date, EndTime: Date } | null> {
+export async function repoGetBookingStatus(bookingId: number): Promise<{ Status: string, BookingCode: string, BookingDate: Date, StartTime: Date | null, EndTime: Date | null } | null> {
   const pool = await getPool();
   // Dùng aggregate để tránh duplicate khi booking có nhiều BookingDetails (combo)
   const query = `
@@ -145,12 +155,15 @@ export async function repoGetBookingLogs(bookingId: number) {
     logId: row.logId,
     action: row.action,
     note: row.note,
-    createdAt: row.createdAt.toISOString(),
+    createdAt: (() => {
+      const utcDate = toUtcFromLocalDb(row.createdAt);
+      return utcDate ? utcDate.toISOString() : "";
+    })(),
     actorName: row.actorName || "System"
   }));
 }
 
-export async function repoGetExpiredConfirmedBookings(targetDate: string): Promise<{ BookingID: number, BookingCode: string, UserID: number, CoachID: number | null, BookingDate: Date, StartTime: Date, EndTime: Date }[]> {
+export async function repoGetExpiredConfirmedBookings(targetDate: string): Promise<{ BookingID: number, BookingCode: string, UserID: number, CoachID: number | null, BookingDate: Date, StartTime: Date | null, EndTime: Date | null }[]> {
   const pool = await getPool();
   const query = `
     SELECT 

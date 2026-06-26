@@ -49,18 +49,6 @@ const METHODS: {
     ),
     desc: "Chuyển khoản ngân hàng",
   },
-  {
-    id: "Momo",
-    label: "Ví MoMo",
-    icon: (
-      <img
-        src="https://developers.momo.vn/v3/assets/images/square-8c08a00f550e40a2efafea4a005b1232.png"
-        alt="MoMo"
-        style={{ width: "24px", height: "24px", objectFit: "contain", borderRadius: "4px" }}
-      />
-    ),
-    desc: "Thanh toán qua ví MoMo",
-  },
 ];
 
 // ── Component ─────────────────────────────────────────
@@ -242,15 +230,7 @@ export default function PaymentModal({
           </div>
         )}
 
-        {/* MoMo hint */}
-        {paymentMethod === "Momo" && (
-          <div className={styles.payosHint}>
-            <span>💗</span>
-            <p>
-              Bạn sẽ được chuyển hướng sang <strong>MoMo</strong>. Có thể dùng app MoMo (môi trường Sandbox) để quét mã.
-            </p>
-          </div>
-        )}
+
 
 
 

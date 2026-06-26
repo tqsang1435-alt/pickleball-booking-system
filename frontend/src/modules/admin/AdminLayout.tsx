@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { clearAuth, getUser } from "@/utils/authStorage";
 import type { AuthUser } from "@/types/auth";
@@ -20,6 +20,7 @@ export default function AdminLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -95,6 +96,48 @@ export default function AdminLayout({
     }
   ];
 
+  const staffNavSections = [
+    {
+      title: "TỔNG QUAN",
+      items: [
+        { href: "/staff/operations?view=dashboard", label: "Tổng quan ca", icon: <DashboardIcon /> },
+      ]
+    },
+    {
+      title: "VẬN HÀNH SÂN",
+      items: [
+        { href: "/staff/operations?view=detail", label: "Chi tiết ca trực", icon: <OperationsIcon /> },
+        { href: "/staff/operations/walk-in-booking", label: "Đặt sân tại quầy", icon: <CourtIcon /> },
+      ]
+    },
+    {
+      title: "QUẢN LÝ",
+      items: [
+        { href: "/admin/bookings", label: "Danh sách booking", icon: <CalendarIcon /> },
+      ]
+    }
+  ];
+
+  const activeSections = isStaff ? staffNavSections : navSections;
+
+  const isItemActive = (itemHref: string) => {
+    const [itemPath, itemQuery] = itemHref.split("?");
+    if (pathname !== itemPath) return false;
+    
+    if (itemQuery) {
+      const params = new URLSearchParams(itemQuery);
+      let match = true;
+      params.forEach((value, key) => {
+        if (searchParams?.get(key) !== value) {
+          match = false;
+        }
+      });
+      return match;
+    } else {
+      return !searchParams?.get("view");
+    }
+  };
+
   return (
     <div className={`${styles.admin} ${isCollapsed ? styles.adminCollapsed : ""}`}>
       <aside className={`${styles.sidebar} ${isCollapsed ? styles.sidebarCollapsed : ""}`}>
@@ -113,7 +156,9 @@ export default function AdminLayout({
               <Link href="/" className={styles.logoTitle}>
                 PickleClub
               </Link>
-              <span className={styles.logoSubtitle}>ENTERPRISE ADMIN</span>
+              <span className={styles.logoSubtitle}>
+                {isStaff ? "STAFF PORTAL" : role.includes("manager") ? "MANAGER PORTAL" : "ENTERPRISE ADMIN"}
+              </span>
             </div>
           </div>
           <button
@@ -143,7 +188,7 @@ export default function AdminLayout({
         </div>
 
         <nav className={styles.nav}>
-          {navSections.map((section) => {
+          {activeSections.map((section) => {
             // Filter items based on user role
             const visibleItems = section.items.filter((item) => {
               if (item.hideForStaff && isStaff) return false;
@@ -159,7 +204,7 @@ export default function AdminLayout({
                 <h3 className={styles.sectionHeader}>{section.title}</h3>
                 <div className={styles.sectionList}>
                   {visibleItems.map((item) => {
-                    const isActive = pathname === item.href;
+                    const isActive = isItemActive(item.href);
                     return (
                       <Link
                         key={item.href}

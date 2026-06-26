@@ -195,139 +195,172 @@ export default function WalkInBookingPage() {
     }
   }
 
+  const userInitials = staffName.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "NV";
+
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <div>
-          <h1>Đặt sân trực tiếp</h1>
-          <p>Hỗ trợ Staff tạo booking tại quầy cho khách vãng lai hoặc khách đã có tài khoản.</p>
-        </div>
-        <div className={styles.staffBox}>
-          <span>Nhân viên thực hiện</span>
-          <strong>{staffName}</strong>
-        </div>
-      </div>
-
-      <div className={styles.grid}>
-        <section className={styles.panel}>
-          <h2>Thông tin sân</h2>
-          <div className={styles.formGrid}>
-            <label>
-              Ngày
-              <input type="date" value={bookingDate} min={todayVN()} onChange={(e) => setBookingDate(e.target.value)} />
-            </label>
-            <label>
-              Sân
-              <select value={courtId} onChange={(e) => setCourtId(e.target.value ? Number(e.target.value) : "")}>
-                <option value="">Chọn sân</option>
-                {courts.map((court) => (
-                  <option key={court.CourtID} value={court.CourtID}>
-                    {court.CourtName}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className={styles.full}>
-              Khung giờ còn trống
-              <select
-                value={slotId}
-                onChange={(e) => {
-                  setSlotId(e.target.value ? Number(e.target.value) : "");
-                  setLastBookedTotal(null);
-                }}
-                disabled={!courtId || loading}
-              >
-                <option value="">Chọn khung giờ</option>
-                {slots.map((slot) => (
-                  <option key={slot.SlotID} value={slot.SlotID}>
-                    {formatTime(slot.StartTime)} - {formatTime(slot.EndTime)} · {formatCurrency(Number(slot.Price))}
-                  </option>
-                ))}
-              </select>
-            </label>
+    <div className={styles.wrapper}>
+      {/* ── Sticky Top Header Bar ── */}
+      <header className={styles.headerBar}>
+        <div className={styles.headerLeft}>
+          <div className={styles.breadcrumbs}>
+            <span>Nhân viên</span>
+            <span className={styles.chevron}>/</span>
+            <span className={styles.currentCrumb}>Đặt sân trực tiếp</span>
           </div>
-        </section>
+        </div>
 
-        <section className={styles.panel}>
-          <h2>Thông tin khách</h2>
-          <div className={styles.segmented}>
-            <button className={customerMode === "guest" ? styles.active : ""} onClick={() => setCustomerMode("guest")} type="button">
-              Khách vãng lai
-            </button>
-            <button className={customerMode === "account" ? styles.active : ""} onClick={() => setCustomerMode("account")} type="button">
-              Khách có tài khoản
-            </button>
+        <div className={styles.headerRight}>
+          {/* Refresh button */}
+          <button className={styles.btnIcon} onClick={() => window.location.reload()} title="Làm mới trang">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M23 4v6h-6M1 20v-6h6"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+          </button>
+
+          {/* User Round Initials Avatar */}
+          <div className={styles.avatar} title={staffName}>
+            {userInitials}
           </div>
+        </div>
+      </header>
 
-          {customerMode === "guest" ? (
-            <div className={styles.formGrid}>
-              <label>
-                Tên khách
-                <input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Nguyễn Văn A" />
-              </label>
-              <label>
-                Số điện thoại
-                <input
-                  value={guestPhone}
-                  onChange={(e) => setGuestPhone(normalizePhoneInput(e.target.value))}
-                  placeholder="0901234567"
-                  inputMode="numeric"
-                  pattern="[0-9]{10}"
-                  maxLength={10}
-                />
-              </label>
+      {/* ── Scrollable Content Area ── */}
+      <div className={styles.contentArea}>
+        <div className={styles.page}>
+          <div className={styles.header}>
+            <div>
+              <h1>Đặt sân trực tiếp</h1>
+              <p>Hỗ trợ Staff tạo booking tại quầy cho khách vãng lai hoặc khách đã có tài khoản.</p>
             </div>
-          ) : (
-            <div className={styles.customerSearch}>
-              <div className={styles.searchLine}>
-                <input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="Nhập SĐT hoặc email" />
-                <button type="button" onClick={searchCustomer} disabled={searching || !keyword.trim()}>
-                  {searching ? "Đang tìm" : "Tìm"}
+            <div className={styles.staffBox}>
+              <span>Nhân viên thực hiện</span>
+              <strong>{staffName}</strong>
+            </div>
+          </div>
+
+          <div className={styles.grid}>
+            <section className={styles.panel}>
+              <h2>Thông tin sân</h2>
+              <div className={styles.formGrid}>
+                <label>
+                  Ngày
+                  <input type="date" value={bookingDate} min={todayVN()} onChange={(e) => setBookingDate(e.target.value)} />
+                </label>
+                <label>
+                  Sân
+                  <select value={courtId} onChange={(e) => setCourtId(e.target.value ? Number(e.target.value) : "")}>
+                    <option value="">Chọn sân</option>
+                    {courts.map((court) => (
+                      <option key={court.CourtID} value={court.CourtID}>
+                        {court.CourtName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className={styles.full}>
+                  Khung giờ còn trống
+                  <select
+                    value={slotId}
+                    onChange={(e) => {
+                      setSlotId(e.target.value ? Number(e.target.value) : "");
+                      setLastBookedTotal(null);
+                    }}
+                    disabled={!courtId || loading}
+                  >
+                    <option value="">Chọn khung giờ</option>
+                    {slots.map((slot) => (
+                      <option key={slot.SlotID} value={slot.SlotID}>
+                        {formatTime(slot.StartTime)} - {formatTime(slot.EndTime)} · {formatCurrency(Number(slot.Price))}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </section>
+
+            <section className={styles.panel}>
+              <h2>Thông tin khách</h2>
+              <div className={styles.segmented}>
+                <button className={customerMode === "guest" ? styles.active : ""} onClick={() => setCustomerMode("guest")} type="button">
+                  Khách vãng lai
+                </button>
+                <button className={customerMode === "account" ? styles.active : ""} onClick={() => setCustomerMode("account")} type="button">
+                  Khách có tài khoản
                 </button>
               </div>
-              <select value={customerId} onChange={(e) => setCustomerId(e.target.value ? Number(e.target.value) : "")}>
-                <option value="">Chọn khách hàng</option>
-                {customers.map((customer) => (
-                  <option key={customer.UserID} value={customer.UserID}>
-                    {customer.FullName} · {customer.PhoneNumber || customer.Email}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </section>
 
-        <section className={`${styles.panel} ${styles.summary}`}>
-          <h2>Thanh toán tại quầy</h2>
-          <div className={styles.payments}>
-            <label className={paymentMethod === "Cash" ? styles.payActive : ""}>
-              <input type="radio" checked={paymentMethod === "Cash"} onChange={() => setPaymentMethod("Cash")} />
-              Tiền mặt
-            </label>
-            <label className={paymentMethod === "BankTransfer" ? styles.payActive : ""}>
-              <input type="radio" checked={paymentMethod === "BankTransfer"} onChange={() => setPaymentMethod("BankTransfer")} />
-              Chuyển khoản trực tiếp
-            </label>
+              {customerMode === "guest" ? (
+                <div className={styles.formGrid}>
+                  <label>
+                    Tên khách
+                    <input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Nguyễn Văn A" />
+                  </label>
+                  <label>
+                    Số điện thoại
+                    <input
+                      value={guestPhone}
+                      onChange={(e) => setGuestPhone(normalizePhoneInput(e.target.value))}
+                      placeholder="0901234567"
+                      inputMode="numeric"
+                      pattern="[0-9]{10}"
+                      maxLength={10}
+                    />
+                  </label>
+                </div>
+              ) : (
+                <div className={styles.customerSearch}>
+                  <div className={styles.searchLine}>
+                    <input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="Nhập SĐT hoặc email" />
+                    <button type="button" onClick={searchCustomer} disabled={searching || !keyword.trim()}>
+                      {searching ? "Đang tìm" : "Tìm"}
+                    </button>
+                  </div>
+                  <select value={customerId} onChange={(e) => setCustomerId(e.target.value ? Number(e.target.value) : "")}>
+                    <option value="">Chọn khách hàng</option>
+                    {customers.map((customer) => (
+                      <option key={customer.UserID} value={customer.UserID}>
+                        {customer.FullName} · {customer.PhoneNumber || customer.Email}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </section>
+
+            <section className={`${styles.panel} ${styles.summary}`}>
+              <h2>Thanh toán tại quầy</h2>
+              <div className={styles.payments}>
+                <label className={paymentMethod === "Cash" ? styles.payActive : ""}>
+                  <input type="radio" checked={paymentMethod === "Cash"} onChange={() => setPaymentMethod("Cash")} />
+                  Tiền mặt
+                </label>
+                <label className={paymentMethod === "BankTransfer" ? styles.payActive : ""}>
+                  <input type="radio" checked={paymentMethod === "BankTransfer"} onChange={() => setPaymentMethod("BankTransfer")} />
+                  Chuyển khoản trực tiếp
+                </label>
+              </div>
+
+              <div className={styles.totalBox}>
+                <span>Tổng tiền</span>
+                <strong>
+                  {selectedSlot
+                    ? formatCurrency(Number(selectedSlot.Price))
+                    : lastBookedTotal !== null
+                      ? formatCurrency(lastBookedTotal)
+                      : "Chưa chọn giờ"}
+                </strong>
+              </div>
+
+              {error && <div className={styles.error}>{error}</div>}
+              {success && <div className={styles.success}>{success}</div>}
+
+              <button className={styles.submit} onClick={submit} disabled={submitting || !selectedSlot}>
+                {submitting ? "Đang tạo booking..." : "Tạo booking tại quầy"}
+              </button>
+            </section>
           </div>
-
-          <div className={styles.totalBox}>
-            <span>Tổng tiền</span>
-            <strong>
-              {selectedSlot
-                ? formatCurrency(Number(selectedSlot.Price))
-                : lastBookedTotal !== null
-                  ? formatCurrency(lastBookedTotal)
-                  : "Chưa chọn giờ"}
-            </strong>
-          </div>
-
-          {error && <div className={styles.error}>{error}</div>}
-          {success && <div className={styles.success}>{success}</div>}
-
-          <button className={styles.submit} onClick={submit} disabled={submitting || !selectedSlot}>
-            {submitting ? "Đang tạo booking..." : "Tạo booking tại quầy"}
-          </button>
-        </section>
+        </div>
       </div>
     </div>
   );

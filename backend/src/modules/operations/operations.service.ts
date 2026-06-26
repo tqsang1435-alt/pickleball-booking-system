@@ -6,16 +6,22 @@ import { sendNoShowEmail } from "@/utils/mail";
 import { getPool, sql } from "@/database/connection";
 import { TodayOperationsData, OperationSummary } from "./operations.type";
 
-function getVNAbsoluteTime(dateUtc: Date, timeUtc: Date): Date {
-  const year = dateUtc.getUTCFullYear();
-  const month = dateUtc.getUTCMonth() + 1;
-  const date = dateUtc.getUTCDate();
-  
-  const hours = timeUtc.getUTCHours();
-  const minutes = timeUtc.getUTCMinutes();
-  
-  const isoString = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00+07:00`;
-  return new Date(isoString);
+function getVNAbsoluteTime(dateUtc: Date | null | undefined, timeUtc: Date | null | undefined): Date | null {
+  if (!dateUtc || !timeUtc) return null;
+  try {
+    const year = dateUtc.getUTCFullYear();
+    const month = dateUtc.getUTCMonth() + 1;
+    const date = dateUtc.getUTCDate();
+    
+    const hours = timeUtc.getUTCHours();
+    const minutes = timeUtc.getUTCMinutes();
+    
+    const isoString = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00+07:00`;
+    return new Date(isoString);
+  } catch (err) {
+    console.warn("Failed to get VN Absolute time for date/time:", dateUtc, timeUtc, err);
+    return null;
+  }
 }
 
 export async function autoMarkNoShowBookings(targetDate: string): Promise<number> {
@@ -25,6 +31,10 @@ export async function autoMarkNoShowBookings(targetDate: string): Promise<number
 
   for (const booking of bookings) {
     const bookingStart = getVNAbsoluteTime(booking.BookingDate, booking.StartTime);
+    if (!bookingStart) {
+      console.warn(`Booking ${booking.BookingCode} is missing BookingDate or StartTime. Skipping auto no-show check.`);
+      continue;
+    }
     const minNoShowTime = new Date(bookingStart.getTime() + 15 * 60000);
 
     if (now >= minNoShowTime) {
@@ -141,6 +151,29 @@ export async function checkInOperation(bookingId: number, note?: string, actorId
     throw new Error("Chỉ có thể check-in booking ở trạng thái Đã xác nhận hoặc Đã thanh toán.");
   }
 
+  // BR-30: Check date must be today in Vietnam timezone
+  const bookingDateStr = booking.BookingDate.toISOString().split('T')[0];
+  const todayStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" });
+  if (bookingDateStr !== todayStr) {
+    throw new Error("Chỉ có thể check-in các booking trong ngày hôm nay.");
+  }
+
+  // BR-30: Check-in is valid within 30 minutes before start time and up to 15 minutes after start time
+  const bookingStart = getVNAbsoluteTime(booking.BookingDate, booking.StartTime);
+  if (!bookingStart) {
+    throw new Error("Không tìm thấy thông tin giờ bắt đầu của booking.");
+  }
+  const now = new Date();
+  const earliestCheckIn = new Date(bookingStart.getTime() - 30 * 60 * 1000);
+  const latestCheckIn = new Date(bookingStart.getTime() + 15 * 60 * 1000);
+
+  if (now < earliestCheckIn) {
+    throw new Error("Chưa đến giờ check-in (chỉ cho phép trước giờ bắt đầu tối đa 30 phút).");
+  }
+  if (now > latestCheckIn) {
+    throw new Error("Đã quá hạn check-in (chỉ cho phép sau giờ bắt đầu tối đa 15 phút).");
+  }
+
   // Update status to CheckedIn and set CheckInTime
   await repoUpdateBookingStatus(bookingId, 'CheckedIn', note, true);
 
@@ -194,6 +227,17 @@ export async function completeOperation(bookingId: number, actorId?: number) {
     throw new Error("Chỉ có thể hoàn thành booking đang ở trạng thái Check-in.");
   }
 
+  // BR-32: Booking only transitions to Completed when play session has ended for at least 30 minutes
+  const bookingEnd = getVNAbsoluteTime(booking.BookingDate, booking.EndTime);
+  if (!bookingEnd) {
+    throw new Error("Không tìm thấy thông tin giờ kết thúc của booking.");
+  }
+  const now = new Date();
+  const allowedCompletionTime = new Date(bookingEnd.getTime() + 30 * 60 * 1000);
+  if (now < allowedCompletionTime) {
+    throw new Error("Chỉ có thể hoàn thành booking sau khi kết thúc ca chơi ít nhất 30 phút.");
+  }
+
   // Update status to Completed
   await repoUpdateBookingStatus(bookingId, 'Completed');
 
@@ -244,6 +288,22 @@ export async function noShowOperation(bookingId: number, note?: string, actorId?
   
   if (!['Confirmed', 'Paid'].includes(booking.Status)) {
     throw new Error("Chỉ có thể đánh dấu No-show booking ở trạng thái Đã xác nhận hoặc Đã thanh toán.");
+  }
+
+  // BR-31: Only allow manual no-show on the booking date and after start time
+  const bookingDateStr = booking.BookingDate.toISOString().split('T')[0];
+  const todayStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" });
+  if (bookingDateStr !== todayStr) {
+    throw new Error("Chỉ có thể báo vắng các booking trong ngày hôm nay.");
+  }
+
+  const bookingStart = getVNAbsoluteTime(booking.BookingDate, booking.StartTime);
+  if (!bookingStart) {
+    throw new Error("Không tìm thấy thông tin giờ bắt đầu của booking.");
+  }
+  const now = new Date();
+  if (now < bookingStart) {
+    throw new Error("Không thể báo vắng trước giờ bắt đầu của booking.");
   }
 
   // Update status to NoShow

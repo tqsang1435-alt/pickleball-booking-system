@@ -168,37 +168,45 @@ export default function AdminBookingsPage() {
     }
   }
 
-  async function handleCheckIn(bookingId: number) {
-    if (!token) return;
-    if (!window.confirm("Xác nhận khách đã đến check-in nhận sân/HLV?")) return;
+  // Confirm modal state
+  const [confirm, setConfirm] = useState<{
+    booking: DailyBooking;
+    type: "checkin" | "cancel";
+  } | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [confirmError, setConfirmError] = useState("");
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
-    try {
-      setActioningId(bookingId);
-      await checkInBooking(token, bookingId);
-      await loadBookings(true);
-    } catch (err: any) {
-      alert(err.message || "Check-in thất bại");
-    } finally {
-      setActioningId(null);
-    }
+  function openConfirm(booking: DailyBooking, type: "checkin" | "cancel") {
+    setConfirm({ booking, type });
+    setCancelReason("");
+    setConfirmError("");
   }
 
-  async function handleCancel(bookingId: number) {
-    if (!token) return;
-    const reason = window.prompt("Nhập lý do hủy booking:");
-    if (reason === null) return;
-    if (reason.trim() === "") {
-      alert("Vui lòng nhập lý do hủy.");
+  async function submitConfirm() {
+    if (!confirm || !token) return;
+    const { booking, type } = confirm;
+    
+    if (type === "cancel" && !cancelReason.trim()) {
+      setConfirmError("Vui lòng nhập lý do hủy.");
       return;
     }
-
+    
+    setConfirmLoading(true);
+    setConfirmError("");
     try {
-      setActioningId(bookingId);
-      await cancelBooking(token, bookingId, reason);
+      setActioningId(booking.BookingID);
+      if (type === "checkin") {
+        await checkInBooking(token, booking.BookingID);
+      } else if (type === "cancel") {
+        await cancelBooking(token, booking.BookingID, cancelReason.trim());
+      }
+      setConfirm(null);
       await loadBookings(true);
     } catch (err: any) {
-      alert(err.message || "Hủy booking thất bại");
+      setConfirmError(err.message || "Thao tác thất bại. Vui lòng thử lại.");
     } finally {
+      setConfirmLoading(false);
       setActioningId(null);
     }
   }
@@ -512,7 +520,7 @@ export default function AdminBookingsPage() {
                                   <div className={styles.actionCell}>
                                     {canCheckIn && (
                                       <button
-                                        onClick={() => handleCheckIn(b.BookingID)}
+                                        onClick={() => openConfirm(b, "checkin")}
                                         disabled={isActioning}
                                         className={styles.btnCheckIn}
                                         title="Đánh dấu khách đã đến"
@@ -522,7 +530,7 @@ export default function AdminBookingsPage() {
                                     )}
                                     {canCancel && (
                                       <button
-                                        onClick={() => handleCancel(b.BookingID)}
+                                        onClick={() => openConfirm(b, "cancel")}
                                         disabled={isActioning}
                                         className={styles.btnCancel}
                                         title="Hủy booking"
@@ -566,6 +574,66 @@ export default function AdminBookingsPage() {
                 </div>
               ))}
           </>
+        )}
+        {/* ── Confirm Modal ── */}
+        {confirm && (
+          <div className={styles.modalOverlay} onClick={() => setConfirm(null)}>
+            <div className={styles.modal} onClick={e => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <h3 className={styles.modalTitle}>
+                  {confirm.type === "checkin" && "Xác nhận Check-in"}
+                  {confirm.type === "cancel" && "Xác nhận Hủy ca"}
+                </h3>
+                <button className={styles.modalClose} onClick={() => setConfirm(null)} disabled={confirmLoading}>×</button>
+              </div>
+              <div className={styles.modalBody}>
+                <div className={styles.bookingCard}>
+                  <div className={styles.bookingCardCode}>{confirm.booking.BookingCode}</div>
+                  <div className={styles.bookingCardName}>{confirm.booking.PlayerName}</div>
+                  {confirm.booking.PlayerPhone && (
+                    <div className={styles.bookingCardSub}>SĐT: {confirm.booking.PlayerPhone}</div>
+                  )}
+                  <div className={styles.bookingCardSub}>
+                    Sân: {confirm.booking.CourtName ?? "Khu vực HLV"} &nbsp;·&nbsp; Giờ: {confirm.booking.StartTime.substring(0, 5)} – {confirm.booking.EndTime.substring(0, 5)}
+                  </div>
+                </div>
+
+                {confirm.type === "checkin" && (
+                  <div className={styles.infoBox}>
+                    Khách đã đến nhận sân/HLV. Xác nhận check-in để bắt đầu tính giờ chơi.
+                  </div>
+                )}
+
+                {confirm.type === "cancel" && (
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Lý do hủy booking *</label>
+                    <textarea
+                      className={styles.formTextarea}
+                      rows={3}
+                      placeholder="Nhập lý do hủy tại đây..."
+                      value={cancelReason}
+                      onChange={e => { setCancelReason(e.target.value); setConfirmError(""); }}
+                      disabled={confirmLoading}
+                    />
+                  </div>
+                )}
+
+                {confirmError && <div className={styles.modalError}>{confirmError}</div>}
+              </div>
+              <div className={styles.modalFooter}>
+                <button className={styles.btnCancelModal} onClick={() => setConfirm(null)} disabled={confirmLoading}>
+                  Hủy
+                </button>
+                <button
+                  className={confirm.type === "cancel" ? styles.btnDangerModal : styles.btnPrimaryModal}
+                  onClick={submitConfirm}
+                  disabled={confirmLoading}
+                >
+                  {confirmLoading ? "Đang xử lý..." : "Xác nhận"}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
