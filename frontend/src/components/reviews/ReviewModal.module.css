@@ -1,0 +1,192 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modalContent {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease-out;
+}
+
+.modalHeader {
+  padding: 20px 24px;
+  border-bottom: 1px solid #eaeaea;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #888;
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.2s;
+}
+
+.closeBtn:hover {
+  color: #ff4d4f;
+}
+
+.modalBody {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.errorMessage {
+  background-color: #fff2f0;
+  border: 1px solid #ffccc7;
+  color: #ff4d4f;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.ratingSection {
+  text-align: center;
+}
+
+.ratingSection p {
+  margin: 0 0 12px 0;
+  color: #555;
+  font-weight: 500;
+}
+
+.starsContainer {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.starFilled {
+  color: #fadb14;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.starFilled:hover {
+  transform: scale(1.1);
+}
+
+.starEmpty {
+  color: #e8e8e8;
+  cursor: pointer;
+  transition: color 0.2s, transform 0.2s;
+}
+
+.starEmpty:hover {
+  color: #fadb14;
+  transform: scale(1.1);
+}
+
+.commentSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.commentSection label {
+  font-weight: 500;
+  color: #444;
+}
+
+.commentSection textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: border-color 0.3s;
+}
+
+.commentSection textarea:focus {
+  outline: none;
+  border-color: #1677ff;
+}
+
+.charCount {
+  text-align: right;
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.modalFooter {
+  padding: 16px 24px;
+  border-top: 1px solid #eaeaea;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.cancelBtn {
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid #d9d9d9;
+  color: #555;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  border-color: #ff4d4f;
+  color: #ff4d4f;
+}
+
+.submitBtn {
+  padding: 8px 20px;
+  background: #1677ff;
+  border: none;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: #0958d9;
+}
+
+.submitBtn:disabled, .cancelBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}

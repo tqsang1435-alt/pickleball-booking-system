@@ -57,6 +57,8 @@ export type Booking = {
   TransactionCode?: string | null;
   PaymentStatus?: string | null;
   PaidAt?: string | null;
+
+  IsReviewed?: boolean;
 };
 
 export type CreateCourtBookingPayload = {

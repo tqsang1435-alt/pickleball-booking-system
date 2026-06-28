@@ -6,12 +6,13 @@ import HeroSection from "./HeroSection";
 import QuickActions from "./QuickActions";
 import FeaturedCourts from "./FeaturedCourts";
 import FeaturedCoaches from "./FeaturedCoaches";
+import ReviewModal from "@/components/reviews/ReviewModal";
 import styles from "./HomePage.module.css";
 
 import { getCourts } from "@/services/courtApi";
 import { getCoaches } from "@/services/coachApi";
 import { getPublicPromotions } from "@/services/promotionApi";
-import { getPublicReviews } from "@/services/reviewApi";
+import { reviewApi } from "@/services/reviewApi";
 
 import type { Court } from "@/types/court";
 import type { Coach } from "@/types/coach";
@@ -24,6 +25,7 @@ export default function HomePage() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
 
   const [courtsLoading, setCourtsLoading] = useState(true);
   const [coachesLoading, setCoachesLoading] = useState(true);
@@ -107,7 +109,7 @@ export default function HomePage() {
 
     async function loadReviews() {
       try {
-        const data = await getPublicReviews();
+        const data = await reviewApi.getPublicReviews();
         if (!mounted) return;
         setReviews(data);
       } catch {
@@ -262,13 +264,30 @@ export default function HomePage() {
           </section>
 
           <section className={styles.testimonials}>
-            <div className={styles.reviewSummary}>
+            <div className={styles.reviewSummary} style={{ position: "relative" }}>
               <span>Đánh giá từ khách hàng</span>
               <h2>
                 4.8<small>/5</small>
               </h2>
               <p>Dựa trên trải nghiệm đặt sân, đặt Coach và sử dụng ưu đãi.</p>
+              <button 
+                className={styles.writeReviewBtn}
+                onClick={() => setReviewModalOpen(true)}
+                style={{ position: "absolute", top: "20px", right: "20px", background: "#1677ff", color: "white", padding: "8px 16px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 500 }}
+              >
+                Gửi Đánh giá
+              </button>
             </div>
+
+            <ReviewModal
+              isOpen={reviewModalOpen}
+              onClose={() => setReviewModalOpen(false)}
+              title="Đánh giá Câu Lạc Bộ"
+              onSuccess={() => {
+                setReviewModalOpen(false);
+                // Optionally reload reviews here
+              }}
+            />
 
             {reviews.length === 0 ? (
               <div className={styles.reviewCard}>

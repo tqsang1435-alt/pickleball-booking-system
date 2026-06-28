@@ -1,0 +1,111 @@
+.statsContainer {
+  display: flex;
+  gap: 40px;
+  padding: 24px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+  align-items: center;
+  border: 1px solid #f0f0f0;
+}
+
+.noStats {
+  width: 100%;
+  text-align: center;
+  color: #888;
+  padding: 20px;
+}
+
+.averageSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 150px;
+}
+
+.averageScore {
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: #333;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.stars {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.starFilled {
+  color: #fadb14;
+  font-size: 1.2rem;
+}
+
+.starEmpty {
+  color: #e8e8e8;
+  font-size: 1.2rem;
+}
+
+.totalReviews {
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.barsSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.barRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.starLabel {
+  width: 30px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.9rem;
+  color: #555;
+  font-weight: 500;
+}
+
+.smallStar {
+  color: #fadb14;
+  font-size: 0.8rem;
+}
+
+.barBackground {
+  flex: 1;
+  height: 8px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  background-color: #fadb14;
+  border-radius: 4px;
+  transition: width 0.5s ease-out;
+}
+
+.countLabel {
+  width: 30px;
+  text-align: right;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+@media (max-width: 768px) {
+  .statsContainer {
+    flex-direction: column;
+    gap: 24px;
+  }
+}
