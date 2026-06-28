@@ -6,8 +6,13 @@ import { getCoachById, getCoachSchedulesPublic } from "@/services/coachApi";
 import { getCoachImageUrl } from "@/utils/image";
 import type { Coach, CoachSchedule } from "@/types/coach";
 import { formatCurrency } from "@/utils/formatCurrency";
+import { reviewApi } from "@/services/reviewApi";
+import type { Review, ReviewStats } from "@/types/review";
 import StateBox from "@/components/common/StateBox";
 import CoachBookingModal from "./CoachBookingModal";
+import ReviewList from "@/components/reviews/ReviewList";
+import ReviewStatsView from "@/components/reviews/ReviewStatsView";
+import ReviewModal from "@/components/reviews/ReviewModal";
 import styles from "./CoachDetailPage.module.css";
 
 const todayVN = () => {
@@ -129,6 +134,14 @@ export default function CoachDetailPage() {
   const [loadingSchedules, setLoadingSchedules] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<CoachSchedule | null>(null);
 
+  // Review State
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewStats, setReviewStats] = useState<ReviewStats | undefined>(undefined);
+  const [reviewPage, setReviewPage] = useState(1);
+  const [reviewTotalPages, setReviewTotalPages] = useState(1);
+  const [loadingReviews, setLoadingReviews] = useState(true);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+
   // Bottom column schedules for next 4 days
   const [upcomingSchedules, setUpcomingSchedules] = useState<{ date: string; label: string; slots: CoachSchedule[] }[]>([]);
   const [loadingUpcoming, setLoadingUpcoming] = useState(false);
@@ -181,6 +194,24 @@ export default function CoachDetailPage() {
       mounted = false;
     };
   }, [coach, date]);
+
+  useEffect(() => {
+    if (!coach) return;
+    async function fetchReviews() {
+      try {
+        setLoadingReviews(true);
+        const data = await reviewApi.getCoachReviews(coach!.CoachID, reviewPage, 5);
+        setReviews(data.data);
+        setReviewStats(data.stats);
+        setReviewTotalPages(data.totalPages);
+      } catch (err) {
+        console.error("Failed to load reviews");
+      } finally {
+        setLoadingReviews(false);
+      }
+    }
+    fetchReviews();
+  }, [coach, reviewPage]);
 
   // Load upcoming 4 days schedules
   useEffect(() => {
@@ -291,33 +322,6 @@ export default function CoachDetailPage() {
     ? coach.Specialization.split(",").map((s) => s.trim()).filter(Boolean)
     : ["Beginner Training", "Intermediate Development", "Match Strategy", "Tournament Preparation"];
 
-  const reviewsData = [
-    {
-      name: "Nguyen Minh Tri",
-      avatar: "/images/users/user1.jpg",
-      initials: "NT",
-      stars: 5,
-      time: "2 weeks ago",
-      text: "Coach Huy is very patient and explains techniques clearly. I improved a lot in just a few lessons!"
-    },
-    {
-      name: "Tran Quoc Bao",
-      avatar: "/images/users/user2.jpg",
-      initials: "QB",
-      stars: 5,
-      time: "1 month ago",
-      text: "Great coach! Helped me with my posture and strategy. Highly recommend."
-    },
-    {
-      name: "Phuong Linh",
-      avatar: "/images/users/user3.jpg",
-      initials: "PL",
-      stars: 5,
-      time: "2 months ago",
-      text: "Friendly, professional and very knowledgeable. Every lesson is worth it."
-    }
-  ];
-
   const formattedRate = formatCurrency(coach.HourlyRate);
 
   return (
@@ -393,7 +397,7 @@ export default function CoachDetailPage() {
                   </svg>
                   {Number(coach.AverageRating || 0).toFixed(1)}
                 </div>
-                <span className={styles.statLbl}>(128 reviews)</span>
+                <span className={styles.statLbl}>({reviewStats?.TotalReviews || 0} reviews)</span>
               </div>
               <div className={styles.statCell}>
                 <div className={styles.statVal}>{coach.TotalStudents || 0}+</div>
@@ -471,62 +475,48 @@ export default function CoachDetailPage() {
               </section>
 
               {/* Reviews */}
-              <section className={styles.section}>
-                <h2>Reviews</h2>
-                <div className={styles.reviewsGrid}>
-                  <div className={styles.reviewsSummaryCard}>
-                    <strong className={styles.ratingNumber}>4.9</strong>
-                    <div className={styles.starsRow}>
-                      {[...Array(5)].map((_, i) => (
-                        <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill="var(--pcs-status-warning)">
-                          <path d="M12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.63L12 2L9.19 8.63L2 9.24L7.46 13.97L5.82 21L12 17.27Z"/>
-                        </svg>
-                      ))}
+              <section className={styles.section} style={{ position: "relative" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                  <h2 style={{ margin: 0 }}>Reviews</h2>
+                  {reviewStats && reviewStats.TotalReviews > 0 && (
+                    <div style={{ color: "var(--pcs-status-success)", fontWeight: 600, fontSize: "0.9rem" }}>
+                      {Math.round(((reviewStats.Star4 + reviewStats.Star5) / reviewStats.TotalReviews) * 100)}% Khách hàng giới thiệu Coach này.
                     </div>
-                    <small>128 reviews</small>
-                  </div>
-                  
-                  <div className={styles.reviewsListRow}>
-                    {reviewsData.map((rev, idx) => (
-                      <div key={idx} className={styles.reviewCommentCard}>
-                        <div className={styles.authorRow}>
-                          <div className={styles.authorAvatar}>
-                            <img
-                              src={rev.avatar}
-                              alt={rev.name}
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = "none";
-                              }}
-                            />
-                            <span className={styles.avatarInitials}>{rev.initials}</span>
-                          </div>
-                          <div>
-                            <strong className={styles.authorName}>{rev.name}</strong>
-                            <div className={styles.reviewStarsMini}>
-                              {[...Array(rev.stars)].map((_, i) => (
-                                <svg key={i} width="10" height="10" viewBox="0 0 24 24" fill="var(--pcs-status-warning)">
-                                  <path d="M12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.63L12 2L9.19 8.63L2 9.24L7.46 13.97L5.82 21L12 17.27Z"/>
-                                </svg>
-                              ))}
-                              <span className={styles.timeAgo}>{rev.time}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <p className={styles.reviewText}>{rev.text}</p>
-                      </div>
-                    ))}
-                  </div>
+                  )}
                 </div>
-                
-                <div className={styles.viewReviewsWrapper}>
-                  <button type="button" className={styles.viewReviewsLink}>
-                    Xem tất cả đánh giá
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: "4px" }}>
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                  </button>
-                </div>
+
+                <button 
+                  onClick={() => setReviewModalOpen(true)}
+                  style={{ position: "absolute", top: "0px", right: "0px", background: "#1677ff", color: "white", padding: "8px 16px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 500 }}
+                >
+                  Viết Đánh giá
+                </button>
+
+                <ReviewModal
+                  isOpen={reviewModalOpen}
+                  onClose={() => setReviewModalOpen(false)}
+                  title={`Đánh giá HLV ${coach.FullName}`}
+                  coachId={coach.CoachID}
+                  onSuccess={() => {
+                    setReviewModalOpen(false);
+                    // Reload reviews
+                    setReviewPage(1);
+                    reviewApi.getCoachReviews(coach.CoachID, 1, 5).then(data => {
+                      setReviews(data.data);
+                      setReviewStats(data.stats);
+                      setReviewTotalPages(data.totalPages);
+                    });
+                  }}
+                />
+
+                <ReviewStatsView stats={reviewStats} />
+                <ReviewList
+                  reviews={reviews}
+                  loading={loadingReviews}
+                  page={reviewPage}
+                  totalPages={reviewTotalPages}
+                  onPageChange={setReviewPage}
+                />
               </section>
             </div>
           </div>

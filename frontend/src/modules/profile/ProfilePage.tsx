@@ -9,6 +9,8 @@ import { formatCurrency } from "@/utils/formatCurrency";
 import type { Profile } from "@/types/profile";
 import { getMyProfile, updateMyProfile } from "@/services/profileApi";
 import CancelBookingModal from "@/modules/bookings/CancelBookingModal";
+import ReviewModal from "@/components/reviews/ReviewModal";
+import MyReviewsSection from "./MyReviewsSection";
 import styles from "./ProfilePage.module.css";
 
 export default function ProfilePage() {
@@ -21,6 +23,9 @@ export default function ProfilePage() {
   const [actioningId, setActioningId] = useState<number | null>(null);
   // UC-17: Replace window.prompt với modal đẹp
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
+  
+  // Review modal
+  const [reviewTarget, setReviewTarget] = useState<Booking | null>(null);
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -149,6 +154,16 @@ export default function ProfilePage() {
     }
   }
 
+  async function handleReviewSuccess() {
+    setReviewTarget(null);
+    setSuccess("Cảm ơn bạn đã đánh giá!");
+    const token = getToken();
+    if (token) {
+      const bookingData = await getMyBookings(token);
+      setBookings(bookingData);
+    }
+  }
+
   if (loading) {
     return (
       <main className={styles.page}>
@@ -173,6 +188,17 @@ export default function ProfilePage() {
           booking={cancelTarget}
           onClose={() => setCancelTarget(null)}
           onSuccess={handleCancelSuccess}
+        />
+      )}
+      
+      {/* Review Modal */}
+      {reviewTarget && (
+        <ReviewModal
+          isOpen={true}
+          onClose={() => setReviewTarget(null)}
+          bookingId={reviewTarget.BookingID}
+          title={reviewTarget.BookingType === "Court" ? "Đánh giá Sân" : reviewTarget.BookingType === "Coach" ? "Đánh giá HLV" : "Đánh giá Combo"}
+          onSuccess={handleReviewSuccess}
         />
       )}
 
@@ -389,7 +415,17 @@ export default function ProfilePage() {
                               Hủy
                             </button>
                           )}
-                          {!canPay && !canCancel && !canCheckIn && <span className={styles.noAction}>-</span>}
+                          {booking.Status === "Completed" && !booking.IsReviewed && (
+                            <button
+                              className={styles.btnPay}
+                              onClick={() => setReviewTarget(booking)}
+                              style={{ backgroundColor: "#52c41a", borderColor: "#52c41a", color: "white" }}
+                            >
+                              Đánh giá
+                            </button>
+                          )}
+                          {!canPay && !canCancel && !canCheckIn && booking.Status !== "Completed" && <span className={styles.noAction}>-</span>}
+                          {booking.Status === "Completed" && booking.IsReviewed && <span className={styles.noAction}>Đã đánh giá</span>}
                         </div>
                       </td>
                     </tr>
@@ -400,6 +436,8 @@ export default function ProfilePage() {
           </div>
         )}
       </section>
+
+      <MyReviewsSection />
     </main>
   );
 }

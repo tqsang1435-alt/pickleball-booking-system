@@ -4,10 +4,15 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { getCourtById, getCourtSlots, type CourtSlot } from "@/services/courtApi";
+import { reviewApi } from "@/services/reviewApi";
 import type { Court } from "@/types/court";
+import type { Review, ReviewStats } from "@/types/review";
 import { formatCurrency } from "@/utils/formatCurrency";
 import StateBox from "@/components/common/StateBox";
 import BookingModal from "./BookingModal";
+import ReviewList from "@/components/reviews/ReviewList";
+import ReviewStatsView from "@/components/reviews/ReviewStatsView";
+import ReviewModal from "@/components/reviews/ReviewModal";
 import styles from "./CourtDetailPage.module.css";
 
 function todayVN() {
@@ -27,6 +32,14 @@ export default function CourtDetailPage({ courtId }: { courtId: string }) {
   const [selectedSlot, setSelectedSlot] = useState<CourtSlot | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [bookingSlot, setBookingSlot] = useState<CourtSlot | null>(null);
+
+  // Review State
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewStats, setReviewStats] = useState<ReviewStats | undefined>(undefined);
+  const [reviewPage, setReviewPage] = useState(1);
+  const [reviewTotalPages, setReviewTotalPages] = useState(1);
+  const [loadingReviews, setLoadingReviews] = useState(true);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
 
   // Lightbox State
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -102,6 +115,23 @@ export default function CourtDetailPage({ courtId }: { courtId: string }) {
     }
     fetchCourt();
   }, [courtId]);
+
+  useEffect(() => {
+    async function fetchReviews() {
+      try {
+        setLoadingReviews(true);
+        const data = await reviewApi.getCourtReviews(Number(courtId), reviewPage, 5);
+        setReviews(data.data);
+        setReviewStats(data.stats);
+        setReviewTotalPages(data.totalPages);
+      } catch (err) {
+        console.error("Failed to load reviews");
+      } finally {
+        setLoadingReviews(false);
+      }
+    }
+    fetchReviews();
+  }, [courtId, reviewPage]);
 
   useEffect(() => {
     if (!court) return;
@@ -223,7 +253,7 @@ export default function CourtDetailPage({ courtId }: { courtId: string }) {
               <h1 className={styles.title}>{court.CourtName}</h1>
               <div className={styles.metaRow}>
                 <span className={styles.location}>📍 {court.Location || "Đà Nẵng"}</span>
-                <span className={styles.rating}>⭐ 4.8 <span className={styles.reviewCount}>(125 đánh giá)</span></span>
+                <span className={styles.rating}>⭐ {reviewStats?.AverageRating ? reviewStats.AverageRating.toFixed(1) : "0.0"} <span className={styles.reviewCount}>({reviewStats?.TotalReviews || 0} đánh giá)</span></span>
                 <span className={styles.metaDivider}>•</span>
                 <span className={styles.bookingsCount}>Đã đặt 1.2k+ lượt</span>
               </div>
@@ -310,52 +340,40 @@ export default function CourtDetailPage({ courtId }: { courtId: string }) {
             </section>
 
             {/* Ratings Breakdown */}
-            <section className={styles.section}>
+            <section className={styles.section} style={{ position: "relative" }}>
               <h2>Đánh giá</h2>
-              <div className={styles.ratingsWrapper}>
-                <div className={styles.ratingScore}>
-                  <h3>4.8</h3>
-                  <div className={styles.stars}>★★★★★</div>
-                  <small>(125 đánh giá)</small>
-                </div>
-                <div className={styles.ratingBars}>
-                  <div className={styles.barItem}>
-                    <span>5 ★</span>
-                    <div className={styles.barContainer}>
-                      <div className={styles.barFill} style={{ width: "78%" }} />
-                    </div>
-                    <span>98</span>
-                  </div>
-                  <div className={styles.barItem}>
-                    <span>4 ★</span>
-                    <div className={styles.barContainer}>
-                      <div className={styles.barFill} style={{ width: "16%" }} />
-                    </div>
-                    <span>20</span>
-                  </div>
-                  <div className={styles.barItem}>
-                    <span>3 ★</span>
-                    <div className={styles.barContainer}>
-                      <div className={styles.barFill} style={{ width: "4%" }} />
-                    </div>
-                    <span>5</span>
-                  </div>
-                  <div className={styles.barItem}>
-                    <span>2 ★</span>
-                    <div className={styles.barContainer}>
-                      <div className={styles.barFill} style={{ width: "1%" }} />
-                    </div>
-                    <span>1</span>
-                  </div>
-                  <div className={styles.barItem}>
-                    <span>1 ★</span>
-                    <div className={styles.barContainer}>
-                      <div className={styles.barFill} style={{ width: "1%" }} />
-                    </div>
-                    <span>1</span>
-                  </div>
-                </div>
-              </div>
+              <button 
+                onClick={() => setReviewModalOpen(true)}
+                style={{ position: "absolute", top: "0px", right: "0px", background: "#1677ff", color: "white", padding: "8px 16px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 500 }}
+              >
+                Viết Đánh giá
+              </button>
+              
+              <ReviewModal
+                isOpen={reviewModalOpen}
+                onClose={() => setReviewModalOpen(false)}
+                title={`Đánh giá sân ${court.CourtName}`}
+                courtId={court.CourtID}
+                onSuccess={() => {
+                  setReviewModalOpen(false);
+                  // Reload reviews
+                  setReviewPage(1);
+                  reviewApi.getCourtReviews(court.CourtID, 1, 5).then(data => {
+                    setReviews(data.data);
+                    setReviewStats(data.stats);
+                    setReviewTotalPages(data.totalPages);
+                  });
+                }}
+              />
+
+              <ReviewStatsView stats={reviewStats} />
+              <ReviewList
+                reviews={reviews}
+                loading={loadingReviews}
+                page={reviewPage}
+                totalPages={reviewTotalPages}
+                onPageChange={setReviewPage}
+              />
             </section>
           </div>
 

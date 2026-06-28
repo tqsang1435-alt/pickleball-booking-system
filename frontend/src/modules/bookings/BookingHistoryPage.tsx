@@ -9,6 +9,7 @@ import { formatCurrency } from "@/utils/formatCurrency";
 import CancelBookingModal from "./CancelBookingModal";
 import RefundRequestModal from "./RefundRequestModal"; // Force recompile
 import PaymentModal from "@/modules/payments/PaymentModal";
+import ReviewModal from "@/components/reviews/ReviewModal";
 import styles from "./BookingHistoryPage.module.css";
 
 // ===== Helpers =====
@@ -148,6 +149,9 @@ export default function BookingHistoryPage() {
   // Payment modal
   const [payTarget, setPayTarget] = useState<Booking | null>(null);
 
+  // Review modal
+  const [reviewTarget, setReviewTarget] = useState<Booking | null>(null);
+
   // Pagination
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 8;
@@ -233,6 +237,13 @@ export default function BookingHistoryPage() {
     setTimeout(() => setSuccess(""), 6000);
   }
 
+  function handleReviewSuccess() {
+    setReviewTarget(null);
+    setSuccess("Cảm ơn bạn đã đánh giá!");
+    loadBookings();
+    setTimeout(() => setSuccess(""), 6000);
+  }
+
   function resetFilters() {
     setFilterStatus("all");
     setFilterType("all");
@@ -285,6 +296,17 @@ export default function BookingHistoryPage() {
               // Reload bookings khi user đóng PaymentModal (có thể đã thanh toán xong)
               loadBookings();
             }}
+          />
+        )}
+
+        {/* Review Modal */}
+        {reviewTarget && (
+          <ReviewModal
+            isOpen={true}
+            onClose={() => setReviewTarget(null)}
+            bookingId={reviewTarget.BookingID}
+            title={reviewTarget.BookingType === "Court" ? "Đánh giá Sân" : reviewTarget.BookingType === "Coach" ? "Đánh giá HLV" : "Đánh giá Combo"}
+            onSuccess={handleReviewSuccess}
           />
         )}
 
@@ -498,7 +520,17 @@ export default function BookingHistoryPage() {
                               Yêu cầu Hoàn tiền
                             </button>
                           )}
-                          {((!isPending || isExpired) && !((["Confirmed", "Paid"].includes(booking.Status) && !isPast))) && <span className={styles.noAction}>-</span>}
+                          {booking.Status === "Completed" && !booking.IsReviewed && (
+                            <button
+                              className={styles.btnPay}
+                              onClick={() => setReviewTarget(booking)}
+                              style={{ backgroundColor: "#52c41a", borderColor: "#52c41a", color: "white" }}
+                            >
+                              Đánh giá
+                            </button>
+                          )}
+                          {((!isPending || isExpired) && !((["Confirmed", "Paid"].includes(booking.Status) && !isPast)) && booking.Status !== "Completed") && <span className={styles.noAction}>-</span>}
+                          {booking.Status === "Completed" && booking.IsReviewed && <span className={styles.noAction}>Đã đánh giá</span>}
                         </div>
                       </td>
                     </tr>

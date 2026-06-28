@@ -977,7 +977,9 @@ export async function findBookingsByUserId(userId: number) {
         p.Status AS PaymentStatus,
         p.PaidAt,
         
-        r.Status AS RefundStatus
+        r.Status AS RefundStatus,
+        
+        CAST(CASE WHEN rev.ReviewID IS NOT NULL THEN 1 ELSE 0 END AS BIT) AS IsReviewed
       FROM Bookings b
       OUTER APPLY (
         SELECT
@@ -1020,6 +1022,11 @@ export async function findBookingsByUserId(userId: number) {
         WHERE BookingID = b.BookingID
         ORDER BY RequestedAt DESC
       ) r
+      OUTER APPLY (
+        SELECT TOP 1 ReviewID
+        FROM Reviews
+        WHERE BookingID = b.BookingID
+      ) rev
       WHERE b.UserID = @UserID
       ORDER BY b.CreatedAt DESC
     `);
