@@ -161,6 +161,46 @@ export async function validatePromotion(
     throw Object.assign(new Error("Chỉ áp dụng voucher khi booking đang PendingPayment"), { statusCode: 400 });
   }
 
+  // 7b. Kiểm tra điều kiện áp dụng AI (Sân, Ngày, Khung giờ)
+  const pool = await getPool();
+  const bookingDetailsResult = await pool
+    .request()
+    .input("BookingID", sql.Int, bookingId)
+    .query(`
+      SELECT CourtID, BookingDate, StartTime, EndTime
+      FROM BookingDetails
+      WHERE BookingID = @BookingID
+    `);
+  const bookingDetails = bookingDetailsResult.recordset;
+
+  if (promo.TargetCourtID && !bookingDetails.some((bd: any) => bd.CourtID === promo.TargetCourtID)) {
+    throw Object.assign(new Error("Mã giảm giá này không áp dụng cho sân bạn đã chọn"), { statusCode: 400 });
+  }
+
+  if (promo.TargetDate) {
+    const promoDateStr = formatYYYYMMDD(promo.TargetDate);
+    const dateMatches = bookingDetails.some((bd: any) => formatYYYYMMDD(bd.BookingDate) === promoDateStr);
+    if (!dateMatches) {
+      throw Object.assign(new Error(`Mã giảm giá này chỉ áp dụng cho ngày ${promoDateStr}`), { statusCode: 400 });
+    }
+  }
+
+  if (promo.TargetHourStart != null && promo.TargetHourEnd != null) {
+    const timeMatches = bookingDetails.some((bd: any) => {
+      const startStr = bd.StartTime.toString();
+      const endStr = bd.EndTime.toString();
+      const startHour = parseInt(startStr.split(":")[0]);
+      const endHour = parseInt(endStr.split(":")[0]);
+      return startHour >= promo.TargetHourStart && endHour <= promo.TargetHourEnd;
+    });
+    if (!timeMatches) {
+      throw Object.assign(
+        new Error(`Mã giảm giá này chỉ áp dụng cho khung giờ từ ${promo.TargetHourStart}h00 đến ${promo.TargetHourEnd}h00`),
+        { statusCode: 400 }
+      );
+    }
+  }
+
   // 8. Tính original amount (giá gốc trước giảm)
   const originalAmount = Number(booking.OriginalAmount ?? booking.TotalAmount + booking.DiscountAmount);
 

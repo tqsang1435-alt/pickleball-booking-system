@@ -25,7 +25,7 @@ logger.info(f"GEMINI_API_KEY exists: {key_exists} (Masked: {masked_key})")
 logger.info(f"LLM_PROVIDER: {LLM_PROVIDER}")
 logger.info(f"MODEL_NAME: {MODEL_NAME}")
 
-from app.routers import chatbot_router, coach_router, player_router
+from app.routers import chatbot_router, coach_router, player_router, forecast_router
 
 app = FastAPI(
     title="Pickle Club AI Service",
@@ -46,6 +46,7 @@ app.add_middleware(
 app.include_router(chatbot_router.router, prefix="/api/ai", tags=["Chatbot"])
 app.include_router(coach_router.router, prefix="/api/ai/coaches", tags=["Coach"])
 app.include_router(player_router.router, prefix="/api/ai/players", tags=["Player"])
+app.include_router(forecast_router.router, prefix="/api/ai", tags=["Forecast"])
 
 @app.get("/")
 async def root():

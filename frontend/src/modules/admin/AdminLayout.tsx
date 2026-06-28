@@ -68,6 +68,7 @@ export default function AdminLayout({
       items: [
         { href: "/admin", label: "Dashboard", icon: <DashboardIcon />, hideForStaff: true },
         { href: "/admin/reports", label: "Reports", icon: <BarChartIcon />, hideForStaff: true },
+        { href: "/admin/ai", label: "AI Occupancy", icon: <BarChartIcon />, hideForStaff: true },
       ]
     },
     {

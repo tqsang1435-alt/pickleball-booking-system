@@ -8,6 +8,7 @@ import { isScheduleExpired } from "../coaches/coaches.validation";
 import { sendBookingCreatedEmail, sendPaymentSuccessEmail, sendCoachAssignedEmail, sendNoShowEmail, sendPaymentExpiredEmail } from "@/utils/mail";
 import { countActiveGroupMembers } from "../playgroups/playgroups.repository";
 import { AppError } from "@/utils/AppError";
+import { getPool, sql } from "@/database/connection";
 
 // ---- Create Bookings ----
 
@@ -84,7 +85,45 @@ export async function createCourtBooking(input: CreateCourtBookingInput) {
   );
   if (!slot) throw new Error("Khung gio nay da bi dat hoac khong co slot phu hop");
 
-  const courtFee = Number(slot.Price);
+  const slotPrice = Number(slot.Price);
+  let courtFee = slotPrice;
+  let originalAmount = slotPrice;
+  let discountAmount = 0;
+  let promotionId: number | null = null;
+
+  try {
+    const startHour = parseInt(input.startTime.split(":")[0], 10);
+    const endHour = parseInt(input.endTime.split(":")[0], 10);
+    const targetDate = new Date(input.bookingDate).toISOString().split("T")[0];
+
+    const pool = await getPool();
+    const promoRes = await pool.request()
+      .input("CourtID", sql.Int, input.courtId)
+      .input("TargetDate", sql.Date, targetDate)
+      .input("StartHour", sql.Int, startHour)
+      .input("EndHour", sql.Int, endHour)
+      .query(`
+        SELECT TOP 1 PromotionID, DiscountValue
+        FROM Promotions
+        WHERE Status = 'Active' 
+          AND StartDate <= @TargetDate AND EndDate >= @TargetDate
+          AND TargetDate = @TargetDate
+          AND (TargetCourtID IS NULL OR TargetCourtID = @CourtID)
+          AND TargetHourStart IS NOT NULL AND TargetHourEnd IS NOT NULL
+          AND @StartHour >= TargetHourStart AND @EndHour <= TargetHourEnd
+        ORDER BY DiscountValue DESC
+      `);
+
+    if (promoRes.recordset.length > 0) {
+      const promo = promoRes.recordset[0];
+      promotionId = promo.PromotionID;
+      const discountPercent = Number(promo.DiscountValue);
+      discountAmount = slotPrice * (discountPercent / 100);
+      courtFee = slotPrice - discountAmount;
+    }
+  } catch (err) {
+    console.error("[Booking Dynamic Pricing] Error resolving dynamic slot price:", err);
+  }
 
   // BR-39: Khong cho dat vao slot da Cancelled (xu ly bang Status check o DB)
   const result = await repoCreateCourtBooking({
@@ -95,6 +134,9 @@ export async function createCourtBooking(input: CreateCourtBookingInput) {
     startTime: input.startTime,
     endTime: input.endTime,
     courtFee,
+    originalAmount,
+    discountAmount,
+    promotionId,
     paymentMethod: isStaffWalkIn ? input.paymentMethod : undefined,
     walkInNote,
     bookedByStaffId: isStaffWalkIn ? input.userId : undefined,

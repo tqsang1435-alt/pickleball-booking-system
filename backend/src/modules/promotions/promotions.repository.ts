@@ -50,7 +50,8 @@ export async function findPromotionByCode(code: string) {
         PromotionID, PromotionCode, PromotionName, Description,
         DiscountType, DiscountValue, MaxDiscountAmount, MinOrderAmount,
         UsageLimit, UsedCount, PerUserLimit, ApplyScope,
-        StartDate, EndDate, Status, CreatedBy, CreatedAt, UpdatedAt
+        StartDate, EndDate, Status, CreatedBy, CreatedAt, UpdatedAt,
+        TargetCourtID, TargetHourStart, TargetHourEnd, TargetDate
       FROM Promotions
       WHERE PromotionCode = @Code
     `);

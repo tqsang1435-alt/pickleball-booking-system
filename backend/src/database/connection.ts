@@ -31,6 +31,14 @@ function startBackgroundJobs() {
       // Chạy tác vụ 2: Tự động đánh dấu hoàn thành (Completed) cho các đơn đã Check-in nhưng hết giờ chơi
       const completed = await repoMarkCompletedExpiredCheckins();
 
+      // Chạy tác vụ 3: Huấn luyện lại và đối soát tự động AI
+      const { runAICronJob } = await import("@/modules/ai/ai-analytics.service");
+      await runAICronJob().catch(err => console.error("[Cron] Lỗi chạy AI cron task:", err));
+
+      // Chạy tác vụ 4: Tự động kích hoạt/hết hạn voucher AI
+      const { runPromotionsStatusScheduler } = await import("@/modules/ai/ai-analytics.service");
+      await runPromotionsStatusScheduler().catch(err => console.error("[Cron] Lỗi chạy AI promotion scheduler:", err));
+
       // Chỉ log ra console nếu thực sự có đơn được xử lý để tránh spam log
       if (res.releasedHoldings > 0 || res.autoCheckedIn > 0 || completed > 0) {
         console.log(`[Cron] Hủy ${res.releasedHoldings} đơn hết hạn, Auto Check-in ${res.autoCheckedIn}, Auto Complete ${completed}`);
@@ -70,6 +78,30 @@ export async function getPool() {
     `);
   } catch (err) {
     console.error("Migration error (ensuring LockReason column in Users):", err);
+  }
+
+  // Self-migration for AI Promotions columns
+  try {
+    await pool.request().query(`
+      IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Promotions') AND name = 'TargetCourtID')
+      BEGIN
+        ALTER TABLE Promotions ADD TargetCourtID INT NULL;
+        ALTER TABLE Promotions ADD CONSTRAINT FK_Promotions_TargetCourt FOREIGN KEY (TargetCourtID) REFERENCES Courts(CourtID);
+      END
+
+      IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Promotions') AND name = 'TargetHourStart')
+      BEGIN
+        ALTER TABLE Promotions ADD TargetHourStart INT NULL;
+        ALTER TABLE Promotions ADD TargetHourEnd INT NULL;
+      END
+
+      IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Promotions') AND name = 'TargetDate')
+      BEGIN
+        ALTER TABLE Promotions ADD TargetDate DATE NULL;
+      END
+    `);
+  } catch (err) {
+    console.error("Migration error (ensuring AI columns in Promotions):", err);
   }
 
   // Trả về pool kết nối

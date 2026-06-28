@@ -6,7 +6,9 @@
     "dev": "next dev -p 5000",
     "build": "next build",
     "start": "next start -p 5000",
-    "scrape:admin": "node scripts/scrape-admin-data.js"
+    "scrape:admin": "node scripts/scrape-admin-data.js",
+    "db:migrate-ai": "node scripts/run-ai-migrations.js",
+    "db:seed-ai": "node scripts/prepare-mock-ai-data.js"
   },
   "dependencies": {
     "@payos/node": "^2.0.5",

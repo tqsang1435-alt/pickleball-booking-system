@@ -439,8 +439,12 @@ export default function CourtDetailPage({ courtId }: { courtId: string }) {
                           className={`${styles.slotBtn} ${
                             isSelected ? styles.slotSelected : ""
                           } ${!isAvailable ? styles.slotBooked : ""}`}
+                          style={slot.HasPromo ? { position: "relative", borderColor: "#f87171" } : { position: "relative" }}
                         >
                           {slot.StartTime.substring(0, 5)}
+                          {slot.HasPromo && slot.DiscountPercent && (
+                            <span className={styles.promoTag}>-{slot.DiscountPercent}%</span>
+                          )}
                         </button>
                       );
                     })}
@@ -461,9 +465,25 @@ export default function CourtDetailPage({ courtId }: { courtId: string }) {
               {/* Subtotal calculation */}
               <div className={styles.subtotalRow}>
                 <span>Tạm tính</span>
-                <strong className={styles.subtotalPrice}>
-                  {selectedSlot ? formatCurrency(selectedSlot.Price) : formatCurrency(court.PricePerHour)}
-                </strong>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+                  {selectedSlot && selectedSlot.HasPromo && selectedSlot.DiscountPercent && selectedSlot.OriginalPrice ? (
+                    <>
+                      <span style={{ textDecoration: "line-through", color: "var(--pcs-neutral-400)", fontSize: "13px", marginRight: "4px" }}>
+                        {formatCurrency(selectedSlot.OriginalPrice)}
+                      </span>
+                      <strong className={styles.subtotalPrice}>
+                        {formatCurrency(selectedSlot.Price)}
+                      </strong>
+                      <span style={{ fontSize: "11px", color: "var(--pcs-status-success)", fontWeight: 600 }}>
+                        (Tiết kiệm {formatCurrency(selectedSlot.OriginalPrice - selectedSlot.Price)})
+                      </span>
+                    </>
+                  ) : (
+                    <strong className={styles.subtotalPrice}>
+                      {selectedSlot ? formatCurrency(selectedSlot.Price) : formatCurrency(court.PricePerHour)}
+                    </strong>
+                  )}
+                </div>
               </div>
 
               {/* Primary action buttons */}

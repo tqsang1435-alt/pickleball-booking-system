@@ -48,6 +48,9 @@ export type CourtSlot = {
   EndTime: string;
   Price: number;
   Status: "Available" | "Blocked" | "Booked" | "Holding" | "Maintenance" | string;
+  OriginalPrice?: number;
+  DiscountPercent?: number;
+  HasPromo?: boolean;
 };
 
 export async function getCourtSlots(

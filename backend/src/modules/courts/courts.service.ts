@@ -6,6 +6,7 @@
 
 import * as courtRepo from "./courts.repository";
 import type { CreateCourtSlotInput } from "./courts.type";
+import { getPool, sql } from "@/database/connection";
 import { validateAndSaveCourtFile, deleteFile } from "../../utils/upload";
 import {
   validateCreateCourtFields,
@@ -182,6 +183,24 @@ export async function deleteCourt(courtId: number) {
 
 // ─── COURT SLOTS ─────────────────────────────────────────────
 
+async function findActiveDiscountsForDay(courtId: number, date: string): Promise<any[]> {
+  const pool = await getPool();
+  const targetDate = new Date(date).toISOString().split("T")[0];
+  const result = await pool.request()
+    .input("CourtID", sql.Int, courtId)
+    .input("TargetDate", sql.Date, targetDate)
+    .query(`
+      SELECT TargetHourStart, TargetHourEnd, DiscountValue
+      FROM Promotions
+      WHERE Status = 'Active'
+        AND StartDate <= @TargetDate AND EndDate >= @TargetDate
+        AND TargetDate = @TargetDate
+        AND (TargetCourtID IS NULL OR TargetCourtID = @CourtID)
+        AND TargetHourStart IS NOT NULL AND TargetHourEnd IS NOT NULL
+    `);
+  return result.recordset;
+}
+
 export async function getCourtSlots(courtId: number, slotDate: string) {
   if (!courtId) {
     throw new Error("courtId is required");
@@ -197,7 +216,45 @@ export async function getCourtSlots(courtId: number, slotDate: string) {
     throw new Error("Court not found");
   }
 
-  return courtRepo.findCourtSlots(courtId, slotDate);
+  const slots = await courtRepo.findCourtSlots(courtId, slotDate);
+  
+  let activePromos: any[] = [];
+  try {
+    activePromos = await findActiveDiscountsForDay(courtId, slotDate);
+  } catch (err) {
+    console.error("[Booking Dynamic Pricing] Error listing active promos for slots:", err);
+  }
+
+  return slots.map((slot: any) => {
+    const startStr = slot.StartTime instanceof Date ? slot.StartTime.toISOString().split("T")[1] : slot.StartTime.toString();
+    const endStr = slot.EndTime instanceof Date ? slot.EndTime.toISOString().split("T")[1] : slot.EndTime.toString();
+    
+    const startHour = parseInt(startStr.split(":")[0]);
+    const endHour = parseInt(endStr.split(":")[0]);
+
+    // Find if there is a promo matching the time slot
+    const promo = activePromos.find((p: any) => startHour >= p.TargetHourStart && endHour <= p.TargetHourEnd);
+
+    if (promo) {
+      const discountPercent = Number(promo.DiscountValue);
+      const originalPrice = Number(slot.Price);
+      const discountedPrice = originalPrice * (1 - discountPercent / 100);
+      return {
+        ...slot,
+        OriginalPrice: originalPrice,
+        Price: discountedPrice,
+        DiscountPercent: discountPercent,
+        HasPromo: true,
+      };
+    }
+    
+    return {
+      ...slot,
+      OriginalPrice: Number(slot.Price),
+      DiscountPercent: 0,
+      HasPromo: false,
+    };
+  });
 }
 
 export async function createCourtSlot(input: CreateCourtSlotInput) {

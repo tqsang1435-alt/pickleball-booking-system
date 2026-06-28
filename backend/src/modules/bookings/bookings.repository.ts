@@ -302,6 +302,9 @@ export async function repoCreateCourtBooking(data: {
   startTime: string;
   endTime: string;
   courtFee: number;
+  originalAmount?: number;
+  discountAmount?: number;
+  promotionId?: number | null;
   paymentMethod?: "Cash" | "BankTransfer";
   walkInNote?: string;
   bookedByStaffId?: number;
@@ -324,8 +327,10 @@ export async function repoCreateCourtBooking(data: {
       .input("BookingDate", sql.Date, data.bookingDate)
       .input("CourtFee", sql.Decimal(18, 2), data.courtFee)
       .input("CoachFee", sql.Decimal(18, 2), 0)
-      .input("DiscountAmount", sql.Decimal(18, 2), 0)
+      .input("DiscountAmount", sql.Decimal(18, 2), data.discountAmount ?? 0)
       .input("TotalAmount", sql.Decimal(18, 2), data.courtFee)
+      .input("OriginalAmount", sql.Decimal(18, 2), data.originalAmount ?? data.courtFee)
+      .input("PromotionID", sql.Int, data.promotionId ?? null)
       .input("SlotID", sql.Int, data.slotId)
       .input("CourtID", sql.Int, data.courtId)
       .input("StartTime", sql.VarChar(5), data.startTime)
@@ -353,13 +358,13 @@ export async function repoCreateCourtBooking(data: {
 
         INSERT INTO Bookings (
           BookingCode, UserID, BookingType, BookingDate,
-          CourtFee, CoachFee, DiscountAmount, TotalAmount, Status, CancelReason,
+          CourtFee, CoachFee, DiscountAmount, TotalAmount, OriginalAmount, PromotionID, Status, CancelReason,
           GuestName, GuestPhone, BookedByStaffID, PaymentMethod, PaymentStatus
         )
         OUTPUT INSERTED.*
         VALUES (
           @BookingCode, @UserID, @BookingType, @BookingDate,
-          @CourtFee, @CoachFee, @DiscountAmount, @TotalAmount, @BookingStatus, @WalkInNote,
+          @CourtFee, @CoachFee, @DiscountAmount, @TotalAmount, @OriginalAmount, @PromotionID, @BookingStatus, @WalkInNote,
           @GuestName, @GuestPhone, @BookedByStaffID, @PaymentMethod,
           CASE WHEN @PaymentMethod IS NULL THEN 'Pending' ELSE 'Paid' END
         );
