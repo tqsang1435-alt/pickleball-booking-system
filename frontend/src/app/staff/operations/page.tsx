@@ -3,7 +3,7 @@ import StaffOperationsClient from "./StaffOperationsClient";
 
 export default function Page() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<div>Đang tải...</div>}>
       <StaffOperationsClient />
     </Suspense>
   );
