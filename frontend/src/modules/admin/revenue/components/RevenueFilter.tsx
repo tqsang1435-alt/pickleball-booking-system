@@ -113,6 +113,7 @@ export default function RevenueFilter({
             <option value="Court">Đặt sân</option>
             <option value="Coach">Thuê Coach</option>
             <option value="Combo">Combo</option>
+            <option value="Tournament">Giải đấu</option>
           </select>
         </div>
 

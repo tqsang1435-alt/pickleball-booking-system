@@ -133,19 +133,19 @@ function applyRevenueFilters(
 
   if (query.fromDate) {
     conditions.push(
-      "CAST(COALESCE(p.PaidAt, p.CreatedAt) AS DATE) >= @FromDate"
+      "CAST(p.CreatedAt AS DATE) >= @FromDate"
     );
   }
 
   if (query.toDate) {
     conditions.push(
-      "CAST(COALESCE(p.PaidAt, p.CreatedAt) AS DATE) <= @ToDate"
+      "CAST(p.CreatedAt AS DATE) <= @ToDate"
     );
   }
 
   if (query.serviceType) {
     conditions.push(
-      "b.BookingType = @ServiceType"
+      "p.ServiceType = @ServiceType"
     );
   }
 
@@ -171,6 +171,33 @@ export async function getAdminRevenue(
 
   const result =
     await request.query(`
+      WITH UnifiedPayments AS (
+        SELECT 
+          p.PaymentID AS ID,
+          COALESCE(u.FullName, b.GuestName, 'Khách vãng lai') AS CustomerName,
+          b.BookingType AS ServiceType,
+          p.Amount,
+          p.PaymentMethod,
+          p.Status,
+          COALESCE(p.PaidAt, p.CreatedAt) AS CreatedAt
+        FROM Payments p
+        INNER JOIN Bookings b ON p.BookingID = b.BookingID
+        LEFT JOIN Users u ON b.UserID = u.UserID
+        
+        UNION ALL
+        
+        SELECT
+          tp.TournamentPaymentID AS ID,
+          u.FullName AS CustomerName,
+          'Tournament' AS ServiceType,
+          tp.Amount,
+          tp.PaymentMethod,
+          CASE WHEN tp.PaymentStatus = 'Paid' THEN 'Paid' WHEN tp.PaymentStatus = 'Refunded' THEN 'Refunded' ELSE 'Failed' END AS Status,
+          COALESCE(tp.PaidAt, tp.CreatedAt) AS CreatedAt
+        FROM TournamentPayments tp
+        INNER JOIN TournamentRegistrations tr ON tp.RegistrationID = tr.RegistrationID
+        INNER JOIN Users u ON tr.RegisteredBy = u.UserID
+      )
       SELECT
         ISNULL(
           SUM(
@@ -187,8 +214,7 @@ export async function getAdminRevenue(
           SUM(
             CASE
               WHEN p.Status = 'Paid'
-                AND CAST(COALESCE(p.PaidAt, p.CreatedAt) AS DATE) =
-                  CAST(GETDATE() AS DATE)
+                AND CAST(p.CreatedAt AS DATE) = CAST(GETDATE() AS DATE)
                 THEN p.Amount
               ELSE 0
             END
@@ -200,8 +226,8 @@ export async function getAdminRevenue(
           SUM(
             CASE
               WHEN p.Status = 'Paid'
-                AND YEAR(COALESCE(p.PaidAt, p.CreatedAt)) = YEAR(GETDATE())
-                AND MONTH(COALESCE(p.PaidAt, p.CreatedAt)) = MONTH(GETDATE())
+                AND YEAR(p.CreatedAt) = YEAR(GETDATE())
+                AND MONTH(p.CreatedAt) = MONTH(GETDATE())
                 THEN p.Amount
               ELSE 0
             END
@@ -212,7 +238,7 @@ export async function getAdminRevenue(
         COUNT(
           DISTINCT CASE
             WHEN p.Status = 'Paid'
-              THEN p.BookingID
+              THEN p.ID
           END
         ) AS PaidBookings,
 
@@ -220,10 +246,7 @@ export async function getAdminRevenue(
           (
             SELECT SUM(r.RefundAmount)
             FROM Refunds r
-            INNER JOIN Payments rp
-              ON r.PaymentID = rp.PaymentID
-            INNER JOIN Bookings rb
-              ON rp.BookingID = rb.BookingID
+            LEFT JOIN Bookings rb ON r.BookingID = rb.BookingID
             WHERE r.Status = 'Completed'
               AND (
                 @FromDate IS NULL
@@ -235,70 +258,124 @@ export async function getAdminRevenue(
               )
               AND (
                 @ServiceType IS NULL
-                OR rb.BookingType = @ServiceType
+                OR (@ServiceType = 'Tournament' AND r.RegistrationID IS NOT NULL)
+                OR (rb.BookingType = @ServiceType)
               )
           ),
           0
         ) AS RefundAmount
 
-      FROM Payments p
-      INNER JOIN Bookings b
-        ON p.BookingID = b.BookingID
+      FROM UnifiedPayments p
       WHERE
         ${filters};
 
+      WITH UnifiedPayments AS (
+        SELECT 
+          p.Amount,
+          p.Status,
+          COALESCE(p.PaidAt, p.CreatedAt) AS CreatedAt,
+          b.BookingType AS ServiceType
+        FROM Payments p
+        INNER JOIN Bookings b ON p.BookingID = b.BookingID
+        
+        UNION ALL
+        
+        SELECT
+          tp.Amount,
+          CASE WHEN tp.PaymentStatus = 'Paid' THEN 'Paid' ELSE 'Failed' END AS Status,
+          COALESCE(tp.PaidAt, tp.CreatedAt) AS CreatedAt,
+          'Tournament' AS ServiceType
+        FROM TournamentPayments tp
+      )
       SELECT
         CONVERT(
           VARCHAR(10),
-          CAST(COALESCE(p.PaidAt, p.CreatedAt) AS DATE),
+          CAST(p.CreatedAt AS DATE),
           23
         ) AS RevenueDate,
 
         ISNULL(SUM(p.Amount), 0) AS Revenue
 
-      FROM Payments p
-      INNER JOIN Bookings b
-        ON p.BookingID = b.BookingID
+      FROM UnifiedPayments p
       WHERE
         ${filters}
         AND p.Status = 'Paid'
       GROUP BY
-        CAST(COALESCE(p.PaidAt, p.CreatedAt) AS DATE)
+        CAST(p.CreatedAt AS DATE)
       ORDER BY
         RevenueDate ASC;
 
+      WITH UnifiedPayments AS (
+        SELECT 
+          p.Amount,
+          p.Status,
+          COALESCE(p.PaidAt, p.CreatedAt) AS CreatedAt,
+          b.BookingType AS ServiceType
+        FROM Payments p
+        INNER JOIN Bookings b ON p.BookingID = b.BookingID
+        
+        UNION ALL
+        
+        SELECT
+          tp.Amount,
+          CASE WHEN tp.PaymentStatus = 'Paid' THEN 'Paid' ELSE 'Failed' END AS Status,
+          COALESCE(tp.PaidAt, tp.CreatedAt) AS CreatedAt,
+          'Tournament' AS ServiceType
+        FROM TournamentPayments tp
+      )
       SELECT
-        b.BookingType,
+        p.ServiceType AS BookingType,
         ISNULL(SUM(p.Amount), 0) AS Revenue
-      FROM Payments p
-      INNER JOIN Bookings b
-        ON p.BookingID = b.BookingID
+      FROM UnifiedPayments p
       WHERE
         ${filters}
         AND p.Status = 'Paid'
       GROUP BY
-        b.BookingType
+        p.ServiceType
       ORDER BY
         Revenue DESC;
 
+      WITH UnifiedPayments AS (
+        SELECT 
+          p.PaymentID AS ID,
+          COALESCE(u.FullName, b.GuestName, 'Khách vãng lai') AS CustomerName,
+          b.BookingType AS ServiceType,
+          p.Amount,
+          p.PaymentMethod,
+          p.Status,
+          COALESCE(p.PaidAt, p.CreatedAt) AS CreatedAt
+        FROM Payments p
+        INNER JOIN Bookings b ON p.BookingID = b.BookingID
+        LEFT JOIN Users u ON b.UserID = u.UserID
+        
+        UNION ALL
+        
+        SELECT
+          tp.TournamentPaymentID AS ID,
+          u.FullName AS CustomerName,
+          'Tournament' AS ServiceType,
+          tp.Amount,
+          tp.PaymentMethod,
+          CASE WHEN tp.PaymentStatus = 'Paid' THEN 'Paid' WHEN tp.PaymentStatus = 'Refunded' THEN 'Refunded' ELSE 'Failed' END AS Status,
+          COALESCE(tp.PaidAt, tp.CreatedAt) AS CreatedAt
+        FROM TournamentPayments tp
+        INNER JOIN TournamentRegistrations tr ON tp.RegistrationID = tr.RegistrationID
+        INNER JOIN Users u ON tr.RegisteredBy = u.UserID
+      )
       SELECT TOP 20
-        p.PaymentID,
-        ISNULL(u.FullName, b.GuestName) AS CustomerName,
-        b.BookingType,
+        p.ID AS PaymentID,
+        p.CustomerName,
+        p.ServiceType AS BookingType,
         p.Amount,
         p.PaymentMethod,
         p.Status,
-        COALESCE(p.PaidAt, p.CreatedAt) AS CreatedAt
-      FROM Payments p
-      INNER JOIN Bookings b
-        ON p.BookingID = b.BookingID
-      LEFT JOIN Users u
-        ON b.UserID = u.UserID
+        p.CreatedAt
+      FROM UnifiedPayments p
       WHERE
         ${filters}
       ORDER BY
-        COALESCE(p.PaidAt, p.CreatedAt) DESC,
-        p.PaymentID DESC;
+        p.CreatedAt DESC,
+        p.ID DESC;
     `);
 
   const recordsets =

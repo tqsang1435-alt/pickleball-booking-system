@@ -31,6 +31,13 @@ function startBackgroundJobs() {
       // Chạy tác vụ 2: Tự động đánh dấu hoàn thành (Completed) cho các đơn đã Check-in nhưng hết giờ chơi
       const completed = await repoMarkCompletedExpiredCheckins();
 
+      // Chạy tác vụ giải phóng đăng ký giải đấu hết hạn 10 phút thanh toán
+      const { releaseExpiredTournamentRegistrations } = await import("@/modules/tournaments/tournaments.service");
+      const releasedTournaments = await releaseExpiredTournamentRegistrations().catch(err => {
+        console.error("[Cron] Lỗi chạy release tournament registrations:", err);
+        return { releasedCount: 0 };
+      });
+      
       // Chạy tác vụ 3: Huấn luyện lại và đối soát tự động AI
       const { runAICronJob } = await import("@/modules/ai/ai-analytics.service");
       await runAICronJob().catch(err => console.error("[Cron] Lỗi chạy AI cron task:", err));
@@ -40,8 +47,8 @@ function startBackgroundJobs() {
       await runPromotionsStatusScheduler().catch(err => console.error("[Cron] Lỗi chạy AI promotion scheduler:", err));
 
       // Chỉ log ra console nếu thực sự có đơn được xử lý để tránh spam log
-      if (res.releasedHoldings > 0 || res.autoCheckedIn > 0 || completed > 0) {
-        console.log(`[Cron] Hủy ${res.releasedHoldings} đơn hết hạn, Auto Check-in ${res.autoCheckedIn}, Auto Complete ${completed}`);
+      if (res.releasedHoldings > 0 || res.autoCheckedIn > 0 || completed > 0 || releasedTournaments.releasedCount > 0) {
+        console.log(`[Cron] Hủy ${res.releasedHoldings} đơn hết hạn, Auto Check-in ${res.autoCheckedIn}, Auto Complete ${completed}, Hủy ${releasedTournaments.releasedCount} đăng ký giải hết hạn`);
       }
     } catch (err) {
       console.error("[Cron] Lỗi chạy background task:", err);

@@ -16,8 +16,10 @@ export type RefundMethod = "Momo" | "PayOSManual" | "Manual";
 
 // Input khi tạo refund record mới
 export type CreateRefundInput = {
-  bookingId: number;
-  paymentId: number;
+  bookingId?: number | null;
+  paymentId?: number | null;
+  registrationId?: number | null;
+  tournamentPaymentId?: number | null;
   refundCode: string;
   refundAmount: number;
   refundMethod: RefundMethod;

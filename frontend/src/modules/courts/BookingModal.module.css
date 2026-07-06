@@ -463,7 +463,7 @@
 
 .headerIconWrapper {
   background: #f0fdf4;
-  color: #16a34a;
+  color: #059669;
   padding: 12px;
   border-radius: 12px;
   display: flex;
@@ -659,7 +659,7 @@
 .checkboxContainer input {
   margin-top: 3px;
   cursor: pointer;
-  accent-color: #16a34a;
+  accent-color: #059669;
 }
 
 .policyText {

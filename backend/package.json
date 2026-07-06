@@ -8,7 +8,12 @@
     "start": "next start -p 5000",
     "scrape:admin": "node scripts/scrape-admin-data.js",
     "db:migrate-ai": "node scripts/run-ai-migrations.js",
-    "db:seed-ai": "node scripts/prepare-mock-ai-data.js"
+    "db:migrate-tournaments": "node scripts/run-tournament-migrations.js",
+    "db:seed-ai": "node scripts/prepare-mock-ai-data.js",
+    "seed:e2e": "npx tsx scripts/seed-e2e-tournament.ts",
+    "reset:e2e": "npx tsx scripts/reset-e2e-tournament.ts",
+    "seed:e2e:scores": "npx tsx scripts/seed-e2e-scores.ts",
+    "seed:e2e:knockout": "npx tsx scripts/seed-e2e-knockout-scores.ts"
   },
   "dependencies": {
     "@payos/node": "^2.0.5",

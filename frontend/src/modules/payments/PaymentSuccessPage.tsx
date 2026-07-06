@@ -52,6 +52,10 @@ export default function PaymentSuccessPage() {
   const orderCode = searchParams.get("orderCode"); // PayOS
   const method = searchParams.get("method"); // "PayOS" khi redirect từ payos-return
 
+  const isTournament = searchParams.get("type") === "tournament";
+  const tournamentIdStr = searchParams.get("tournamentId");
+  const tournamentId = Number(tournamentIdStr);
+
   const [status, setStatus] = useState<PaymentStatusResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -71,9 +75,34 @@ export default function PaymentSuccessPage() {
   const loadStatus = useCallback(
     async (token: string, bid: number): Promise<PaymentStatusResult | null> => {
       try {
-        const data = await getPaymentStatus(token, bid);
-        setStatus(data);
-        return data;
+        if (isTournament) {
+          const { tournamentApi } = await import("@/services/tournamentApi");
+          const reg = await tournamentApi.getMyRegistration(tournamentId);
+          if (!reg) {
+            setError("Không tìm thấy thông tin đăng ký giải đấu.");
+            return null;
+          }
+          // Map tournament registration status to synthetic PaymentStatusResult
+          const synthStatus: PaymentStatusResult = {
+            bookingId: reg.RegistrationID,
+            bookingStatus: reg.RegistrationStatus, // "Confirmed" or "PendingPayment"
+            paymentId: reg.RegistrationID,
+            paymentStatus: reg.PaymentStatus, // "Paid" or "Pending"
+            paymentMethod: (method as any) || "PayOS",
+            paymentCode: paymentCode || `#${orderCode}`,
+            amount: reg.RegistrationFee || 0,
+            expiredAt: reg.PaymentExpiredAt || null,
+            paidAt: reg.PaymentStatus === "Paid" ? (reg.UpdatedAt || new Date().toISOString()) : null,
+            failedAt: null,
+            gatewayOrderId: orderCode,
+          };
+          setStatus(synthStatus);
+          return synthStatus;
+        } else {
+          const data = await getPaymentStatus(token, bid);
+          setStatus(data);
+          return data;
+        }
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Không thể tải trạng thái thanh toán."
@@ -83,14 +112,22 @@ export default function PaymentSuccessPage() {
         setLoading(false);
       }
     },
-    []
+    [isTournament, tournamentId, method, paymentCode, orderCode]
   );
 
   useEffect(() => {
-    if (!bookingId || isNaN(bookingId)) {
-      setError("Không tìm thấy thông tin booking.");
-      setLoading(false);
-      return;
+    if (isTournament) {
+      if (isNaN(tournamentId)) {
+        setError("Không tìm thấy thông tin giải đấu.");
+        setLoading(false);
+        return;
+      }
+    } else {
+      if (!bookingId || isNaN(bookingId)) {
+        setError("Không tìm thấy thông tin booking.");
+        setLoading(false);
+        return;
+      }
     }
 
     const token = getToken();
@@ -100,15 +137,17 @@ export default function PaymentSuccessPage() {
       return;
     }
 
+    const idToLoad = isTournament ? tournamentId : bookingId;
+
     // Load lần đầu
-    loadStatus(token, bookingId).then((data) => {
+    loadStatus(token, idToLoad).then((data) => {
       // Nếu Pending → bắt đầu polling (tối đa 30 lần × 4s = 2 phút)
       if (data?.paymentStatus === "Pending") {
         let count = 0;
         pollRef.current = setInterval(async () => {
           count++;
           setPollCount(count);
-          const latest = await loadStatus(token, bookingId);
+          const latest = await loadStatus(token, idToLoad);
           // Dừng polling nếu đã có kết quả cuối hoặc đủ số lần
           if (latest?.paymentStatus !== "Pending" || count >= 30) {
             stopPolling();
@@ -119,7 +158,7 @@ export default function PaymentSuccessPage() {
 
     return () => stopPolling();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookingIdStr]);
+  }, [bookingIdStr, tournamentIdStr, isTournament]);
 
   // ── Loading ───────────────────────────────────────────
 
@@ -149,9 +188,15 @@ export default function PaymentSuccessPage() {
             Không tải được trạng thái
           </h1>
           <p className={styles.subtitle}>{error || "Có lỗi xảy ra."}</p>
-          <Link href="/bookings" className={styles.btnPrimary}>
-            Xem lịch sử booking →
-          </Link>
+          {isTournament ? (
+            <Link href={`/tournaments/${tournamentId || ""}`} className={styles.btnPrimary}>
+              Quay lại trang giải đấu →
+            </Link>
+          ) : (
+            <Link href="/bookings" className={styles.btnPrimary}>
+              Xem lịch sử booking →
+            </Link>
+          )}
         </div>
       </div>
     );
@@ -206,13 +251,17 @@ export default function PaymentSuccessPage() {
 
         <p className={styles.subtitle}>
           {isPaid
-            ? "Thanh toán thành công. Thông tin đặt sân đã được gửi về email của bạn. Bạn cũng có thể xem thông báo trong mục chuông thông báo."
+            ? isTournament
+              ? "Thanh toán thành công. Thông tin đăng ký giải đấu của bạn đã được xác nhận chính thức."
+              : "Thanh toán thành công. Thông tin đặt sân đã được gửi về email của bạn. Bạn cũng có thể xem thông báo trong mục chuông thông báo."
             : isPending && isPayOS
             ? "Nếu bạn đã chuyển khoản, hệ thống đang xác nhận. Thường mất 30 giây – 2 phút."
             : isPending
             ? "Hệ thống đang xác nhận giao dịch. Vui lòng kiểm tra lại sau vài phút."
             : isFailed
-            ? "Giao dịch không thành công. Bạn có thể thử thanh toán lại từ lịch sử booking."
+            ? isTournament
+              ? "Giao dịch đăng ký không thành công. Bạn có thể thử thanh toán lại từ trang chi tiết giải đấu."
+              : "Giao dịch không thành công. Bạn có thể thử thanh toán lại từ lịch sử booking."
             : "Trạng thái giao dịch đang được cập nhật."}
         </p>
 
@@ -243,7 +292,7 @@ export default function PaymentSuccessPage() {
             </div>
           )}
           <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>Trạng thái booking</span>
+            <span className={styles.infoLabel}>{isTournament ? "Trạng thái đăng ký" : "Trạng thái booking"}</span>
             <span
               className={`${styles.statusBadge} ${
                 status.bookingStatus === "Confirmed" ? "" : styles.statusPending
@@ -288,12 +337,25 @@ export default function PaymentSuccessPage() {
         )}
 
         {/* CTA buttons */}
-        <Link href="/bookings" className={styles.btnPrimary}>
-          Xem lịch sử booking →
-        </Link>
-        <Link href="/courts" className={styles.btnSecondary}>
-          Đặt thêm sân
-        </Link>
+        {isTournament ? (
+          <>
+            <Link href={`/tournaments/${tournamentId}`} className={styles.btnPrimary}>
+              Quay lại trang giải đấu →
+            </Link>
+            <Link href="/tournaments" className={styles.btnSecondary}>
+              Khám phá giải đấu khác
+            </Link>
+          </>
+        ) : (
+          <>
+            <Link href="/bookings" className={styles.btnPrimary}>
+              Xem lịch sử booking →
+            </Link>
+            <Link href="/courts" className={styles.btnSecondary}>
+              Đặt thêm sân
+            </Link>
+          </>
+        )}
       </div>
     </div>
   );

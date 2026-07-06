@@ -19,7 +19,13 @@ export async function getRecommendations(date: string) {
   return repo.getPromotionRecommendations(date);
 }
 
-export async function updateRecommendation(id: number, status: string, adminId?: number) {
+export async function updateRecommendation(
+  id: number,
+  status: string,
+  adminId?: number,
+  customDiscount?: number,
+  customMarketingMessage?: string
+) {
   if (!id || id <= 0) {
     throw new Error("ID đề xuất không hợp lệ");
   }
@@ -38,6 +44,16 @@ export async function updateRecommendation(id: number, status: string, adminId?:
     // Retrieve recommendation details
     const rec = await repo.findRecommendationById(id);
     if (rec) {
+      if (customDiscount !== undefined && customDiscount !== null) {
+        rec.SuggestedDiscount = customDiscount;
+      }
+      if (customMarketingMessage !== undefined && customMarketingMessage !== null) {
+        rec.MarketingMessage = customMarketingMessage;
+      }
+
+      // Update details in DB
+      await repo.updateRecommendationDetails(id, rec.SuggestedDiscount, rec.MarketingMessage);
+
       // Auto-register promotion as Inactive (Scheduled)
       promoCode = await repo.createActivePromotionFromRecommendation(rec, adminId);
       

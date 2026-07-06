@@ -154,6 +154,13 @@ export async function findAvailableCourtSlot(
         AND StartTime = CAST(@StartTime AS TIME)
         AND EndTime = CAST(@EndTime AS TIME)
         AND Status = 'Available'
+        AND NOT EXISTS (
+          SELECT 1 FROM TournamentCourtBlocks b
+          WHERE b.CourtID = CourtSlots.CourtID
+            AND b.Status = 'Active'
+            AND b.StartDateTime < CAST(CAST(CourtSlots.SlotDate AS VARCHAR(10)) + ' ' + CAST(CourtSlots.EndTime AS VARCHAR(8)) AS DATETIME)
+            AND b.EndDateTime > CAST(CAST(CourtSlots.SlotDate AS VARCHAR(10)) + ' ' + CAST(CourtSlots.StartTime AS VARCHAR(8)) AS DATETIME)
+        )
     `);
 
   return result.recordset[0] ?? null;

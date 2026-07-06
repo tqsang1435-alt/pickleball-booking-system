@@ -94,6 +94,13 @@ export async function findAvailableCourts(
       WHERE cs.SlotDate = @SlotDate
         AND cs.Status = 'Available'
         AND c.Status = 'Available'
+        AND NOT EXISTS (
+          SELECT 1 FROM TournamentCourtBlocks b
+          WHERE b.CourtID = c.CourtID
+            AND b.Status = 'Active'
+            AND b.StartDateTime < CAST(CAST(cs.SlotDate AS VARCHAR(10)) + ' ' + CAST(cs.EndTime AS VARCHAR(8)) AS DATETIME)
+            AND b.EndDateTime > CAST(CAST(cs.SlotDate AS VARCHAR(10)) + ' ' + CAST(cs.StartTime AS VARCHAR(8)) AS DATETIME)
+        )
   `;
 
   if (startTime && endTime) {

@@ -46,6 +46,7 @@ export default function AIAnaDashboard() {
   const [recommendations, setRecommendations] = useState<PromotionRecommendationData[]>([]);
   const [logs, setLogs] = useState<AIModelLogData[]>([]);
   const [accuracy, setAccuracy] = useState<AccuracyMetricSummary[]>([]);
+  const [editingRecs, setEditingRecs] = useState<Record<number, { discount: number; marketingMessage: string }>>({});
   
   // UI States
   const [loading, setLoading] = useState<boolean>(true);
@@ -53,6 +54,14 @@ export default function AIAnaDashboard() {
   const [selectedCourt, setSelectedCourt] = useState<string>("All");
   const [activeTab, setActiveTab] = useState<"forecasts" | "recommendations" | "accuracy" | "logs">("forecasts");
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  const getBoostForDiscount = (d: number) => {
+    if (d <= 0) return 0;
+    if (d <= 10) return 15;
+    if (d <= 20) return 30;
+    if (d <= 35) return 45;
+    return 55;
+  };
 
   const showToast = (message: string, type: "success" | "error" = "success") => {
     setToast({ message, type });
@@ -98,14 +107,25 @@ export default function AIAnaDashboard() {
     }
   }, [activeTab]);
 
-  const handleStatusUpdate = async (id: number, newStatus: "Approved" | "Rejected") => {
+  const handleStatusUpdate = async (
+    id: number,
+    newStatus: "Approved" | "Rejected",
+    customDiscount?: number,
+    customMarketingMessage?: string
+  ) => {
     try {
-      const result = await updateRecommendationStatus(id, newStatus);
+      const result = await updateRecommendationStatus(id, newStatus, customDiscount, customMarketingMessage);
       if (result.success) {
         showToast(`Đề xuất đã được ${newStatus === "Approved" ? "Duyệt" : "Từ chối"}`);
         // Refresh local recommendations
         setRecommendations(prev => 
-          prev.map(r => r.RecommendationID === id ? { ...r, Status: newStatus, UpdatedAt: new Date().toISOString() } : r)
+          prev.map(r => r.RecommendationID === id ? { 
+            ...r, 
+            Status: newStatus,
+            SuggestedDiscount: customDiscount !== undefined ? customDiscount : r.SuggestedDiscount,
+            MarketingMessage: customMarketingMessage !== undefined ? customMarketingMessage : r.MarketingMessage,
+            UpdatedAt: new Date().toISOString() 
+          } : r)
         );
       }
     } catch (error: any) {
@@ -154,12 +174,23 @@ export default function AIAnaDashboard() {
     return row;
   });
 
+  // Filter recommendations that are in the past if date is today
+  const filteredRecommendations = recommendations.filter((rec) => {
+    const todayStr = new Date().toISOString().split("T")[0];
+    if (date !== todayStr) return true;
+    
+    // Parse starting hour, e.g., "05" from "05:00-06:00"
+    const startHour = parseInt(rec.TargetHourRange.split(":")[0], 10);
+    const currentHour = new Date().getHours();
+    return startHour > currentHour;
+  });
+
   // Calculate KPIs
   const avgOccupancy = forecasts.length > 0 
     ? (forecasts.reduce((sum, f) => sum + f.PredictedRate, 0) / forecasts.length).toFixed(1)
     : "0.0";
-  const promoCount = recommendations.length;
-  const activePromoCount = recommendations.filter(r => r.Status === "Approved" || r.Status === "Implemented").length;
+  const promoCount = filteredRecommendations.length;
+  const activePromoCount = filteredRecommendations.filter(r => r.Status === "Approved" || r.Status === "Implemented").length;
   const modelVersion = forecasts[0]?.ModelVersion || "N/A";
 
   return (
@@ -357,75 +388,121 @@ export default function AIAnaDashboard() {
               {activeTab === "recommendations" && (
                 <div className={styles.recsList}>
                   <h3 className={styles.panelTitle}>Khuyến Nghị Giá Ưu Đãi Động & Tiếp Thị Tự Động</h3>
-                  {recommendations.length === 0 ? (
+                  {filteredRecommendations.length === 0 ? (
                     <div className={styles.emptyState}>Không có khung giờ nào dưới ngưỡng {threshold}% cần áp dụng khuyến mãi.</div>
                   ) : (
-                    recommendations.map((rec) => (
-                      <div className={styles.recItem} key={rec.RecommendationID}>
-                        <div className={styles.recHeader}>
-                          <span className={styles.recTime}>
-                            ⏰ Khung giờ: {rec.TargetHourRange}
-                          </span>
-                          <span className={`${styles.badge} ${
-                            rec.Status === "Approved" ? styles.badgeApproved :
-                            rec.Status === "Rejected" ? styles.badgeRejected :
-                            rec.Status === "Implemented" ? styles.badgeImplemented : styles.badgeSuggested
-                          }`}>
-                            {rec.Status}
-                          </span>
-                          <span className={styles.recDiscount}>
-                            Giảm giá {rec.SuggestedDiscount}%
-                          </span>
-                        </div>
+                    filteredRecommendations.map((rec) => {
+                      const currentDiscount = editingRecs[rec.RecommendationID]?.discount ?? rec.SuggestedDiscount;
+                      const currentMarketingMessage = editingRecs[rec.RecommendationID]?.marketingMessage ?? rec.MarketingMessage;
+                      const activeBoost = getBoostForDiscount(currentDiscount);
 
-                        <div className={styles.recGrid}>
-                          <div className={styles.recTextContent}>
-                            <div>
-                              <span className={styles.recLabel}>Lý do đề xuất (AI Reasoning)</span>
-                              <div className={styles.recVal}>{rec.Reasoning}</div>
+                      return (
+                        <div className={styles.recItem} key={rec.RecommendationID}>
+                          <div className={styles.recHeader}>
+                            <span className={styles.recTime}>
+                              ⏰ Khung giờ: {rec.TargetHourRange}
+                            </span>
+                            <span className={`${styles.badge} ${
+                              rec.Status === "Approved" ? styles.badgeApproved :
+                              rec.Status === "Rejected" ? styles.badgeRejected :
+                              rec.Status === "Implemented" ? styles.badgeImplemented : styles.badgeSuggested
+                            }`}>
+                              {rec.Status}
+                            </span>
+                            {rec.Status === "Suggested" ? (
+                              <span className={styles.recDiscountEdit}>
+                                Giảm giá:{" "}
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={currentDiscount}
+                                  onChange={(e) => {
+                                    const val = Math.min(100, Math.max(0, Number(e.target.value)));
+                                    setEditingRecs(prev => ({
+                                      ...prev,
+                                      [rec.RecommendationID]: {
+                                        marketingMessage: prev[rec.RecommendationID]?.marketingMessage ?? currentMarketingMessage,
+                                        discount: val
+                                      }
+                                    }));
+                                  }}
+                                  className={styles.discountInput}
+                                />
+                                %
+                              </span>
+                            ) : (
+                              <span className={styles.recDiscount}>
+                                Giảm giá {rec.SuggestedDiscount}%
+                              </span>
+                            )}
+                          </div>
+
+                          <div className={styles.recGrid}>
+                            <div className={styles.recTextContent}>
+                              <div>
+                                <span className={styles.recLabel}>Lý do đề xuất (AI Reasoning)</span>
+                                <div className={styles.recVal}>{rec.Reasoning}</div>
+                              </div>
+                              <div style={{ marginTop: 10 }}>
+                                <span className={styles.recLabel}>Tin nhắn tiếp thị SMS/Zalo kích cầu</span>
+                                {rec.Status === "Suggested" ? (
+                                  <textarea
+                                    value={currentMarketingMessage}
+                                    onChange={(e) => {
+                                      setEditingRecs(prev => ({
+                                        ...prev,
+                                        [rec.RecommendationID]: {
+                                          discount: prev[rec.RecommendationID]?.discount ?? currentDiscount,
+                                          marketingMessage: e.target.value
+                                        }
+                                      }));
+                                    }}
+                                    className={styles.marketingTextarea}
+                                  />
+                                ) : (
+                                  <div className={styles.recVal} style={{ fontStyle: "italic", background: "rgba(0,0,0,0.2)", padding: 10, borderRadius: 6, borderLeft: "3px solid #d946ef" }}>
+                                    {rec.MarketingMessage}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <div style={{ marginTop: 10 }}>
-                              <span className={styles.recLabel}>Tin nhắn tiếp thị SMS/Zalo kích cầu</span>
-                              <div className={styles.recVal} style={{ fontStyle: "italic", background: "rgba(0,0,0,0.2)", padding: 10, borderRadius: 6, borderLeft: "3px solid #d946ef" }}>
-                                {rec.MarketingMessage}
+
+                            <div className={styles.recStats}>
+                              <div className={styles.statRow}>
+                                <span className={styles.statLabel}>Tăng lấp đầy dự kiến:</span>
+                                <span className={styles.statVal} style={{ color: "#4ade80", fontWeight: "bold" }}>
+                                  +{activeBoost}%
+                                </span>
+                              </div>
+                              <div className={styles.statRow}>
+                                <span className={styles.statLabel}>Tăng doanh thu dự kiến:</span>
+                                <span className={styles.statVal} style={{ color: "#38bdf8", fontWeight: "bold" }}>
+                                  +{(activeBoost * 0.01 * basePrice).toLocaleString("vi-VN")}đ/giờ
+                                </span>
                               </div>
                             </div>
                           </div>
 
-                          <div className={styles.recStats}>
-                            <div className={styles.statRow}>
-                              <span className={styles.statLabel}>Tăng lấp đầy dự kiến:</span>
-                              <span className={styles.statVal} style={{ color: "#4ade80", fontWeight: "bold" }}>
-                                +{rec.SuggestedDiscount <= 10 ? 15 : rec.SuggestedDiscount <= 20 ? 30 : rec.SuggestedDiscount <= 35 ? 45 : 55}%
-                              </span>
+                          {rec.Status === "Suggested" && (
+                            <div className={styles.recActions}>
+                              <button 
+                                className={`${styles.btnSecondary} ${styles.btnReject}`}
+                                onClick={() => handleStatusUpdate(rec.RecommendationID, "Rejected")}
+                              >
+                                <FaTimes style={{ marginRight: 6 }} /> Từ chối
+                              </button>
+                              <button 
+                                className={`${styles.btnSecondary} ${styles.btnApprove}`}
+                                onClick={() => handleStatusUpdate(rec.RecommendationID, "Approved", currentDiscount, currentMarketingMessage)}
+                              >
+                                <FaCheck style={{ marginRight: 6 }} /> Duyệt & Đăng Ký
+                              </button>
                             </div>
-                            <div className={styles.statRow}>
-                              <span className={styles.statLabel}>Tăng doanh thu dự kiến:</span>
-                              <span className={styles.statVal} style={{ color: "#38bdf8", fontWeight: "bold" }}>
-                                +{((rec.SuggestedDiscount <= 10 ? 15 : rec.SuggestedDiscount <= 20 ? 30 : rec.SuggestedDiscount <= 35 ? 45 : 55) * 0.01 * basePrice).toLocaleString("vi-VN")}đ/giờ
-                              </span>
-                            </div>
-                          </div>
+                          )}
                         </div>
-
-                        {rec.Status === "Suggested" && (
-                          <div className={styles.recActions}>
-                            <button 
-                              className={`${styles.btnSecondary} ${styles.btnReject}`}
-                              onClick={() => handleStatusUpdate(rec.RecommendationID, "Rejected")}
-                            >
-                              <FaTimes style={{ marginRight: 6 }} /> Từ chối
-                            </button>
-                            <button 
-                              className={`${styles.btnSecondary} ${styles.btnApprove}`}
-                              onClick={() => handleStatusUpdate(rec.RecommendationID, "Approved")}
-                            >
-                              <FaCheck style={{ marginRight: 6 }} /> Duyệt & Đăng Ký
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               )}

@@ -1,4 +1,10 @@
+
 .aiFormCard {
+  --pcs-brand-primary: #2563eb;
+  --pcs-brand-primary-hover: #1d4ed8;
+  --pcs-brand-primary-light: #eff6ff;
+  --pcs-brand-primary-border: #bfdbfe;
+
   background: #ffffff;
   border-radius: var(--pcs-radius-lg);
   border: 1px solid var(--pcs-neutral-200);
@@ -6,6 +12,7 @@
   box-shadow: var(--pcs-shadow-sm);
   margin-top: 24px;
 }
+
 .header {
   display: flex;
   align-items: center;

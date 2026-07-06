@@ -14,10 +14,15 @@ export async function getDashboardStatsFromDB() {
 
   const queries = `
     -- Today Revenue
-    SELECT ISNULL(SUM(TotalAmount), 0) AS TodayRevenue
-    FROM Bookings
-    WHERE BookingDate = @TargetDate
-      AND Status IN ('Confirmed', 'Completed', 'CheckedIn');
+    SELECT (
+      SELECT ISNULL(SUM(TotalAmount), 0) 
+      FROM Bookings 
+      WHERE BookingDate = @TargetDate AND Status IN ('Confirmed', 'Completed', 'CheckedIn')
+    ) + (
+      SELECT ISNULL(SUM(Amount), 0) 
+      FROM TournamentPayments 
+      WHERE PaymentStatus = 'Paid' AND CAST(COALESCE(PaidAt, CreatedAt) AS DATE) = @TargetDate
+    ) AS TodayRevenue;
 
     -- Today Bookings Count
     SELECT COUNT(*) AS TodayBookingsCount
@@ -877,16 +882,30 @@ export async function getSaaSDashboardStatsFromDB(
 
   const query = `
     -- 1. Current Revenue
-    SELECT ISNULL(SUM(TotalAmount), 0) AS Revenue
-    FROM Bookings
-    WHERE BookingDate BETWEEN @StartDate AND @EndDate
-      AND Status IN ('Confirmed', 'Completed', 'CheckedIn', 'Paid');
+    SELECT (
+      SELECT ISNULL(SUM(TotalAmount), 0)
+      FROM Bookings
+      WHERE BookingDate BETWEEN @StartDate AND @EndDate
+        AND Status IN ('Confirmed', 'Completed', 'CheckedIn', 'Paid')
+    ) + (
+      SELECT ISNULL(SUM(Amount), 0)
+      FROM TournamentPayments
+      WHERE PaymentStatus = 'Paid'
+        AND CAST(COALESCE(PaidAt, CreatedAt) AS DATE) BETWEEN @StartDate AND @EndDate
+    ) AS Revenue;
 
     -- 2. Previous Revenue
-    SELECT ISNULL(SUM(TotalAmount), 0) AS PrevRevenue
-    FROM Bookings
-    WHERE BookingDate BETWEEN @PrevStartDate AND @PrevEndDate
-      AND Status IN ('Confirmed', 'Completed', 'CheckedIn', 'Paid');
+    SELECT (
+      SELECT ISNULL(SUM(TotalAmount), 0)
+      FROM Bookings
+      WHERE BookingDate BETWEEN @PrevStartDate AND @PrevEndDate
+        AND Status IN ('Confirmed', 'Completed', 'CheckedIn', 'Paid')
+    ) + (
+      SELECT ISNULL(SUM(Amount), 0)
+      FROM TournamentPayments
+      WHERE PaymentStatus = 'Paid'
+        AND CAST(COALESCE(PaidAt, CreatedAt) AS DATE) BETWEEN @PrevStartDate AND @PrevEndDate
+    ) AS PrevRevenue;
 
     -- 3. Current Bookings
     SELECT COUNT(*) AS BookingsCount
@@ -920,15 +939,30 @@ export async function getSaaSDashboardStatsFromDB(
     WHERE Status = 'Active';
 
     -- 6. Daily Revenue Trend
+    WITH UnifiedDailyRevenue AS (
+      SELECT 
+        CAST(BookingDate AS DATE) AS RevenueDate,
+        TotalAmount AS Amount,
+        1 AS BookingVal
+      FROM Bookings
+      WHERE BookingDate BETWEEN @StartDate AND @EndDate
+        AND Status IN ('Confirmed', 'Completed', 'CheckedIn', 'Paid')
+      UNION ALL
+      SELECT
+        CAST(COALESCE(PaidAt, CreatedAt) AS DATE) AS RevenueDate,
+        Amount,
+        0 AS BookingVal
+      FROM TournamentPayments
+      WHERE PaymentStatus = 'Paid'
+        AND CAST(COALESCE(PaidAt, CreatedAt) AS DATE) BETWEEN @StartDate AND @EndDate
+    )
     SELECT 
-      CONVERT(VARCHAR(10), BookingDate, 23) AS DateStr,
-      ISNULL(SUM(TotalAmount), 0) AS Revenue,
-      COUNT(*) AS BookingsCount
-    FROM Bookings
-    WHERE BookingDate BETWEEN @StartDate AND @EndDate
-      AND Status IN ('Confirmed', 'Completed', 'CheckedIn', 'Paid')
-    GROUP BY BookingDate
-    ORDER BY BookingDate ASC;
+      CONVERT(VARCHAR(10), RevenueDate, 23) AS DateStr,
+      ISNULL(SUM(Amount), 0) AS Revenue,
+      SUM(BookingVal) AS BookingsCount
+    FROM UnifiedDailyRevenue
+    GROUP BY RevenueDate
+    ORDER BY RevenueDate ASC;
 
     -- 7. Hourly Booking Trend
     SELECT 
@@ -991,6 +1025,11 @@ export async function getSaaSDashboardStatsFromDB(
     ORDER BY UsageCount DESC;
 
     -- 12. Payment Method Analytics
+    WITH UnifiedPaidPayments AS (
+      SELECT PaymentMethod, Amount, CreatedAt FROM Payments WHERE Status = 'Paid'
+      UNION ALL
+      SELECT PaymentMethod, Amount, CreatedAt FROM TournamentPayments WHERE PaymentStatus = 'Paid'
+    )
     SELECT 
       CASE 
         WHEN PaymentMethod IN ('Cash', 'Tiền mặt') THEN N'Tiền mặt (Khách vãng lai)'
@@ -998,9 +1037,8 @@ export async function getSaaSDashboardStatsFromDB(
       END AS PaymentMethod,
       COUNT(*) AS Count,
       ISNULL(SUM(Amount), 0) AS TotalAmount
-    FROM Payments
+    FROM UnifiedPaidPayments
     WHERE CreatedAt BETWEEN CAST(@StartDate AS DATETIME) AND DATEADD(DAY, 1, CAST(@EndDate AS DATETIME))
-      AND Status = 'Paid'
     GROUP BY 
       CASE 
         WHEN PaymentMethod IN ('Cash', 'Tiền mặt') THEN N'Tiền mặt (Khách vãng lai)'
@@ -1057,6 +1095,22 @@ export async function getSaaSDashboardStatsFromDB(
       UNION ALL
 
       SELECT 
+        'TournamentPayment' AS ActivityType,
+        tp.CreatedAt,
+        u.FullName AS ActorName,
+        tp.TransactionCode AS EventCode,
+        N'Đăng ký giải đấu: ' + t.TournamentName AS Description,
+        tp.Amount AS AmountValue
+      FROM TournamentPayments tp
+      INNER JOIN TournamentRegistrations tr ON tp.RegistrationID = tr.RegistrationID
+      INNER JOIN Tournaments t ON tr.TournamentID = t.TournamentID
+      INNER JOIN Users u ON tr.RegisteredBy = u.UserID
+      WHERE tp.PaymentStatus = 'Paid'
+        AND tp.CreatedAt BETWEEN CAST(@StartDate AS DATETIME) AND DATEADD(DAY, 1, CAST(@EndDate AS DATETIME))
+
+      UNION ALL
+
+      SELECT 
         'Refund' AS ActivityType,
         r.RequestedAt AS CreatedAt,
         u.FullName AS ActorName,
@@ -1066,6 +1120,20 @@ export async function getSaaSDashboardStatsFromDB(
       FROM Refunds r
       JOIN Bookings b ON r.BookingID = b.BookingID
       JOIN Users u ON b.UserID = u.UserID
+      WHERE r.RequestedAt BETWEEN CAST(@StartDate AS DATETIME) AND DATEADD(DAY, 1, CAST(@EndDate AS DATETIME))
+
+      UNION ALL
+
+      SELECT 
+        'TournamentRefund' AS ActivityType,
+        r.RequestedAt AS CreatedAt,
+        u.FullName AS ActorName,
+        r.RefundCode AS EventCode,
+        N'Hoàn tiền giải đấu: ' + r.Reason AS Description,
+        r.RefundAmount AS AmountValue
+      FROM Refunds r
+      INNER JOIN TournamentRegistrations tr ON r.RegistrationID = tr.RegistrationID
+      INNER JOIN Users u ON tr.RegisteredBy = u.UserID
       WHERE r.RequestedAt BETWEEN CAST(@StartDate AS DATETIME) AND DATEADD(DAY, 1, CAST(@EndDate AS DATETIME))
 
       UNION ALL

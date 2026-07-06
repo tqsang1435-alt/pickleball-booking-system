@@ -100,8 +100,10 @@ export async function createRefundRecord(input: CreateRefundInput): Promise<numb
   const pool = await getPool();
   const result = await pool
     .request()
-    .input("BookingID", sql.Int, input.bookingId)
-    .input("PaymentID", sql.Int, input.paymentId)
+    .input("BookingID", sql.Int, input.bookingId || null)
+    .input("PaymentID", sql.Int, input.paymentId || null)
+    .input("RegistrationID", sql.Int, input.registrationId || null)
+    .input("TournamentPaymentID", sql.Int, input.tournamentPaymentId || null)
     .input("RefundCode", sql.NVarChar(100), input.refundCode)
     .input("RefundMethod", sql.NVarChar(50), input.refundMethod)
     .input("RefundAmount", sql.Decimal(18, 2), input.refundAmount)
@@ -109,10 +111,10 @@ export async function createRefundRecord(input: CreateRefundInput): Promise<numb
     .input("CreatedBy", sql.Int, input.createdBy)
     .query(`
       INSERT INTO Refunds
-        (BookingID, PaymentID, RefundCode, RefundMethod, RefundAmount, Reason, Status, CreatedBy, RequestedAt)
+        (BookingID, PaymentID, RegistrationID, TournamentPaymentID, RefundCode, RefundMethod, RefundAmount, Reason, Status, CreatedBy, RequestedAt)
       OUTPUT INSERTED.RefundID
       VALUES
-        (@BookingID, @PaymentID, @RefundCode, @RefundMethod, @RefundAmount, @Reason, 'Requested', @CreatedBy, GETDATE())
+        (@BookingID, @PaymentID, @RegistrationID, @TournamentPaymentID, @RefundCode, @RefundMethod, @RefundAmount, @Reason, 'Requested', @CreatedBy, GETDATE())
     `);
   return result.recordset[0].RefundID as number;
 }
@@ -226,19 +228,20 @@ export async function getManagerRefunds(filters?: {
 
   const result = await req.query(`
     SELECT
-      r.RefundID, r.BookingID, r.PaymentID,
+      r.RefundID, r.BookingID, r.PaymentID, r.RegistrationID, r.TournamentPaymentID,
       r.RefundCode, r.RefundMethod, r.RefundAmount, r.Reason,
       r.GatewayRefundId, r.GatewayResponse,
       r.Status, r.RequestedAt, r.ProcessedAt,
       r.CreatedBy, r.ProcessedBy, r.UpdatedAt,
-      p.PaymentMethod,
-      b.BookingCode,
+      COALESCE(p.PaymentMethod, tp.PaymentMethod) AS PaymentMethod,
+      COALESCE(b.BookingCode, 'REG-' + CAST(r.RegistrationID AS VARCHAR(10))) AS BookingCode,
       u.FullName AS PlayerName,
       u.Email AS PlayerEmail
     FROM Refunds r
-    JOIN Payments p ON p.PaymentID = r.PaymentID
-    JOIN Bookings b ON b.BookingID = r.BookingID
-    JOIN Users u ON u.UserID = b.UserID
+    LEFT JOIN Payments p ON p.PaymentID = r.PaymentID
+    LEFT JOIN Bookings b ON b.BookingID = r.BookingID
+    LEFT JOIN TournamentPayments tp ON tp.TournamentPaymentID = r.TournamentPaymentID
+    LEFT JOIN Users u ON u.UserID = COALESCE(b.UserID, r.CreatedBy)
     ${whereClause}
     ORDER BY r.RequestedAt DESC
   `);
@@ -401,4 +404,52 @@ export async function createAuditLog(
   } catch (err) {
     console.error("[RefundRepo] createAuditLog failed (non-blocking):", err);
   }
+}
+
+/**
+ * Đánh dấu đăng ký giải đấu là Rejected và hủy đội.
+ */
+export async function rejectTournamentRegistration(registrationId: number): Promise<void> {
+  const pool = await getPool();
+  const transaction = new sql.Transaction(pool);
+  await transaction.begin();
+  try {
+    const regResult = await new sql.Request(transaction)
+      .input("RegistrationID", sql.Int, registrationId)
+      .query(`
+        UPDATE TournamentRegistrations
+        SET RegistrationStatus = 'Rejected', PaymentStatus = 'Failed'
+        OUTPUT INSERTED.*
+        WHERE RegistrationID = @RegistrationID
+      `);
+    
+    const registration = regResult.recordset[0];
+    if (registration) {
+      await new sql.Request(transaction)
+        .input("TeamID", sql.Int, registration.TeamID)
+        .query(`
+          UPDATE TournamentTeams
+          SET TeamStatus = 'Withdrawn'
+          WHERE TeamID = @TeamID
+        `);
+    }
+    await transaction.commit();
+  } catch (err) {
+    await transaction.rollback();
+    throw err;
+  }
+}
+
+/**
+ * Đánh dấu TournamentPayment là Refunded.
+ */
+export async function markTournamentPaymentRefunded(paymentId: number): Promise<void> {
+  const pool = await getPool();
+  await pool.request()
+    .input("PaymentID", sql.Int, paymentId)
+    .query(`
+      UPDATE TournamentPayments
+      SET PaymentStatus = 'Refunded'
+      WHERE TournamentPaymentID = @PaymentID
+    `);
 }

@@ -21,7 +21,8 @@ export type RevenueByService = {
 export type RevenueServiceType =
   | "Court"
   | "Coach"
-  | "Combo";
+  | "Combo"
+  | "Tournament";
 
 export type RevenueFilterParams = {
   fromDate?: string;
