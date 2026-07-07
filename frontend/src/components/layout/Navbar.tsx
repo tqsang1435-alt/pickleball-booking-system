@@ -165,6 +165,7 @@ export default function Navbar() {
     { href: "/courts", label: "Sân" },
     { href: "/coaches", label: "Coach" },
     { href: "/combo", label: "Combo" },
+    { href: "/tournaments", label: "Giải đấu" },
     { href: "/matching", label: "Tìm người chơi" },
     { href: "/bookings", label: "Lịch sử booking" },
   ];

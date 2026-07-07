@@ -24,6 +24,8 @@ function getServiceLabel(type: RevenueServiceType) {
       return "Thuê Coach";
     case "Combo":
       return "Combo";
+    case "Tournament":
+      return "Giải đấu";
     default:
       return type;
   }

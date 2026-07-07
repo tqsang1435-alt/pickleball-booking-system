@@ -19,9 +19,15 @@ export async function POST(req: NextRequest, context: RouteContext) {
     const recommendationId = Number(params.id);
 
     const body = await req.json();
-    const { status } = body;
+    const { status, customDiscount, customMarketingMessage } = body;
 
-    const result = await updateRecommendation(recommendationId, status, auth.userId);
+    const result = await updateRecommendation(
+      recommendationId,
+      status,
+      auth.userId,
+      customDiscount !== undefined && customDiscount !== null ? Number(customDiscount) : undefined,
+      customMarketingMessage
+    );
     return successResponse(result, "Cập nhật trạng thái đề xuất thành công");
   } catch (error) {
     return handleError(error);

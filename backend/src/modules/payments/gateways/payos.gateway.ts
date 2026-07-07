@@ -205,3 +205,60 @@ export async function cancelPayosPaymentLink(
     console.warn(`[PayOS] cancelPaymentLink(${orderCode}) failed:`, err?.message ?? err);
   }
 }
+
+/**
+ * Tạo link thanh toán PayOS dành riêng cho giải đấu.
+ */
+export async function createPayosTournamentPaymentLink(params: {
+  paymentId: number;
+  amount: number;
+  paymentCode: string;
+  registrationId: number;
+}): Promise<PayosCreateResult> {
+  const payos = getPayosInstance();
+
+  // orderCode: payOS yêu cầu số nguyên > 0, dùng paymentId
+  const orderCode = params.paymentId;
+
+  // description: tối đa 25 ký tự (tiền tố GL + id để phân biệt ở webhook)
+  const description = `GL${params.registrationId}`;
+
+  const body = {
+    orderCode,
+    amount: Math.round(params.amount), // VND nguyên
+    description,
+    returnUrl: `${cfg.returnUrl}?type=tournament`,
+    cancelUrl: `${cfg.cancelUrl}?type=tournament`,
+    items: [
+      {
+        name: `Le phi Giai dau #${params.registrationId}`,
+        quantity: 1,
+        price: Math.round(params.amount),
+      },
+    ],
+    // Hết hạn sau 10 phút
+    expiredAt: Math.floor(Date.now() / 1000) + 10 * 60,
+  };
+
+  try {
+    const response = await payos.paymentRequests.create(body);
+    const rawResponse = JSON.stringify(response);
+
+    return {
+      success: true,
+      checkoutUrl: response.checkoutUrl,
+      orderCode,
+      rawResponse,
+    };
+  } catch (err: any) {
+    const errorMessage = err?.message ?? "PayOS createTournamentPaymentLink failed";
+    return {
+      success: false,
+      checkoutUrl: "",
+      orderCode,
+      rawResponse: JSON.stringify({ error: errorMessage }),
+      errorMessage,
+    };
+  }
+}
+

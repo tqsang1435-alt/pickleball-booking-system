@@ -563,13 +563,70 @@ export async function completeManualRefund(
     gatewayResponse,
   });
 
-  // Update Booking → Refunded (BR-38)
-  await refundRepo.markBookingRefunded(refund.BookingID);
+  // Update Booking / Tournament Registration and Payment Status
+  if (refund.RegistrationID) {
+    const { getPool } = await import("@/database/connection");
+    const sql = await import("mssql");
+    await refundRepo.rejectTournamentRegistration(refund.RegistrationID);
+    if (refund.TournamentPaymentID) {
+      await refundRepo.markTournamentPaymentRefunded(refund.TournamentPaymentID);
+    }
+    
+    // Send email / push notification to the user
+    try {
+      const pool = await getPool();
+      const regResult = await pool.request()
+        .input("RegistrationID", sql.Int, refund.RegistrationID)
+        .query("SELECT RegisteredBy, TournamentID, DivisionID FROM TournamentRegistrations WHERE RegistrationID = @RegistrationID");
+      const reg = regResult.recordset[0];
+      if (reg) {
+        const namesResult = await pool.request()
+          .input("TournamentID", sql.Int, reg.TournamentID)
+          .input("DivisionID", sql.Int, reg.DivisionID)
+          .query(`
+            SELECT t.TournamentName, d.DivisionName 
+            FROM Tournaments t, TournamentDivisions d
+            WHERE t.TournamentID = @TournamentID AND d.DivisionID = @DivisionID
+          `);
+        const names = namesResult.recordset[0] || {};
+        
+        // Notify in-app
+        void createNotification({
+          userId: reg.RegisteredBy,
+          title: "Hoàn tiền đăng ký giải đấu thành công",
+          message: `Lệ phí đăng ký nội dung ${names.DivisionName || ""} tại giải ${names.TournamentName || ""} của bạn đã được hoàn trả thành công.`,
+          notificationType: "System",
+        });
 
-  // Nếu full refund → Update Payment → Refunded
-  const payment = await _getPaymentForRefund(refund.BookingID, refund.PaymentID);
-  if (payment && Number(refund.RefundAmount) >= Number(payment.Amount)) {
-    await refundRepo.markPaymentRefunded(refund.PaymentID);
+        // Send email
+        const userRes = await pool.request()
+          .input("UserID", sql.Int, reg.RegisteredBy)
+          .query("SELECT Email, FullName FROM Users WHERE UserID = @UserID");
+        const user = userRes.recordset[0];
+        if (user && user.Email) {
+          const { sendNotificationEmail } = await import("../../utils/mail");
+          void sendNotificationEmail({
+            to: user.Email,
+            fullName: user.FullName || "Vận động viên",
+            type: "Giải đấu",
+            subject: `Hoàn tất hoàn tiền lệ phí giải đấu - ${names.TournamentName || ""}`,
+            title: "Hoàn tất hoàn tiền lệ phí giải đấu",
+            message: `Ban tổ chức đã thực hiện hoàn tiền lệ phí đăng ký nội dung <strong>${names.DivisionName || ""}</strong> của giải đấu <strong>${names.TournamentName || ""}</strong> với số tiền là <strong>${Number(refund.RefundAmount).toLocaleString("vi-VN")} ₫</strong>.<br/><br/>Giao dịch chuyển khoản ngân hàng thủ công đã hoàn tất. Bạn vui lòng kiểm tra tài khoản thụ hưởng.<br/><br/>Hồ sơ đăng ký giải đấu của bạn đã được cập nhật chính thức sang trạng thái <strong>Từ chối (Rejected)</strong>.`,
+          });
+        }
+      }
+    } catch (err: any) {
+      console.error("[Refund] Failed to send rejection completion notification:", err.message);
+    }
+  } else {
+    // Normal court booking flow
+    await refundRepo.markBookingRefunded(refund.BookingID);
+
+    // Nếu full refund → Update Payment → Refunded
+    const payment = await _getPaymentForRefund(refund.BookingID, refund.PaymentID);
+    if (payment && Number(refund.RefundAmount) >= Number(payment.Amount)) {
+      await refundRepo.markPaymentRefunded(refund.PaymentID);
+    }
   }
 
   void refundRepo.createAuditLog(

@@ -24,10 +24,11 @@
 
   /* PCS Foundation V2 (Operational SaaS) */
   /* Brand Colors */
-  --pcs-brand-primary: #16a34a; /* Pickle Club Green */
-  --pcs-brand-primary-hover: #15803d;
-  --pcs-brand-primary-light: #f0fdf4;
-  --pcs-brand-primary-border: #bbf7d0;
+  --pcs-brand-primary: #059669; /* Pickle Club Green ngọc đậm */
+  --pcs-brand-primary-hover: #047857;
+  --pcs-brand-primary-light: #ecfdf5;
+  --pcs-brand-primary-border: #a7f3d0;
+
 
   /* Neutrals */
   --pcs-neutral-50: #f8fafc;
@@ -145,3 +146,11 @@ img {
     flex-direction: column;
   }
 }
+
+/* Operational SaaS branding color reset for Admin & Staff layouts */
+[class*="AdminLayout_admin"] {
+  --pcs-brand-primary: #16a34a !important;
+  --pcs-brand-primary-hover: #15803d !important;
+  --pcs-brand-primary-light: #f0fdf4 !important;
+  --pcs-brand-primary-border: #bbf7d0 !important;
+}

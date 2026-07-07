@@ -316,3 +316,25 @@ export async function createActivePromotionFromRecommendation(
 
   return promoCode;
 }
+
+/**
+ * Update promotion recommendation suggested discount and marketing message.
+ */
+export async function updateRecommendationDetails(
+  id: number,
+  discount: number,
+  marketingMessage: string
+): Promise<boolean> {
+  const pool = await getPool();
+  const result = await pool.request()
+    .input("RecommendationID", sql.Int, id)
+    .input("SuggestedDiscount", sql.Decimal(5, 2), discount)
+    .input("MarketingMessage", sql.NVarChar(sql.MAX), marketingMessage)
+    .query(`
+      UPDATE AIPromotionRecommendations
+      SET SuggestedDiscount = @SuggestedDiscount, MarketingMessage = @MarketingMessage, UpdatedAt = GETDATE()
+      WHERE RecommendationID = @RecommendationID
+    `);
+  return (result.rowsAffected[0] ?? 0) > 0;
+}
+

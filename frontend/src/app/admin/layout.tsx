@@ -1,5 +1,5 @@
-import { Suspense } from "react";
 import AdminLayout from "@/modules/admin/AdminLayout";
+import { Suspense } from "react";
 
 export default function Layout({
   children,
@@ -7,7 +7,7 @@ export default function Layout({
   children: React.ReactNode;
 }) {
   return (
-    <Suspense fallback={<div>Đang tải...</div>}>
+    <Suspense fallback={null}>
       <AdminLayout>{children}</AdminLayout>
     </Suspense>
   );

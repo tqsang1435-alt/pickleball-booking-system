@@ -21,6 +21,8 @@ function getServiceLabel(serviceName: string) {
       return "Thuê Coach";
     case "Combo":
       return "Combo";
+    case "Tournament":
+      return "Giải đấu";
     default:
       return serviceName || "Khác";
   }
@@ -55,7 +57,7 @@ export default function RevenueServiceBreakdown({
       <div className={styles.panelHeader}>
         <div>
           <h2 className={styles.panelTitle}>Doanh thu theo dịch vụ</h2>
-          <p className={styles.panelSubtitle}>Tỷ trọng Court, Coach và Combo</p>
+          <p className={styles.panelSubtitle}>Tỷ trọng Court, Coach, Combo và Giải đấu</p>
         </div>
       </div>
 

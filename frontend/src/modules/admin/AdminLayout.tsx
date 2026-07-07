@@ -96,7 +96,7 @@ export default function AdminLayout({
     {
       title: "EVENTS",
       items: [
-        { href: "/admin/events", label: "Tournaments", icon: <CalendarIcon />, hideForStaff: true },
+        { href: "/admin/tournaments", label: "Tournaments", icon: <CalendarIcon /> },
         { href: "/admin/promotions", label: "Promotions", icon: <PromotionIcon />, hideForStaff: true },
         { href: "/admin/settings", label: "Settings", icon: <SettingsIcon />, hideForStaff: true },
       ]
@@ -121,6 +121,7 @@ export default function AdminLayout({
       title: "QUẢN LÝ",
       items: [
         { href: "/admin/bookings", label: "Danh sách booking", icon: <CalendarIcon /> },
+        { href: "/admin/tournaments", label: "Giải đấu", icon: <CalendarIcon /> },
       ]
     }
   ];

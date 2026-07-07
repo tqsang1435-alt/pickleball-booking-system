@@ -67,13 +67,15 @@ export async function getPromotionRecommendations(date: string): Promise<Promoti
 
 export async function updateRecommendationStatus(
   id: number,
-  status: "Suggested" | "Approved" | "Rejected" | "Implemented"
+  status: "Suggested" | "Approved" | "Rejected" | "Implemented",
+  customDiscount?: number,
+  customMarketingMessage?: string
 ): Promise<{ success: boolean; message: string }> {
   const result = await apiClient<BackendApiResponse<{ success: boolean; message: string }>>(
     `/api/admin/ai/recommendations/${id}/status`,
     {
       method: "POST",
-      body: { status },
+      body: { status, customDiscount, customMarketingMessage },
       token: getToken(),
     }
   );

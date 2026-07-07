@@ -32,11 +32,17 @@ export default function PaymentFailedPage() {
   const errorCode = searchParams.get("code");
   const errorStr = searchParams.get("error");
   const reason = searchParams.get("reason"); // "cancelled" khi user hủy PayOS
+  const isTournament = searchParams.get("type") === "tournament";
+  const tournamentId = searchParams.get("tournamentId");
 
   const [status, setStatus] = useState<PaymentStatusResult | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (isTournament) {
+      setLoading(false);
+      return;
+    }
     const bookingId = Number(bookingIdStr);
     if (!bookingId || isNaN(bookingId)) {
       setLoading(false);
@@ -53,11 +59,15 @@ export default function PaymentFailedPage() {
       .then(setStatus)
       .catch(() => {/* silent – thất bại không nghiêm trọng ở trang này */})
       .finally(() => setLoading(false));
-  }, [bookingIdStr]);
+  }, [bookingIdStr, isTournament]);
 
   // Xây dựng message lỗi
   const errorMessage =
-    reason === "cancelled"
+    isTournament
+      ? reason === "cancelled"
+        ? "Bạn đã hủy giao dịch. Lệ phí đăng ký giải đấu chưa được thanh toán thành công. Suất đăng ký của bạn vẫn được giữ tạm thời – bạn có thể thanh toán lại để hoàn tất."
+        : "Thanh toán lệ phí giải đấu không thành công. Vui lòng thử lại hoặc liên hệ ban tổ chức."
+      : reason === "cancelled"
       ? "Bạn đã hủy giao dịch. Booking vẫn được giữ – bạn có thể thanh toán lại."
       : errorStr === "invalid_signature"
       ? "Chữ ký không hợp lệ. Có thể đã bị giả mạo giao dịch."
@@ -85,7 +95,7 @@ export default function PaymentFailedPage() {
         <p className={styles.subtitle}>{errorMessage}</p>
 
         {/* Status từ backend (nếu có) */}
-        {!loading && status && (
+        {!loading && !isTournament && status && (
           <div className={styles.infoCard}>
             {status.amount !== null && (
               <div className={styles.infoRow}>
@@ -114,23 +124,32 @@ export default function PaymentFailedPage() {
           </div>
         )}
 
-        {/* Notice: booking vẫn còn – có thể thử lại */}
-        {status?.bookingStatus === "PendingPayment" && (
+        {/* Notice: booking/tournament vẫn còn – có thể thử lại */}
+        {isTournament ? (
           <div className={styles.notice}>
             <span>💡</span>
             <p>
-              Booking của bạn vẫn đang <strong>chờ thanh toán</strong> và chưa bị hủy. Bạn có thể{" "}
-              <strong>thanh toán lại</strong> từ trang lịch sử booking trước khi hết thời gian giữ slot.
+              Suất đăng ký của bạn vẫn đang được giữ tạm thời. Vui lòng thanh toán lại sớm tại trang chi tiết giải đấu để chính thức giữ slot.
             </p>
           </div>
+        ) : (
+          status?.bookingStatus === "PendingPayment" && (
+            <div className={styles.notice}>
+              <span>💡</span>
+              <p>
+                Booking của bạn vẫn đang <strong>chờ thanh toán</strong> và chưa bị hủy. Bạn có thể{" "}
+                <strong>thanh toán lại</strong> từ trang lịch sử booking trước khi hết thời gian giữ slot.
+              </p>
+            </div>
+          )
         )}
 
         {/* CTA */}
-        <Link href="/bookings" className={styles.btnPrimary}>
+        <Link href={isTournament ? (tournamentId ? `/tournaments/${tournamentId}` : "/tournaments") : "/bookings"} className={styles.btnPrimary}>
           Thanh toán lại →
         </Link>
-        <Link href="/courts" className={styles.btnSecondary}>
-          Đặt sân khác
+        <Link href={isTournament ? "/tournaments" : "/courts"} className={styles.btnSecondary}>
+          {isTournament ? "Xem giải đấu khác" : "Đặt sân khác"}
         </Link>
       </div>
     </div>

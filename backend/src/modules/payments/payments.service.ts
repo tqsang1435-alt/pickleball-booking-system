@@ -4,6 +4,7 @@
 // ==========================================
 
 import { paymentConfig } from "@/config/payment";
+import { getPool, sql } from "@/database/connection";
 import { createNotification } from "@/modules/notifications/notifications.service";
 import {
   findBookingForPayment,
@@ -213,6 +214,33 @@ export async function getPaymentStatusService(
       new Error("Booking không tồn tại hoặc bạn không có quyền xem"),
       { statusCode: 404 }
     );
+  }
+
+  // Tự động đồng bộ trạng thái thực tế từ PayOS nếu đang là Pending ở môi trường local
+  if (status.paymentStatus === "Pending" && status.paymentMethod === "PayOS" && status.gatewayOrderId) {
+    try {
+      const { getPayosPaymentInfo } = await import("./gateways/payos.gateway");
+      const payosInfo = await getPayosPaymentInfo(Number(status.gatewayOrderId)) as any;
+      if (payosInfo && payosInfo.status === "PAID") {
+        console.info(`[Auto Sync Booking] Payment ${status.paymentId} was PAID on PayOS! Updating db...`);
+        const txCode = payosInfo.transactions?.[0]?.reference || String(status.gatewayOrderId);
+        await markPaymentPaidFromBookingDetails(status.paymentId!, bookingId, {
+          transactionCode: txCode,
+          gatewayResponse: JSON.stringify(payosInfo),
+        });
+        await sendPaymentNotification(
+          bookingId,
+          "PayOS",
+          true,
+          status.paymentCode ?? undefined,
+          txCode
+        );
+        // Lấy lại thông tin trạng thái mới nhất đã cập nhật từ DB
+        return getPaymentStatusService(bookingId, userId);
+      }
+    } catch (err: any) {
+      console.warn(`[Auto Sync Booking] Failed to sync status for payment ${status.paymentId}:`, err.message);
+    }
   }
 
   return status;
@@ -458,6 +486,25 @@ export async function handlePayosWebhook(
   const orderCode = webhookData.orderCode;
   const webhookAmount = webhookData.amount;
   const reference = webhookData.reference;
+  const description = webhookData.description || "";
+
+  // Intercept tournament payment
+  if (description.startsWith("GL")) {
+    console.info(`[PayOS Webhook] Detected tournament payment for orderCode=${orderCode}, description=${description}`);
+    try {
+      const { handleTournamentPaymentWebhook } = await import("../tournaments/tournaments.service");
+      await handleTournamentPaymentWebhook({
+        paymentId: orderCode,
+        transactionCode: reference || String(orderCode),
+        gatewayResponse: JSON.stringify(body),
+        success: isPayosWebhookSuccess(webhookData.code),
+      });
+      return { success: true };
+    } catch (err: any) {
+      console.error("[PayOS Webhook] Failed to handle tournament payment:", err.message);
+      return { success: false };
+    }
+  }
 
   // 2. Tìm payment theo GatewayOrderId = orderCode (string)
   const payment = await getPaymentByGatewayOrderId(String(orderCode));
@@ -542,6 +589,28 @@ export async function handlePayosReturn(
   const orderCode = query["orderCode"] ?? "";
   const status = query["status"] ?? "";
   const code = query["code"] ?? "";
+  const isTournament = query["type"] === "tournament";
+
+  if (isTournament) {
+    const { findPaymentById, findRegistrationForPayment } = await import("../tournaments/tournaments.repository");
+    const tournamentPayment = await findPaymentById(Number(orderCode));
+    let tournamentId = "";
+    if (tournamentPayment) {
+      const records = await findRegistrationForPayment(tournamentPayment.RegistrationID);
+      if (records.length > 0) {
+        tournamentId = records[0].TournamentID;
+      }
+    }
+    const tournamentQuery = `type=tournament&registrationId=${tournamentPayment?.RegistrationID ?? ""}&tournamentId=${tournamentId}&`;
+    if (code === "00" || status === "PAID") {
+      return {
+        redirectUrl: `${cfg.frontendSuccessUrl}?${tournamentQuery}orderCode=${orderCode}&method=PayOS`,
+      };
+    }
+    return {
+      redirectUrl: `${cfg.frontendStatusUrl}?${tournamentQuery}orderCode=${orderCode}&method=PayOS`,
+    };
+  }
 
   // Cần lấy bookingId để frontend có thể load status
   const payment = await getPaymentByGatewayOrderId(orderCode);
@@ -580,10 +649,37 @@ export async function handlePayosCancel(
 ): Promise<PayosCancelResult> {
   const cfg = paymentConfig.app;
   const orderCode = query["orderCode"] ?? "";
+  const isTournament = query["type"] === "tournament";
 
   if (!orderCode) {
     return {
       redirectUrl: `${cfg.frontendFailedUrl}?error=missing_order_code`,
+    };
+  }
+
+  if (isTournament) {
+    const { findPaymentById, findRegistrationForPayment } = await import("../tournaments/tournaments.repository");
+    const tournamentPayment = await findPaymentById(Number(orderCode));
+    if (!tournamentPayment) {
+      return {
+        redirectUrl: `${cfg.frontendFailedUrl}?type=tournament&error=payment_not_found`,
+      };
+    }
+
+    if (tournamentPayment.PaymentStatus === "Pending") {
+      const pool = await getPool();
+      await pool.request()
+        .input("PaymentID", sql.Int, tournamentPayment.TournamentPaymentID)
+        .query("UPDATE TournamentPayments SET PaymentStatus = 'Failed' WHERE TournamentPaymentID = @PaymentID");
+      
+      void cancelPayosPaymentLink(Number(orderCode), "User cancelled");
+    }
+
+    const records = await findRegistrationForPayment(tournamentPayment.RegistrationID);
+    const tournamentId = records.length > 0 ? records[0].TournamentID : "";
+
+    return {
+      redirectUrl: `${cfg.frontendFailedUrl}?type=tournament&registrationId=${tournamentPayment.RegistrationID}&tournamentId=${tournamentId}&orderCode=${orderCode}&reason=cancelled`,
     };
   }
 

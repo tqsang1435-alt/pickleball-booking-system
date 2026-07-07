@@ -836,7 +836,7 @@ export default function AdminRefundPage() {
                           {r.RefundCode || `#${r.RefundID}`}
                         </div>
                         <div className={styles.bookingSubtext}>
-                          Booking #{r.BookingID} {r.BookingCode && `(${r.BookingCode})`}
+                          {r.BookingID ? `Booking #${r.BookingID}` : "Đăng ký giải đấu"} {r.BookingCode && `(${r.BookingCode})`}
                         </div>
                       </td>
 
