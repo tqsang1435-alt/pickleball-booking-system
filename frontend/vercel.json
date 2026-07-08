@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/backend-api/:path*",
+      "destination": "http://pcs-backend-2026-v2.ap-southeast-2.elasticbeanstalk.com/:path*"
+    }
+  ]
+}

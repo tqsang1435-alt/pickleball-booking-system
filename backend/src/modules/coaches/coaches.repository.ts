@@ -229,6 +229,21 @@ export async function updateCoachFee(
 
   return result.recordset[0] ?? null;
 }
+export async function findActiveBookedScheduleIds(coachId: number): Promise<number[]> {
+  const pool = await getPool();
+  const result = await pool
+    .request()
+    .input("CoachID", sql.Int, coachId)
+    .query(`
+      SELECT bd.CoachScheduleID
+      FROM BookingDetails bd
+      JOIN Bookings b ON bd.BookingID = b.BookingID
+      WHERE bd.CoachID = @CoachID
+        AND bd.CoachScheduleID IS NOT NULL
+        AND b.Status IN ('PendingPayment', 'Paid', 'Confirmed')
+    `);
+  return result.recordset.map((r: any) => r.CoachScheduleID);
+}
 
 // ─── SCHEDULES: Find my schedules ────────────────────────────
 
@@ -331,6 +346,55 @@ export async function createCoachSchedule(data: {
     `);
 
   return result.recordset[0];
+}
+
+export async function createCoachSchedulesTransaction(slots: {
+  coachId: number;
+  workingDate: string;
+  startTime: string;
+  endTime: string;
+}[]) {
+  const pool = await getPool();
+  const transaction = new sql.Transaction(pool);
+
+  try {
+    await transaction.begin();
+    const results = [];
+
+    for (const slot of slots) {
+      const result = await transaction
+        .request()
+        .input("CoachID", sql.Int, slot.coachId)
+        .input("WorkingDate", sql.Date, slot.workingDate)
+        .input("StartTime", sql.VarChar(5), slot.startTime)
+        .input("EndTime", sql.VarChar(5), slot.endTime)
+        .query(`
+          INSERT INTO CoachSchedules (CoachID, WorkingDate, StartTime, EndTime, Status)
+          OUTPUT
+            INSERTED.CoachScheduleID,
+            INSERTED.CoachID,
+            CONVERT(VARCHAR(10), INSERTED.WorkingDate, 120) AS WorkingDate,
+            CONVERT(VARCHAR(5), INSERTED.StartTime, 108) AS StartTime,
+            CONVERT(VARCHAR(5), INSERTED.EndTime, 108) AS EndTime,
+            INSERTED.Status,
+            INSERTED.CreatedAt
+          VALUES (
+            @CoachID,
+            @WorkingDate,
+            CAST(@StartTime AS TIME),
+            CAST(@EndTime AS TIME),
+            'Available'
+          )
+        `);
+      results.push(result.recordset[0]);
+    }
+
+    await transaction.commit();
+    return results;
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
 }
 
 // ─── SCHEDULES: Update schedule ───────────────────────────────

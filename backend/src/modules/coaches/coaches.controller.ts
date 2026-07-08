@@ -5,7 +5,7 @@
 
 import { NextRequest } from "next/server";
 import * as coachService from "./coaches.service";
-import { successResponse } from "@/utils/response";
+import { errorResponse, successResponse } from "@/utils/response";
 import { handleError } from "@/middlewares/error";
 import { requireAuth } from "@/middlewares/auth.middleware";
 import { requireRoles } from "@/middlewares/role.middleware";
@@ -274,6 +274,30 @@ export async function getMySchedulesController(req: NextRequest) {
     const result = await coachService.getMySchedules(user.userId);
 
     return successResponse(result, "Lấy danh sách lịch thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+// ─── AUTH COACH: Get my schedule options ─────────────────────
+
+export async function getScheduleOptionsController(req: NextRequest) {
+  try {
+    const user = requireAuth(req);
+    if (user instanceof Response) return user;
+
+    const forbidden = requireRoles(user, ["Coach"]);
+    if (forbidden) return forbidden;
+
+    const { searchParams } = new URL(req.url);
+    const date = searchParams.get("date");
+    if (!date) {
+      return errorResponse("Vui lòng cung cấp tham số date", 400);
+    }
+
+    const result = await coachService.getScheduleOptions(user.userId, date);
+
+    return successResponse(result, "Lấy thông tin lựa chọn lịch thành công");
   } catch (error) {
     return handleError(error);
   }
