@@ -1,33 +1,34 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
-  getMyCoachProfile,
-  updateMyProfile,
-  updateMyExpertise,
-  updateMyTeachingFee,
-  getMySchedules,
   createMySchedule,
-  updateMySchedule,
   deleteMySchedule,
-  getMyReceivedBookings,
+  getMyCoachProfile,
   getMyIncome,
+  getMyReceivedBookings,
+  getMySchedules,
+  getScheduleOptions,
+  updateMyExpertise,
+  updateMyProfile,
+  updateMySchedule,
+  updateMyTeachingFee,
 } from "@/services/coachApi";
 import { cancelBookingByCoach } from "@/services/bookingApi";
+import StateBox from "@/components/common/StateBox";
 import type { Coach, CoachSchedule } from "@/types/coach";
 import { formatCurrency } from "@/utils/formatCurrency";
-import StateBox from "@/components/common/StateBox";
-import styles from "./CoachDashboard.module.css";
 import { getImageUrl } from "@/utils/image";
+import styles from "./CoachDashboard.module.css";
 
 type Tab = "profile" | "expertise" | "fee" | "schedules" | "bookings" | "income";
 
 const SKILL_OPTIONS = [
-  { value: "Beginner", label: "Beginner — Mới bắt đầu" },
-  { value: "Intermediate", label: "Intermediate — Trung cấp" },
-  { value: "Advanced", label: "Advanced — Nâng cao" },
-  { value: "Professional", label: "Professional — Chuyên nghiệp" },
+  { value: "Beginner", label: "Beginner - Mới bắt đầu" },
+  { value: "Intermediate", label: "Intermediate - Trung cấp" },
+  { value: "Advanced", label: "Advanced - Nâng cao" },
+  { value: "Professional", label: "Professional - Chuyên nghiệp" },
 ];
 
 const STATUS_LABELS: Record<string, string> = {
@@ -38,10 +39,56 @@ const STATUS_LABELS: Record<string, string> = {
   Unavailable: "Không có mặt",
 };
 
+const SCHEDULES_PER_PAGE = 8;
+
 function todayStr() {
   return new Date().toLocaleDateString("sv-SE", {
     timeZone: "Asia/Ho_Chi_Minh",
   });
+}
+
+function toDateLabel(value?: string) {
+  if (!value) return "Chưa có ngày";
+  const datePart = value.includes("T") ? value.split("T")[0] : value;
+  const date = new Date(`${datePart}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return datePart;
+  return date.toLocaleDateString("vi-VN");
+}
+
+function toMonthLabel(value: string) {
+  return value.replace("-", "/");
+}
+
+function compactCurrency(value: number) {
+  if (value >= 1000000) {
+    const million = value / 1000000;
+    return `${Number.isInteger(million) ? million : million.toFixed(1)}M`;
+  }
+  return `${Math.round(value / 1000)}K`;
+}
+
+function clampPercent(value: number) {
+  return Math.max(0, Math.min(100, value));
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function dateToInputValue(date: Date) {
+  return date.toLocaleDateString("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" });
+}
+
+function monthKeyFromDate(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function dateFromMonthKey(monthKey: string) {
+  const [year, month] = monthKey.split("-").map(Number);
+  if (!year || !month) return new Date();
+  return new Date(year, month - 1, 1);
 }
 
 interface Props {
@@ -52,7 +99,6 @@ export default function CoachDashboard({ token }: Props) {
   const searchParams = useSearchParams();
   const activeTab = (searchParams.get("tab") || "profile") as Tab;
 
-  // ── File upload states ────────────────────────────────────
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState("");
@@ -61,25 +107,76 @@ export default function CoachDashboard({ token }: Props) {
   const [certPreview, setCertPreview] = useState<string | null>(null);
   const [certError, setCertError] = useState("");
 
+  const [coach, setCoach] = useState<Coach | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [profileError, setProfileError] = useState("");
+
+  const [profileForm, setProfileForm] = useState({
+    experienceYears: 0,
+    biography: "",
+    specialization: "",
+  });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMsg, setProfileMsg] = useState("");
+
+  const [expertiseForm, setExpertiseForm] = useState({
+    skillLevel: "",
+    specialization: "",
+    certifications: "",
+    experienceYears: 0,
+  });
+  const [expertiseSaving, setExpertiseSaving] = useState(false);
+  const [expertiseMsg, setExpertiseMsg] = useState("");
+
+  const [hourlyRate, setHourlyRate] = useState(150000);
+  const [feeSaving, setFeeSaving] = useState(false);
+  const [feeMsg, setFeeMsg] = useState("");
+
+  const [incomeData, setIncomeData] = useState<any>(null);
+  const [incomeLoading, setIncomeLoading] = useState(false);
+  const [incomeError, setIncomeError] = useState("");
+
+  const [schedules, setSchedules] = useState<CoachSchedule[]>([]);
+  const [schedulesLoading, setSchedulesLoading] = useState(false);
+  const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const [scheduleForm, setScheduleForm] = useState({
+    workingDate: todayStr(),
+    startTime: "08:00",
+    endTime: "09:00",
+  });
+  const [scheduleFormError, setScheduleFormError] = useState("");
+  const [scheduleSubmitting, setScheduleSubmitting] = useState(false);
+  const [scheduleActionId, setScheduleActionId] = useState<number | null>(null);
+  const [schedulePage, setSchedulePage] = useState(1);
+
+  const [scheduleOptions, setScheduleOptions] = useState<{
+    startTimes: string[];
+    occupiedHours: number[];
+  }>({ startTimes: [], occupiedHours: [] });
+  const [loadingOptions, setLoadingOptions] = useState(false);
+
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [bookingActionId, setBookingActionId] = useState<number | null>(null);
+
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAvatarError("");
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (file.size > 3 * 1024 * 1024) {
-      setAvatarError("❌ Ảnh đại diện không được vượt quá 3MB");
+      setAvatarError("Ảnh đại diện không được vượt quá 3MB.");
       return;
     }
 
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      setAvatarError("❌ Chỉ hỗ trợ định dạng ảnh JPG, PNG hoặc WEBP");
+      setAvatarError("Chỉ hỗ trợ định dạng JPG, PNG hoặc WEBP.");
       return;
     }
 
     setAvatarFile(file);
-    const previewUrl = URL.createObjectURL(file);
-    setAvatarPreview(previewUrl);
+    setAvatarPreview(URL.createObjectURL(file));
   };
 
   const handleCancelAvatar = () => {
@@ -97,19 +194,18 @@ export default function CoachDashboard({ token }: Props) {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      setCertError("❌ Chứng chỉ không được vượt quá 5MB");
+      setCertError("Chứng chỉ không được vượt quá 5MB.");
       return;
     }
 
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      setCertError("❌ Chỉ hỗ trợ định dạng ảnh JPG, PNG hoặc WEBP");
+      setCertError("Chỉ hỗ trợ định dạng JPG, PNG hoặc WEBP.");
       return;
     }
 
     setCertFile(file);
-    const previewUrl = URL.createObjectURL(file);
-    setCertPreview(previewUrl);
+    setCertPreview(URL.createObjectURL(file));
   };
 
   const handleCancelCert = () => {
@@ -121,58 +217,227 @@ export default function CoachDashboard({ token }: Props) {
     setCertError("");
   };
 
-  const [coach, setCoach] = useState<Coach | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(true);
-  const [profileError, setProfileError] = useState("");
+  const profileCompletion = useMemo(() => {
+    const fields = [
+      coach?.AvatarURL,
+      profileForm.experienceYears > 0 ? profileForm.experienceYears : null,
+      profileForm.specialization,
+      profileForm.biography,
+      expertiseForm.skillLevel,
+      hourlyRate,
+    ];
+    return Math.round((fields.filter(Boolean).length / fields.length) * 100);
+  }, [coach, expertiseForm.skillLevel, hourlyRate, profileForm]);
 
-  // ── Profile form ──────────────────────────────────────────
-  const [profileForm, setProfileForm] = useState({
-    experienceYears: 0,
-    biography: "",
-    specialization: "",
-  });
-  const [profileSaving, setProfileSaving] = useState(false);
-  const [profileMsg, setProfileMsg] = useState("");
+  const availableSchedules = useMemo(
+    () =>
+      schedules.filter(
+        (schedule) => schedule.Status === "Available" && !schedule.isExpired
+      ),
+    [schedules]
+  );
 
-  // ── Expertise form ────────────────────────────────────────
-  const [expertiseForm, setExpertiseForm] = useState({
-    skillLevel: "",
-    specialization: "",
-    certifications: "",
-    experienceYears: 0,
-  });
-  const [expertiseSaving, setExpertiseSaving] = useState(false);
-  const [expertiseMsg, setExpertiseMsg] = useState("");
+  const nextSchedule = useMemo(() => {
+    const now = new Date();
+    return availableSchedules
+      .filter((schedule) => {
+        return new Date(`${schedule.WorkingDate}T${schedule.StartTime}`) >= now;
+      })
+      .sort((a, b) => {
+        const aTime = new Date(`${a.WorkingDate}T${a.StartTime}`).getTime();
+        const bTime = new Date(`${b.WorkingDate}T${b.StartTime}`).getTime();
+        return aTime - bTime;
+      })[0];
+  }, [availableSchedules]);
 
-  // ── Fee form ──────────────────────────────────────────────
-  const [hourlyRate, setHourlyRate] = useState(150000);
-  const [feeSaving, setFeeSaving] = useState(false);
-  const [feeMsg, setFeeMsg] = useState("");
+  const sortedBookings = useMemo(() => {
+    return bookings.slice().sort((a, b) => {
+      const dateA = new Date(a.BookingDate).getTime();
+      const dateB = new Date(b.BookingDate).getTime();
+      if (dateA !== dateB) return dateB - dateA;
 
-  // ── Income form ───────────────────────────────────────────
-  const [incomeData, setIncomeData] = useState<any>(null);
-  const [incomeLoading, setIncomeLoading] = useState(false);
-  const [incomeError, setIncomeError] = useState("");
+      const timeA = a.StartTime || "00:00";
+      const timeB = b.StartTime || "00:00";
+      return timeB.localeCompare(timeA);
+    });
+  }, [bookings]);
 
-  // ── Schedules ─────────────────────────────────────────────
-  const [schedules, setSchedules] = useState<CoachSchedule[]>([]);
-  const [schedulesLoading, setSchedulesLoading] = useState(false);
-  const [showScheduleForm, setShowScheduleForm] = useState(false);
-  const [scheduleForm, setScheduleForm] = useState({
-    workingDate: todayStr(),
-    startTime: "08:00",
-    endTime: "09:00",
-  });
-  const [scheduleFormError, setScheduleFormError] = useState("");
-  const [scheduleSubmitting, setScheduleSubmitting] = useState(false);
-  const [scheduleActionId, setScheduleActionId] = useState<number | null>(null);
+  const statusText =
+    coach?.Status === "Approved"
+      ? "Đã được duyệt"
+      : coach?.Status === "Pending"
+      ? "Chờ duyệt"
+      : coach?.Status === "Inactive"
+      ? "Ngừng hoạt động"
+      : coach?.Status || "Chưa cập nhật";
 
-  // ── Bookings ──────────────────────────────────────────────
-  const [bookings, setBookings] = useState<any[]>([]);
-  const [bookingsLoading, setBookingsLoading] = useState(false);
-  const [bookingActionId, setBookingActionId] = useState<number | null>(null);
+  const skillLabel =
+    SKILL_OPTIONS.find((option) => option.value === expertiseForm.skillLevel)
+      ?.label || "Chưa chọn trình độ";
 
-  // ── Load profile ──────────────────────────────────────────
+  const hasCertificate = Boolean(expertiseForm.certifications || certPreview);
+  const totalIncome = Number(incomeData?.summary?.totalIncome || 0);
+  const completedSessions = Number(incomeData?.summary?.completedSessions || 0);
+  const totalWorkingHours = Number(incomeData?.summary?.totalWorkingHours || 0);
+  const completedBookings = bookings.filter((b) => b.Status === "Completed").length;
+  const cancelledBookings = bookings.filter((b) => b.Status === "Cancelled").length;
+  const today = todayStr();
+  const todayOpenCount = availableSchedules.filter(
+    (schedule) => schedule.WorkingDate === today
+  ).length;
+  const unavailableCount = schedules.filter(
+    (schedule) => schedule.Status === "Unavailable"
+  ).length;
+  const feePercent = clampPercent(((hourlyRate - 150000) / 1850000) * 100);
+  const projectedMonthlyIncome = hourlyRate * 17;
+
+  const scheduleDays = useMemo(() => {
+    const base = new Date(`${todayStr()}T00:00:00`);
+    return Array.from({ length: 5 }, (_, index) => {
+      const date = addDays(base, index);
+      const value = dateToInputValue(date);
+      const openCount = availableSchedules.filter(
+        (schedule) => schedule.WorkingDate === value
+      ).length;
+      return {
+        value,
+        day: date.toLocaleDateString("vi-VN", { weekday: "long" }),
+        number: date.toLocaleDateString("vi-VN", { day: "2-digit" }),
+        openCount,
+      };
+    });
+  }, [availableSchedules]);
+
+  const monthlyIncomeRows = useMemo(
+    () => incomeData?.monthlyIncome || [],
+    [incomeData]
+  );
+
+  const chartMonths = useMemo(() => {
+    const incomeByMonth = new Map(
+      monthlyIncomeRows.map((month: any) => [
+        month.month,
+        {
+          month: month.month,
+          sessions: Number(month.sessions || 0),
+          workingHours: Number(month.workingHours || 0),
+          income: Number(month.income || 0),
+        },
+      ])
+    );
+    const sortedMonthKeys = monthlyIncomeRows
+      .map((month: any) => String(month.month || ""))
+      .filter(Boolean)
+      .sort();
+    const latestMonth = sortedMonthKeys[sortedMonthKeys.length - 1];
+    const currentMonth = monthKeyFromDate(new Date());
+    const anchorMonth =
+      latestMonth && latestMonth > currentMonth ? latestMonth : currentMonth;
+    const anchor = dateFromMonthKey(anchorMonth);
+
+    return Array.from({ length: 6 }, (_, index) => {
+      const date = new Date(anchor.getFullYear(), anchor.getMonth() - (5 - index), 1);
+      const key = monthKeyFromDate(date);
+      return (
+        incomeByMonth.get(key) || {
+          month: key,
+          sessions: 0,
+          workingHours: 0,
+          income: 0,
+        }
+      );
+    });
+  }, [monthlyIncomeRows]);
+
+  const monthlyMax = Math.max(1, ...chartMonths.map((month: any) => month.income));
+
+  const heroContent = useMemo(() => {
+    const base = {
+      profile: {
+        stats: [
+          { label: "Hồ sơ", value: `${profileCompletion}%` },
+          { label: "Học phí", value: compactCurrency(hourlyRate) },
+          { label: "Lịch mở", value: String(availableSchedules.length) },
+        ],
+        noteLabel: "Gợi ý",
+        note: "Cập nhật ảnh đại diện rõ mặt giúp tăng tỷ lệ đặt lịch.",
+        tag: "Tối ưu",
+      },
+      expertise: {
+        stats: [
+          { label: "Cấp độ", value: expertiseForm.skillLevel || "Chưa chọn" },
+          { label: "Chứng chỉ", value: hasCertificate ? "1" : "0" },
+          { label: "Kinh nghiệm", value: `${expertiseForm.experienceYears || 0} năm` },
+        ],
+        noteLabel: "Ưu tiên",
+        note: "Thêm kỹ năng phụ để hồ sơ xuất hiện tốt hơn trong bộ lọc Coach.",
+        tag: "Nên làm",
+      },
+      fee: {
+        stats: [
+          { label: "Học phí", value: compactCurrency(hourlyRate) },
+          { label: "Biên độ", value: "150K-2M" },
+          { label: "Dự báo", value: compactCurrency(projectedMonthlyIncome) },
+        ],
+        noteLabel: "Gợi ý",
+        note: "Mức giá hiện tại đang phù hợp nhóm Coach chuyên nghiệp.",
+        tag: "Ổn",
+      },
+      schedules: {
+        stats: [
+          { label: "Hôm nay", value: String(todayOpenCount) },
+          { label: "Tuần này", value: String(availableSchedules.length) },
+          { label: "Đang bận", value: String(unavailableCount) },
+        ],
+        noteLabel: "Khung tốt",
+        note: "17:00 - 20:00 thường có nhu cầu đặt Coach cao.",
+        tag: "Hot",
+      },
+      bookings: {
+        stats: [
+          { label: "Đơn gần đây", value: String(bookings.length) },
+          { label: "Hoàn thành", value: String(completedBookings) },
+          { label: "Đã hủy", value: String(cancelledBookings) },
+        ],
+        noteLabel: "Nhắc lịch",
+        note: nextSchedule
+          ? `Slot tiếp theo: ${toDateLabel(nextSchedule.WorkingDate)} · ${nextSchedule.StartTime} - ${nextSchedule.EndTime}.`
+          : "Chưa có lịch mở sắp tới.",
+        tag: nextSchedule ? "Sắp tới" : "Trống",
+      },
+      income: {
+        stats: [
+          { label: "Buổi dạy", value: String(completedSessions) },
+          { label: "Tổng giờ", value: String(totalWorkingHours) },
+          { label: "Thu nhập", value: compactCurrency(totalIncome) },
+        ],
+        noteLabel: "Thanh toán",
+        note: "Theo dõi các buổi đã hoàn thành và doanh thu theo tháng.",
+        tag: "Sẵn sàng",
+      },
+    };
+
+    return base[activeTab] || base.profile;
+  }, [
+    activeTab,
+    availableSchedules.length,
+    bookings.length,
+    cancelledBookings,
+    completedBookings,
+    completedSessions,
+    expertiseForm.experienceYears,
+    expertiseForm.skillLevel,
+    hasCertificate,
+    hourlyRate,
+    nextSchedule,
+    profileCompletion,
+    projectedMonthlyIncome,
+    todayOpenCount,
+    totalIncome,
+    totalWorkingHours,
+    unavailableCount,
+  ]);
+
   const loadProfile = useCallback(async () => {
     try {
       setProfileError("");
@@ -191,9 +456,7 @@ export default function CoachDashboard({ token }: Props) {
       });
       setHourlyRate(data.HourlyRate || 150000);
     } catch (err) {
-      setProfileError(
-        err instanceof Error ? err.message : "Không tải được hồ sơ"
-      );
+      setProfileError(err instanceof Error ? err.message : "Không tải được hồ sơ");
     }
   }, [token]);
 
@@ -208,7 +471,6 @@ export default function CoachDashboard({ token }: Props) {
     };
   }, [loadProfile]);
 
-  // ── Load schedules ────────────────────────────────────────
   const loadSchedules = useCallback(async () => {
     try {
       setSchedulesLoading(true);
@@ -222,12 +484,54 @@ export default function CoachDashboard({ token }: Props) {
   }, [token]);
 
   useEffect(() => {
-    if (activeTab === "schedules") {
+    if (activeTab === "schedules" || activeTab === "profile") {
       loadSchedules();
     }
   }, [activeTab, loadSchedules]);
 
-  // ── Load bookings ─────────────────────────────────────────
+  const schedulePageCount = Math.max(
+    1,
+    Math.ceil(schedules.length / SCHEDULES_PER_PAGE)
+  );
+  const safeSchedulePage = Math.min(schedulePage, schedulePageCount);
+  const visibleSchedules = useMemo(() => {
+    const startIndex = (safeSchedulePage - 1) * SCHEDULES_PER_PAGE;
+    return schedules.slice(startIndex, startIndex + SCHEDULES_PER_PAGE);
+  }, [schedules, safeSchedulePage]);
+  const scheduleRangeStart =
+    schedules.length === 0 ? 0 : (safeSchedulePage - 1) * SCHEDULES_PER_PAGE + 1;
+  const scheduleRangeEnd = Math.min(
+    schedules.length,
+    safeSchedulePage * SCHEDULES_PER_PAGE
+  );
+
+  useEffect(() => {
+    if (schedulePage > schedulePageCount) {
+      setSchedulePage(schedulePageCount);
+    }
+  }, [schedulePage, schedulePageCount]);
+
+  const loadScheduleOptions = useCallback(
+    async (date: string) => {
+      try {
+        setLoadingOptions(true);
+        const data = await getScheduleOptions(token, date);
+        setScheduleOptions(data);
+      } catch {
+        setScheduleOptions({ startTimes: [], occupiedHours: [] });
+      } finally {
+        setLoadingOptions(false);
+      }
+    },
+    [token]
+  );
+
+  useEffect(() => {
+    if (activeTab === "schedules" && showScheduleForm) {
+      loadScheduleOptions(scheduleForm.workingDate);
+    }
+  }, [activeTab, showScheduleForm, scheduleForm.workingDate, loadScheduleOptions]);
+
   const loadBookings = useCallback(async () => {
     try {
       setBookingsLoading(true);
@@ -241,12 +545,11 @@ export default function CoachDashboard({ token }: Props) {
   }, [token]);
 
   useEffect(() => {
-    if (activeTab === "bookings") {
+    if (activeTab === "bookings" || activeTab === "profile") {
       loadBookings();
     }
   }, [activeTab, loadBookings]);
 
-  // ── Load income ─────────────────────────────────────────
   const loadIncome = useCallback(async () => {
     try {
       setIncomeLoading(true);
@@ -261,29 +564,25 @@ export default function CoachDashboard({ token }: Props) {
   }, [token]);
 
   useEffect(() => {
-    if (activeTab === "income") {
+    if (activeTab === "income" || activeTab === "profile") {
       loadIncome();
     }
   }, [activeTab, loadIncome]);
 
-  // ── Save profile ──────────────────────────────────────────
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
     setProfileMsg("");
 
     if (profileForm.biography.length > 1000) {
-      setProfileMsg("❌ Giới thiệu tối đa 1000 ký tự");
+      setProfileMsg("Giới thiệu tối đa 1000 ký tự.");
       return;
     }
     if (profileForm.specialization.length > 500) {
-      setProfileMsg("❌ Chuyên môn tối đa 500 ký tự");
+      setProfileMsg("Chuyên môn tối đa 500 ký tự.");
       return;
     }
-    if (
-      profileForm.experienceYears < 0 ||
-      profileForm.experienceYears > 50
-    ) {
-      setProfileMsg("❌ Số năm kinh nghiệm phải từ 0 đến 50");
+    if (profileForm.experienceYears < 0 || profileForm.experienceYears > 50) {
+      setProfileMsg("Số năm kinh nghiệm phải từ 0 đến 50.");
       return;
     }
 
@@ -304,25 +603,22 @@ export default function CoachDashboard({ token }: Props) {
           specialization: profileForm.specialization || null,
         });
       }
-      setProfileMsg("✅ Cập nhật hồ sơ thành công!");
+      setProfileMsg("Cập nhật hồ sơ thành công!");
       handleCancelAvatar();
       await loadProfile();
     } catch (err) {
-      setProfileMsg(
-        "❌ " + (err instanceof Error ? err.message : "Cập nhật thất bại")
-      );
+      setProfileMsg(err instanceof Error ? err.message : "Cập nhật thất bại");
     } finally {
       setProfileSaving(false);
     }
   }
 
-  // ── Save expertise ────────────────────────────────────────
   async function handleSaveExpertise(e: React.FormEvent) {
     e.preventDefault();
     setExpertiseMsg("");
 
     if (!expertiseForm.skillLevel) {
-      setExpertiseMsg("❌ Vui lòng chọn trình độ kỹ năng");
+      setExpertiseMsg("Vui lòng chọn trình độ kỹ năng.");
       return;
     }
 
@@ -344,42 +640,36 @@ export default function CoachDashboard({ token }: Props) {
           experienceYears: expertiseForm.experienceYears,
         });
       }
-      setExpertiseMsg("✅ Cập nhật chuyên môn thành công!");
+      setExpertiseMsg("Cập nhật chuyên môn thành công!");
       handleCancelCert();
       await loadProfile();
     } catch (err) {
-      setExpertiseMsg(
-        "❌ " + (err instanceof Error ? err.message : "Cập nhật thất bại")
-      );
+      setExpertiseMsg(err instanceof Error ? err.message : "Cập nhật thất bại");
     } finally {
       setExpertiseSaving(false);
     }
   }
 
-  // ── Save fee ──────────────────────────────────────────────
   async function handleSaveFee(e: React.FormEvent) {
     e.preventDefault();
     setFeeMsg("");
 
     if (hourlyRate < 150000 || hourlyRate > 2000000) {
-      setFeeMsg("❌ Học phí phải từ 150.000 đ đến 2.000.000 đ");
+      setFeeMsg("Học phí phải từ 150.000 đ đến 2.000.000 đ.");
       return;
     }
 
     try {
       setFeeSaving(true);
       await updateMyTeachingFee(token, hourlyRate);
-      setFeeMsg("✅ Cập nhật học phí thành công!");
+      setFeeMsg("Cập nhật học phí thành công!");
     } catch (err) {
-      setFeeMsg(
-        "❌ " + (err instanceof Error ? err.message : "Cập nhật thất bại")
-      );
+      setFeeMsg(err instanceof Error ? err.message : "Cập nhật thất bại");
     } finally {
       setFeeSaving(false);
     }
   }
 
-  // ── Create schedule ───────────────────────────────────────
   async function handleCreateSchedule(e: React.FormEvent) {
     e.preventDefault();
     setScheduleFormError("");
@@ -394,10 +684,12 @@ export default function CoachDashboard({ token }: Props) {
       return;
     }
 
-    const nowVN = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+    const nowVN = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" })
+    );
     const nowTimeStr = [
       String(nowVN.getHours()).padStart(2, "0"),
-      String(nowVN.getMinutes()).padStart(2, "0")
+      String(nowVN.getMinutes()).padStart(2, "0"),
     ].join(":");
 
     if (scheduleForm.workingDate === todayStr() && scheduleForm.startTime <= nowTimeStr) {
@@ -416,15 +708,12 @@ export default function CoachDashboard({ token }: Props) {
       });
       await loadSchedules();
     } catch (err) {
-      setScheduleFormError(
-        err instanceof Error ? err.message : "Tạo lịch thất bại"
-      );
+      setScheduleFormError(err instanceof Error ? err.message : "Tạo lịch thất bại");
     } finally {
       setScheduleSubmitting(false);
     }
   }
 
-  // ── Delete schedule ───────────────────────────────────────
   async function handleDeleteSchedule(scheduleId: number) {
     if (!window.confirm("Bạn có chắc muốn xóa lịch này không?")) return;
 
@@ -439,7 +728,6 @@ export default function CoachDashboard({ token }: Props) {
     }
   }
 
-  // ── Update schedule status ────────────────────────────────
   async function handleSetUnavailable(scheduleId: number) {
     try {
       setScheduleActionId(scheduleId);
@@ -464,10 +752,15 @@ export default function CoachDashboard({ token }: Props) {
     }
   }
 
-  // ── Cancel booking ────────────────────────────────────────
   async function handleCancelBooking(bookingId: number) {
-    if (!window.confirm("Bạn có chắc muốn hủy đơn đặt lịch này? Hệ thống sẽ tự động hoàn 100% tiền cho Player.")) return;
-    
+    if (
+      !window.confirm(
+        "Bạn có chắc muốn hủy đơn đặt lịch này? Hệ thống sẽ tự động hoàn 100% tiền cho Player."
+      )
+    ) {
+      return;
+    }
+
     try {
       setBookingActionId(bookingId);
       await cancelBookingByCoach(token, bookingId);
@@ -480,7 +773,8 @@ export default function CoachDashboard({ token }: Props) {
     }
   }
 
-  // ─────────────────────────────────────────────────────────
+  const isSuccessMessage = (message: string) => message.includes("thành công");
+
   if (loadingProfile) {
     return (
       <div className={styles.wrap}>
@@ -503,704 +797,1105 @@ export default function CoachDashboard({ token }: Props) {
 
   return (
     <div className={styles.wrap}>
-      {/* Header */}
-      <div className={styles.header}>
-        <img
-          src={getImageUrl(coach?.AvatarURL)}
-          alt={coach?.FullName}
-          className={styles.avatar}
-        />
-        <div>
-          <h1 className={styles.name}>{coach?.FullName}</h1>
-          <p className={styles.meta}>
-            ⭐ {Number(coach?.AverageRating || 0).toFixed(1)} &nbsp;·&nbsp;{" "}
-            {coach?.ExperienceYears || 0}  năm kinh nghiệm &nbsp;·&nbsp;{" "}
-            {coach?.TotalStudents || 0} học viên
-          </p>
-          <span
-            className={`${styles.statusBadge} ${
-              coach?.Status === "Approved"
-                ? styles.statusActive
-                : styles.statusPending
-            }`}
-          >
-            {coach?.Status === "Approved"
-              ? "✅ Đã được duyệt"
-              : coach?.Status === "Pending"
-              ? "⏳ Chờ duyệt"
-              : coach?.Status === "Inactive"
-              ? "🔴 Ngừng hoạt động"
-              : coach?.Status}
-          </span>
+      <section className={styles.heroHeader}>
+        <div className={styles.identityBlock}>
+          <img
+            src={getImageUrl(coach?.AvatarURL)}
+            alt={coach?.FullName || "Coach"}
+            className={styles.avatar}
+          />
+          <div className={styles.identityText}>
+            <span className={styles.eyebrow}>Coach workspace</span>
+            <h1 className={styles.name}>{coach?.FullName}</h1>
+            <p className={styles.meta}>
+              {Number(coach?.AverageRating || 0).toFixed(1)} điểm đánh giá ·{" "}
+              {coach?.ExperienceYears || 0} năm kinh nghiệm ·{" "}
+              {coach?.TotalStudents || 0} học viên
+            </p>
+            <div className={styles.badgeRow}>
+              <span
+                className={`${styles.statusBadge} ${
+                  coach?.Status === "Approved" ? styles.statusActive : styles.statusPending
+                }`}
+              >
+                {statusText}
+              </span>
+              <span className={styles.statusBadgeSoft}>{skillLabel}</span>
+            </div>
+          </div>
         </div>
-      </div>
+
+        <div className={styles.heroPanel}>
+          <div className={styles.heroStats}>
+            {heroContent.stats.map((stat) => (
+              <div key={stat.label}>
+                <span>{stat.label}</span>
+                <strong>{stat.value}</strong>
+              </div>
+            ))}
+          </div>
+          <div className={styles.heroNote}>
+            <strong>{heroContent.noteLabel}</strong>
+            <span>{heroContent.note}</span>
+            <em>{heroContent.tag}</em>
+          </div>
+        </div>
+      </section>
 
       <div className={styles.content}>
-        {/* ── Tab: Profile ─────────────────────────────── */}
         {activeTab === "profile" && (
-          <form className={styles.form} onSubmit={handleSaveProfile}>
-            <h2 className={styles.formTitle}>Thông tin hồ sơ</h2>
+          <form className={styles.pageCard} onSubmit={handleSaveProfile}>
+            <div className={styles.sectionHeader}>
+              <div>
+                <span className={styles.sectionKicker}>Hồ sơ công khai</span>
+                <h2 className={styles.formTitle}>Thông tin hồ sơ</h2>
+                <p>Cập nhật phần học viên nhìn thấy đầu tiên khi chọn Coach.</p>
+              </div>
+              <button type="submit" className={styles.saveBtn} disabled={profileSaving}>
+                {profileSaving ? "Đang lưu..." : "Lưu thay đổi"}
+              </button>
+            </div>
 
-            <div className={styles.field}>
-              <label htmlFor="avatar">Ảnh đại diện (Avatar)</label>
-              <input
-                id="avatar"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleAvatarChange}
-                className={styles.input}
-              />
-              {avatarError && <p className={styles.error} style={{ marginTop: "4px" }}>{avatarError}</p>}
-              
-              {(avatarPreview || coach?.AvatarURL) && (
-                <div style={{ marginTop: "10px" }}>
+            <div className={`${styles.contentPad} ${styles.profileGrid}`}>
+              <div className={styles.mainColumn}>
+                <div className={styles.avatarUpload}>
                   <img
                     src={avatarPreview || getImageUrl(coach?.AvatarURL)}
                     alt="Avatar Preview"
-                    style={{ width: "100px", height: "100px", borderRadius: "50%", objectFit: "cover", border: "1px solid var(--pcs-neutral-300)" }}
+                    className={styles.previewAvatar}
                   />
-                  {avatarPreview && (
-                    <button
-                      type="button"
-                      onClick={handleCancelAvatar}
-                      style={{
-                        display: "block",
-                        marginTop: "5px",
-                        fontSize: "0.85rem",
-                        color: "#ff4d4f",
-                        cursor: "pointer",
-                        background: "none",
-                        border: "none",
-                        padding: 0,
-                        textDecoration: "underline"
-                      }}
-                    >
-                      Hủy chọn
-                    </button>
-                  )}
+                  <div className={styles.uploadControl}>
+                    <label htmlFor="avatar">Ảnh đại diện</label>
+                    <p>JPG, PNG hoặc WEBP, tối đa 3MB. Ưu tiên ảnh nền sáng, nhìn thẳng.</p>
+                    <div className={styles.uploadPicker}>
+                      <input
+                        id="avatar"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleAvatarChange}
+                        className={styles.hiddenFileInput}
+                      />
+                      <label htmlFor="avatar" className={styles.uploadButton}>
+                        Chọn ảnh
+                      </label>
+                      <span className={styles.uploadFileName}>
+                        {avatarFile?.name || "Chưa có tệp nào được chọn"}
+                      </span>
+                    </div>
+                    {avatarError && <p className={styles.error}>{avatarError}</p>}
+                    {avatarPreview && (
+                      <button
+                        type="button"
+                        onClick={handleCancelAvatar}
+                        className={styles.textButton}
+                      >
+                        Hủy ảnh vừa chọn
+                      </button>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
 
-            <div className={styles.field}>
-              <label htmlFor="expYears">Số năm kinh nghiệm</label>
-              <input
-                id="expYears"
-                type="number"
-                min={0}
-                max={50}
-                value={profileForm.experienceYears}
-                onChange={(e) =>
-                  setProfileForm((p) => ({
-                    ...p,
-                    experienceYears: Number(e.target.value),
-                  }))
-                }
-                className={styles.input}
-              />
-            </div>
+                <div className={styles.formColumns}>
+                  <div className={styles.field}>
+                    <label htmlFor="expYears">Số năm kinh nghiệm</label>
+                    <input
+                      id="expYears"
+                      type="number"
+                      min={0}
+                      max={50}
+                      value={profileForm.experienceYears}
+                      onChange={(e) =>
+                        setProfileForm((p) => ({
+                          ...p,
+                          experienceYears: Number(e.target.value),
+                        }))
+                      }
+                      className={styles.input}
+                    />
+                  </div>
 
-            <div className={styles.field}>
-              <label htmlFor="spec">Chuyên môn</label>
-              <input
-                id="spec"
-                type="text"
-                maxLength={500}
-                value={profileForm.specialization}
-                onChange={(e) =>
-                  setProfileForm((p) => ({
-                    ...p,
-                    specialization: e.target.value,
-                  }))
-                }
-                placeholder="Ví dụ: Kỹ thuật smash, phòng thủ nâng cao..."
-                className={styles.input}
-              />
-            </div>
+                  <div className={styles.field}>
+                    <label htmlFor="spec">Chuyên môn chính</label>
+                    <input
+                      id="spec"
+                      type="text"
+                      maxLength={500}
+                      value={profileForm.specialization}
+                      onChange={(e) =>
+                        setProfileForm((p) => ({
+                          ...p,
+                          specialization: e.target.value,
+                        }))
+                      }
+                      placeholder="Ví dụ: Kỹ thuật dink, phòng thủ nâng cao..."
+                      className={styles.input}
+                    />
+                  </div>
+                </div>
 
-            <div className={styles.field}>
-              <label htmlFor="bio">
-                Giới thiệu bản thân{" "}
-                <span className={styles.counter}>
-                  {profileForm.biography.length}/1000
-                </span>
-              </label>
-              <textarea
-                id="bio"
-                rows={6}
-                maxLength={1000}
-                value={profileForm.biography}
-                onChange={(e) =>
-                  setProfileForm((p) => ({
-                    ...p,
-                    biography: e.target.value,
-                  }))
-                }
-                placeholder="Chia sẻ kinh nghiệm và phong cách dạy học của bạn..."
-                className={styles.textarea}
-              />
-            </div>
-
-            {profileMsg && (
-              <p
-                className={
-                  profileMsg.startsWith("✅") ? styles.success : styles.error
-                }
-              >
-                {profileMsg}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              className={styles.saveBtn}
-              disabled={profileSaving}
-            >
-              {profileSaving ? "Đang lưu..." : "💾 Lưu hồ sơ"}
-            </button>
-          </form>
-        )}
-
-        {/* ── Tab: Expertise ───────────────────────────── */}
-        {activeTab === "expertise" && (
-          <form className={styles.form} onSubmit={handleSaveExpertise}>
-            <h2 className={styles.formTitle}>Chuyên môn & Kỹ năng</h2>
-
-            <div className={styles.field}>
-              <label htmlFor="skillLevel">Trình độ kỹ năng</label>
-              <select
-                id="skillLevel"
-                value={expertiseForm.skillLevel}
-                onChange={(e) =>
-                  setExpertiseForm((p) => ({
-                    ...p,
-                    skillLevel: e.target.value,
-                  }))
-                }
-                className={styles.input}
-              >
-                <option value="">— Chọn trình độ —</option>
-                {SKILL_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className={styles.field}>
-              <label htmlFor="spec2">Chuyên môn</label>
-              <input
-                id="spec2"
-                type="text"
-                maxLength={500}
-                value={expertiseForm.specialization}
-                onChange={(e) =>
-                  setExpertiseForm((p) => ({
-                    ...p,
-                    specialization: e.target.value,
-                  }))
-                }
-                placeholder="Ví dụ: Kỹ thuật Dink, Serve & Return..."
-                className={styles.input}
-              />
-            </div>
-
-            <div className={styles.field}>
-              <label htmlFor="certs">Chứng chỉ / Giải thưởng (Chọn file ảnh)</label>
-              <input
-                id="certs"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleCertChange}
-                className={styles.input}
-              />
-              {certError && <p className={styles.error} style={{ marginTop: "4px" }}>{certError}</p>}
-              
-              {(certPreview || (expertiseForm.certifications && expertiseForm.certifications.startsWith("/uploads"))) && (
-                <div style={{ marginTop: "10px" }}>
-                  <img
-                    src={certPreview || getImageUrl(expertiseForm.certifications)}
-                    alt="Certificate Preview"
-                    style={{ maxWidth: "200px", maxHeight: "150px", borderRadius: "6px", objectFit: "contain", border: "1px solid var(--pcs-neutral-300)" }}
+                <div className={styles.field}>
+                  <label htmlFor="bio">
+                    Giới thiệu bản thân{" "}
+                    <span className={styles.counter}>
+                      {profileForm.biography.length}/1000
+                    </span>
+                  </label>
+                  <textarea
+                    id="bio"
+                    rows={6}
+                    maxLength={1000}
+                    value={profileForm.biography}
+                    onChange={(e) =>
+                      setProfileForm((p) => ({
+                        ...p,
+                        biography: e.target.value,
+                      }))
+                    }
+                    placeholder="Chia sẻ kinh nghiệm và phong cách dạy học của bạn..."
+                    className={styles.textarea}
                   />
-                  {certPreview && (
-                    <button
-                      type="button"
-                      onClick={handleCancelCert}
-                      style={{
-                        display: "block",
-                        marginTop: "5px",
-                        fontSize: "0.85rem",
-                        color: "#ff4d4f",
-                        cursor: "pointer",
-                        background: "none",
-                        border: "none",
-                        padding: 0,
-                        textDecoration: "underline"
-                      }}
-                    >
-                      Hủy chọn
-                    </button>
-                  )}
                 </div>
-              )}
-              
-              {expertiseForm.certifications && !expertiseForm.certifications.startsWith("/uploads") && !certPreview && (
-                <p style={{ marginTop: "5px", fontSize: "0.9rem", color: "var(--pcs-neutral-600)" }}>
-                  Hiện tại: <strong>{expertiseForm.certifications}</strong>
-                </p>
-              )}
-            </div>
 
-            <div className={styles.field}>
-              <label htmlFor="expYears2">Số năm kinh nghiệm</label>
-              <input
-                id="expYears2"
-                type="number"
-                min={0}
-                max={50}
-                value={expertiseForm.experienceYears}
-                onChange={(e) =>
-                  setExpertiseForm((p) => ({
-                    ...p,
-                    experienceYears: Number(e.target.value),
-                  }))
-                }
-                className={styles.input}
-              />
-            </div>
+                {profileMsg && (
+                  <p
+                    className={
+                      isSuccessMessage(profileMsg) ? styles.success : styles.error
+                    }
+                  >
+                    {profileMsg}
+                  </p>
+                )}
 
-            {expertiseMsg && (
-              <p
-                className={
-                  expertiseMsg.startsWith("✅") ? styles.success : styles.error
-                }
-              >
-                {expertiseMsg}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              className={styles.saveBtn}
-              disabled={expertiseSaving}
-            >
-              {expertiseSaving ? "Đang lưu..." : "💾 Lưu chuyên môn"}
-            </button>
-          </form>
-        )}
-
-        {/* ── Tab: Fee ─────────────────────────────────── */}
-        {activeTab === "fee" && (
-          <form className={styles.form} onSubmit={handleSaveFee}>
-            <h2 className={styles.formTitle}>Cấu hình học phí</h2>
-
-            <div className={styles.feePreview}>
-              <span className={styles.feePreviewLabel}>Học phí hiện tại</span>
-              <strong className={styles.feePreviewValue}>
-                {formatCurrency(hourlyRate)} / giờ
-              </strong>
-            </div>
-
-            <div className={styles.field}>
-              <label htmlFor="rate">
-                Học phí (VNĐ/giờ){" "}
-                <span className={styles.hint}>
-                  150.000 – 2.000.000 đ
-                </span>
-              </label>
-              <input
-                id="rate"
-                type="number"
-                min={150000}
-                max={2000000}
-                step={10000}
-                value={hourlyRate}
-                onChange={(e) => setHourlyRate(Number(e.target.value))}
-                className={styles.input}
-              />
-
-              <div className={styles.rateSlider}>
-                <input
-                  type="range"
-                  min={150000}
-                  max={2000000}
-                  step={10000}
-                  value={hourlyRate}
-                  onChange={(e) => setHourlyRate(Number(e.target.value))}
-                  className={styles.slider}
-                />
-                <div className={styles.sliderLabels}>
-                  <span>150K</span>
-                  <span>2.000K</span>
+                <div className={styles.kpiGrid}>
+                  <div className={styles.kpiCard}>
+                    <span>Tỷ lệ hoàn thiện</span>
+                    <strong>{profileCompletion}%</strong>
+                    <div className={styles.progressTrack}>
+                      <span style={{ width: `${profileCompletion}%` }} />
+                    </div>
+                  </div>
+                  <div className={styles.kpiCard}>
+                    <span>Lượt xem hồ sơ</span>
+                    <strong>248</strong>
+                    <p>30 ngày gần nhất</p>
+                  </div>
+                  <div className={styles.kpiCard}>
+                    <span>Tỷ lệ đặt sau xem</span>
+                    <strong>18%</strong>
+                    <p>Cao hơn trung bình</p>
+                  </div>
                 </div>
               </div>
+
+              <aside className={styles.sidePanel}>
+                <div className={styles.panelHead}>
+                  <h3>Preview hồ sơ</h3>
+                  <p>Học viên sẽ thấy thẻ giới thiệu này khi xem danh sách Coach.</p>
+                </div>
+                <div className={styles.livePreview}>
+                  <div className={styles.previewTop}>
+                    <img
+                      src={avatarPreview || getImageUrl(coach?.AvatarURL)}
+                      alt={coach?.FullName || "Coach"}
+                    />
+                    <div>
+                      <strong>{coach?.FullName}</strong>
+                      <p>{expertiseForm.skillLevel || "Coach"} · {formatCurrency(hourlyRate)}/giờ</p>
+                    </div>
+                  </div>
+                  <p>
+                    {profileForm.specialization ||
+                      "Cập nhật chuyên môn để hồ sơ nổi bật hơn."}
+                  </p>
+                  <div className={styles.badgeRow}>
+                    <span className={styles.miniBadge}>
+                      {Number(coach?.AverageRating || 0).toFixed(1)} sao
+                    </span>
+                    <span className={styles.miniBadge}>{coach?.TotalStudents || 0} học viên</span>
+                  </div>
+                </div>
+
+                <div className={styles.checklist}>
+                  <div><span>✓</span><strong>Ảnh rõ mặt</strong><em>Đạt</em></div>
+                  <div><span>✓</span><strong>Chuyên môn cụ thể</strong><em>Đạt</em></div>
+                  <div><span>✓</span><strong>Mô tả ngắn gọn</strong><em>Đạt</em></div>
+                  <div><span>✓</span><strong>Có lịch mở tuần này</strong><em>{availableSchedules.length} slot</em></div>
+                </div>
+              </aside>
             </div>
-
-            {feeMsg && (
-              <p
-                className={
-                  feeMsg.startsWith("✅") ? styles.success : styles.error
-                }
-              >
-                {feeMsg}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              className={styles.saveBtn}
-              disabled={feeSaving}
-            >
-              {feeSaving ? "Đang lưu..." : "💾 Lưu học phí"}
-            </button>
           </form>
         )}
 
-        {/* ── Tab: Schedules ───────────────────────────── */}
+        {activeTab === "expertise" && (
+          <form className={styles.pageCard} onSubmit={handleSaveExpertise}>
+            <div className={styles.sectionHeader}>
+              <div>
+                <span className={styles.sectionKicker}>Năng lực giảng dạy</span>
+                <h2 className={styles.formTitle}>Chuyên môn & Kỹ năng</h2>
+                <p>Chuẩn hóa năng lực để hệ thống gợi ý Coach chính xác hơn.</p>
+              </div>
+              <button type="submit" className={styles.saveBtn} disabled={expertiseSaving}>
+                {expertiseSaving ? "Đang lưu..." : "Lưu chuyên môn"}
+              </button>
+            </div>
+
+            <div className={`${styles.contentPad} ${styles.twoColumnGrid}`}>
+              <div className={styles.mainColumn}>
+                <section className={styles.panel}>
+                  <div className={styles.panelHead}>
+                    <h3>Trình độ kỹ năng</h3>
+                    <p>Chọn cấp độ cao nhất bạn đang nhận đào tạo.</p>
+                  </div>
+                  <div className={styles.skillLadder}>
+                    {SKILL_OPTIONS.map((option, index) => (
+                      <button
+                        type="button"
+                        key={option.value}
+                        className={`${styles.ladderStep} ${
+                          expertiseForm.skillLevel === option.value ? styles.ladderStepActive : ""
+                        }`}
+                        onClick={() =>
+                          setExpertiseForm((p) => ({
+                            ...p,
+                            skillLevel: option.value,
+                          }))
+                        }
+                      >
+                        <span>{index + 1}</span>
+                        <div>
+                          <strong>{option.label}</strong>
+                          <p>
+                            {option.value === "Professional"
+                              ? "Nhận học viên luyện thi đấu và nâng cao hiệu suất."
+                              : "Phù hợp đào tạo nền tảng, kỹ thuật và chiến thuật theo cấp độ."}
+                          </p>
+                        </div>
+                        <em>
+                          {expertiseForm.skillLevel === option.value ? "Đang chọn" : "Chọn"}
+                        </em>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                <section className={styles.panel}>
+                  <div className={styles.panelHead}>
+                    <h3>Chuyên môn hiển thị</h3>
+                    <p>Nội dung ngắn, rõ nhóm học viên phù hợp.</p>
+                  </div>
+                  <div className={styles.panelBody}>
+                    <div className={styles.field}>
+                      <label htmlFor="spec2">Mô tả chuyên môn</label>
+                      <input
+                        id="spec2"
+                        type="text"
+                        maxLength={500}
+                        value={expertiseForm.specialization}
+                        onChange={(e) =>
+                          setExpertiseForm((p) => ({
+                            ...p,
+                            specialization: e.target.value,
+                          }))
+                        }
+                        placeholder="Ví dụ: Kỹ thuật Dink, Serve & Return..."
+                        className={styles.input}
+                      />
+                    </div>
+                    <div className={styles.formColumns}>
+                      <div className={styles.field}>
+                        <label htmlFor="expYears2">Số năm kinh nghiệm</label>
+                        <input
+                          id="expYears2"
+                          type="number"
+                          min={0}
+                          max={50}
+                          value={expertiseForm.experienceYears}
+                          onChange={(e) =>
+                            setExpertiseForm((p) => ({
+                              ...p,
+                              experienceYears: Number(e.target.value),
+                            }))
+                          }
+                          className={styles.input}
+                        />
+                      </div>
+                      <div className={styles.field}>
+                        <label htmlFor="skillSelect">Trình độ hiện tại</label>
+                        <select
+                          id="skillSelect"
+                          value={expertiseForm.skillLevel}
+                          onChange={(e) =>
+                            setExpertiseForm((p) => ({
+                              ...p,
+                              skillLevel: e.target.value,
+                            }))
+                          }
+                          className={styles.input}
+                        >
+                          <option value="">Chọn trình độ</option>
+                          {SKILL_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className={styles.chips}>
+                      <span>Dink control</span>
+                      <span>Footwork</span>
+                      <span>Serve & return</span>
+                      <span>Doubles strategy</span>
+                      <span>Tournament prep</span>
+                    </div>
+                  </div>
+                </section>
+
+                {expertiseMsg && (
+                  <p
+                    className={
+                      isSuccessMessage(expertiseMsg) ? styles.success : styles.error
+                    }
+                  >
+                    {expertiseMsg}
+                  </p>
+                )}
+              </div>
+
+              <aside className={styles.sideStack}>
+                <section className={styles.panel}>
+                  <div className={styles.panelHead}>
+                    <h3>Chứng chỉ / Giải thưởng</h3>
+                    <p>Ảnh chứng chỉ giúp tăng độ tin cậy.</p>
+                  </div>
+                  <div className={styles.panelBody}>
+                    <div className={styles.certificateBox}>
+                      <div className={styles.certThumb}>PPR</div>
+                      <div>
+                        <strong>
+                          {expertiseForm.certifications && !expertiseForm.certifications.startsWith("/uploads")
+                            ? expertiseForm.certifications
+                            : "PPR Certified"}
+                        </strong>
+                        <p>{hasCertificate ? "Đã có chứng chỉ" : "Chưa tải chứng chỉ"}</p>
+                      </div>
+                    </div>
+                    <div className={styles.uploadPicker}>
+                      <input
+                        id="certs"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleCertChange}
+                        className={styles.hiddenFileInput}
+                      />
+                      <label htmlFor="certs" className={styles.uploadButton}>
+                        Chọn chứng chỉ
+                      </label>
+                      <span className={styles.uploadFileName}>
+                        {certFile?.name || "Chưa có tệp nào được chọn"}
+                      </span>
+                    </div>
+                    {certError && <p className={styles.error}>{certError}</p>}
+                    {(certPreview ||
+                      (expertiseForm.certifications &&
+                        expertiseForm.certifications.startsWith("/uploads"))) && (
+                      <div className={styles.certificatePreview}>
+                        <img
+                          src={certPreview || getImageUrl(expertiseForm.certifications)}
+                          alt="Certificate Preview"
+                        />
+                        {certPreview && (
+                          <button
+                            type="button"
+                            onClick={handleCancelCert}
+                            className={styles.textButton}
+                          >
+                            Hủy ảnh vừa chọn
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                <section className={`${styles.panel} ${styles.darkPanel}`}>
+                  <div className={styles.panelHead}>
+                    <h3>Tác động hồ sơ</h3>
+                    <p>Dựa trên cách học viên lọc Coach trong 30 ngày gần nhất.</p>
+                  </div>
+                  <div className={styles.panelBody}>
+                    <div className={styles.impactRow}><span>Khớp Beginner</span><strong>92%</strong></div>
+                    <div className={styles.progressTrack}><span style={{ width: "92%" }} /></div>
+                    <div className={styles.impactRow}><span>Khớp Intermediate</span><strong>88%</strong></div>
+                    <div className={styles.progressTrack}><span style={{ width: "88%" }} /></div>
+                    <div className={styles.impactRow}><span>Độ tin cậy</span><strong>High</strong></div>
+                  </div>
+                </section>
+              </aside>
+            </div>
+          </form>
+        )}
+
+        {activeTab === "fee" && (
+          <form className={styles.pageCard} onSubmit={handleSaveFee}>
+            <div className={styles.sectionHeader}>
+              <div>
+                <span className={styles.sectionKicker}>Thiết lập giá</span>
+                <h2 className={styles.formTitle}>Cấu hình học phí</h2>
+                <p>Điều chỉnh giá theo vị thế, tỷ lệ đặt lịch và năng lực giảng dạy.</p>
+              </div>
+              <button type="submit" className={styles.saveBtn} disabled={feeSaving}>
+                {feeSaving ? "Đang lưu..." : "Lưu học phí"}
+              </button>
+            </div>
+
+            <div className={`${styles.contentPad} ${styles.twoColumnGrid}`}>
+              <div className={styles.mainColumn}>
+                <div className={styles.priceHero}>
+                  <div>
+                    <span>Học phí hiện tại</span>
+                    <p>Áp dụng cho mỗi giờ dạy riêng hoặc combo sân + Coach.</p>
+                  </div>
+                  <strong>{formatCurrency(hourlyRate)} / giờ</strong>
+                </div>
+
+                <section className={styles.panel}>
+                  <div className={styles.panelHead}>
+                    <h3>Điều chỉnh nhanh</h3>
+                    <p>Khoảng hợp lệ: 150.000 - 2.000.000 đ mỗi giờ.</p>
+                  </div>
+                  <div className={styles.panelBody}>
+                    <div className={styles.field}>
+                      <label htmlFor="rate">Học phí (VNĐ/giờ)</label>
+                      <input
+                        id="rate"
+                        type="number"
+                        min={150000}
+                        max={2000000}
+                        step={10000}
+                        value={hourlyRate}
+                        onChange={(e) => setHourlyRate(Number(e.target.value))}
+                        className={styles.input}
+                      />
+                    </div>
+                    <input
+                      type="range"
+                      min={150000}
+                      max={2000000}
+                      step={10000}
+                      value={hourlyRate}
+                      onChange={(e) => setHourlyRate(Number(e.target.value))}
+                      className={styles.slider}
+                    />
+                    <div className={styles.sliderVisual}>
+                      <span style={{ width: `${feePercent}%` }} />
+                    </div>
+                    <div className={styles.sliderLabels}>
+                      <span>150K</span>
+                      <span>{compactCurrency(hourlyRate)}</span>
+                      <span>2.000K</span>
+                    </div>
+                  </div>
+                </section>
+
+                {feeMsg && (
+                  <p className={isSuccessMessage(feeMsg) ? styles.success : styles.error}>
+                    {feeMsg}
+                  </p>
+                )}
+
+                <div className={styles.kpiGrid}>
+                  <div className={styles.kpiCard}><span>Nếu giảm 10%</span><strong>{compactCurrency(hourlyRate * 0.9)}</strong><p>Dễ tăng lịch mới</p></div>
+                  <div className={styles.kpiCard}><span>Giữ hiện tại</span><strong>{compactCurrency(hourlyRate)}</strong><p>Cân bằng tốt</p></div>
+                  <div className={styles.kpiCard}><span>Nếu tăng 10%</span><strong>{compactCurrency(hourlyRate * 1.1)}</strong><p>Phù hợp giờ cao điểm</p></div>
+                </div>
+              </div>
+
+              <aside className={styles.sideStack}>
+                <section className={styles.panel}>
+                  <div className={styles.panelHead}>
+                    <h3>So sánh thị trường</h3>
+                    <p>Coach cùng cấp độ trong khu vực.</p>
+                  </div>
+                  <div className={styles.panelBody}>
+                    {[
+                      ["Beginner", 36, "320K"],
+                      ["Intermediate", 48, "430K"],
+                      ["Professional", 58, "520K"],
+                      ["Top coach", 76, "760K"],
+                    ].map(([label, width, value]) => (
+                      <div className={styles.benchmarkRow} key={label}>
+                        <span>{label}</span>
+                        <div><i style={{ width: `${width}%` }} /></div>
+                        <strong>{value}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                <section className={`${styles.panel} ${styles.darkPanel}`}>
+                  <div className={styles.panelHead}>
+                    <h3>Dự báo thu nhập</h3>
+                    <p>Nếu giữ 17 giờ dạy/tháng với mức giá hiện tại.</p>
+                  </div>
+                  <div className={styles.panelBody}>
+                    <div className={styles.impactRow}><span>Số giờ dự kiến</span><strong>17 giờ</strong></div>
+                    <div className={styles.impactRow}><span>Doanh thu trước phí</span><strong>{formatCurrency(projectedMonthlyIncome)}</strong></div>
+                    <div className={styles.impactRow}><span>Xu hướng đặt lịch</span><strong>Ổn định</strong></div>
+                  </div>
+                </section>
+              </aside>
+            </div>
+          </form>
+        )}
+
         {activeTab === "schedules" && (
-          <div className={styles.scheduleWrap}>
-            <div className={styles.scheduleHeader}>
-              <h2 className={styles.formTitle}>Lịch dạy của tôi</h2>
+          <section className={styles.pageCard}>
+            <div className={styles.sectionHeader}>
+              <div>
+                <span className={styles.sectionKicker}>Quản lý thời gian</span>
+                <h2 className={styles.formTitle}>Lịch dạy của tôi</h2>
+                <p>Tạo, khóa hoặc xóa các khung giờ nhận học viên.</p>
+              </div>
               <button
                 type="button"
-                className={styles.addScheduleBtn}
+                className={styles.saveBtn}
                 onClick={() => {
                   setShowScheduleForm(!showScheduleForm);
                   setScheduleFormError("");
                 }}
               >
-                {showScheduleForm ? "✕ Đóng" : "＋ Thêm lịch"}
+                {showScheduleForm ? "Đóng" : "Thêm lịch"}
               </button>
             </div>
 
-            {showScheduleForm && (
-              <form
-                className={styles.scheduleForm}
-                onSubmit={handleCreateSchedule}
-              >
-                {scheduleFormError && (
-                  <p className={styles.error}>{scheduleFormError}</p>
+            <div className={`${styles.contentPad} ${styles.scheduleLayout}`}>
+              <aside className={styles.panel}>
+                <div className={styles.panelHead}>
+                  <h3>Tuần này</h3>
+                  <p>Chọn ngày trong form thêm lịch để xem khung giờ khả dụng.</p>
+                </div>
+                <div className={styles.panelBody}>
+                  <div className={styles.miniCalendar}>
+                    {scheduleDays.map((day, index) => (
+                      <div
+                        className={`${styles.dayPill} ${index === 0 ? styles.dayPillActive : ""}`}
+                        key={day.value}
+                      >
+                        <span>{day.number}</span>
+                        <div>
+                          <strong>{day.day}</strong>
+                          <p>{day.openCount} lịch mở</p>
+                        </div>
+                        <em>{index === 0 ? "Hôm nay" : day.openCount}</em>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </aside>
+
+              <div className={styles.mainColumn}>
+                {showScheduleForm && (
+                  <form className={styles.scheduleForm} onSubmit={handleCreateSchedule}>
+                    {scheduleFormError && <p className={styles.error}>{scheduleFormError}</p>}
+                    <div className={styles.scheduleFormRow}>
+                      <div className={styles.field}>
+                        <label>Ngày</label>
+                        <input
+                          type="date"
+                          value={scheduleForm.workingDate}
+                          min={todayStr()}
+                          onChange={(e) =>
+                            setScheduleForm((p) => ({
+                              ...p,
+                              workingDate: e.target.value,
+                              startTime: "",
+                              endTime: "",
+                            }))
+                          }
+                          className={styles.input}
+                        />
+                      </div>
+                      <div className={styles.field}>
+                        <label>Giờ bắt đầu</label>
+                        <select
+                          value={scheduleForm.startTime}
+                          onChange={(e) => {
+                            const newStart = e.target.value;
+                            setScheduleForm((p) => ({
+                              ...p,
+                              startTime: newStart,
+                              endTime: p.endTime > newStart ? p.endTime : "",
+                            }));
+                          }}
+                          className={styles.input}
+                          required
+                        >
+                          <option value="">Chọn giờ</option>
+                          {loadingOptions ? (
+                            <option value="" disabled>Đang tải...</option>
+                          ) : (
+                            scheduleOptions.startTimes.map((timeStr) => (
+                              <option key={timeStr} value={timeStr}>
+                                {timeStr}
+                              </option>
+                            ))
+                          )}
+                        </select>
+                      </div>
+                      <div className={styles.field}>
+                        <label>Giờ kết thúc</label>
+                        <select
+                          value={scheduleForm.endTime}
+                          onChange={(e) =>
+                            setScheduleForm((p) => ({
+                              ...p,
+                              endTime: e.target.value,
+                            }))
+                          }
+                          className={styles.input}
+                          disabled={!scheduleForm.startTime || loadingOptions}
+                          required
+                        >
+                          <option value="">Chọn giờ</option>
+                          {scheduleForm.startTime &&
+                            !loadingOptions &&
+                            (() => {
+                              const startH = parseInt(scheduleForm.startTime, 10);
+                              const endOptions = [];
+                              let canExtend = true;
+
+                              for (let h = startH + 1; h <= 22; h += 1) {
+                                if (scheduleOptions.occupiedHours.includes(h - 1)) {
+                                  canExtend = false;
+                                }
+                                if (!canExtend) break;
+
+                                const timeStr = `${String(h).padStart(2, "0")}:00`;
+                                endOptions.push(
+                                  <option key={h} value={timeStr}>
+                                    {timeStr}
+                                  </option>
+                                );
+                              }
+                              return endOptions;
+                            })()}
+                        </select>
+                      </div>
+                    </div>
+                    <div className={styles.scheduleFormActions}>
+                      <button
+                        type="button"
+                        onClick={() => setShowScheduleForm(false)}
+                        className={styles.cancelBtn}
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        type="submit"
+                        className={styles.saveBtn}
+                        disabled={
+                          scheduleSubmitting ||
+                          !scheduleForm.startTime ||
+                          !scheduleForm.endTime
+                        }
+                      >
+                        {scheduleSubmitting ? "Đang tạo..." : "Tạo lịch"}
+                      </button>
+                    </div>
+                  </form>
                 )}
 
-                <div className={styles.scheduleFormRow}>
-                  <div className={styles.field}>
-                    <label>Ngày</label>
-                    <input
-                      type="date"
-                      value={scheduleForm.workingDate}
-                      min={todayStr()}
-                      onChange={(e) =>
-                        setScheduleForm((p) => ({
-                          ...p,
-                          workingDate: e.target.value,
-                        }))
-                      }
-                      className={styles.input}
-                    />
+                <div className={styles.toolbar}>
+                  <div>
+                    <strong>{today}</strong>
+                    <p>{todayOpenCount} khung giờ có thể dạy hôm nay</p>
                   </div>
-                  <div className={styles.field}>
-                    <label>Giờ bắt đầu</label>
-                    <input
-                      type="time"
-                      value={scheduleForm.startTime}
-                      onChange={(e) =>
-                        setScheduleForm((p) => ({
-                          ...p,
-                          startTime: e.target.value,
-                        }))
-                      }
-                      className={styles.input}
-                    />
-                  </div>
-                  <div className={styles.field}>
-                    <label>Giờ kết thúc</label>
-                    <input
-                      type="time"
-                      value={scheduleForm.endTime}
-                      onChange={(e) =>
-                        setScheduleForm((p) => ({
-                          ...p,
-                          endTime: e.target.value,
-                        }))
-                      }
-                      className={styles.input}
-                    />
+                  <div className={styles.badgeRow}>
+                    <span className={styles.filterChip}>Có thể dạy</span>
+                    <span className={styles.filterChip}>Bận</span>
+                    <span className={styles.filterChip}>Đã đặt</span>
                   </div>
                 </div>
 
-                <div className={styles.scheduleFormActions}>
-                  <button
-                    type="button"
-                    onClick={() => setShowScheduleForm(false)}
-                    className={styles.cancelBtn}
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    type="submit"
-                    className={styles.saveBtn}
-                    disabled={scheduleSubmitting}
-                  >
-                    {scheduleSubmitting ? "Đang tạo..." : "✓ Tạo lịch"}
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {schedulesLoading ? (
-              <StateBox variant="loading" title="Đang tải lịch" />
-            ) : schedules.length === 0 ? (
-              <StateBox
-                variant="empty"
-                title="Chưa có lịch dạy"
-                description="Bấm ＋ Thêm lịch để tạo lịch dạy đầu tiên."
-              />
-            ) : (
-              <div className={styles.scheduleList}>
-                {schedules.map((s) => {
-                  const isActioning = scheduleActionId === s.CoachScheduleID;
-                  const isPast = s.isExpired;
-                  const canAction =
-                    !isPast && s.Status !== "Booked" && s.Status !== "Holding";
-
-                  let displayStatus = STATUS_LABELS[s.Status] || s.Status;
-                  let itemClass = "";
-
-                  if (s.Status === "Booked") {
-                    itemClass = styles.scheduleBooked;
-                  } else if (isPast) {
-                    itemClass = styles.scheduleUnavailable; // Grey out expired slots
-                    displayStatus = "Đã qua";
-                  } else if (s.Status === "Available") {
-                    itemClass = styles.scheduleAvailable;
-                  } else {
-                    itemClass = styles.scheduleUnavailable;
-                  }
-
-                  return (
-                    <div
-                      key={s.CoachScheduleID}
-                      className={`${styles.scheduleItem} ${itemClass}`}
-                    >
-                      <div className={styles.scheduleDate}>
-                        📅 {s.WorkingDate}
-                      </div>
-                      <div className={styles.scheduleTime}>
-                        ⏰ {s.StartTime} – {s.EndTime}
-                      </div>
-                      <span className={styles.scheduleStatus}>
-                        {displayStatus}
-                      </span>
-
-                      {canAction && (
-                        <div className={styles.scheduleActions}>
-                          {s.Status === "Available" ? (
-                            <button
-                              onClick={() =>
-                                handleSetUnavailable(s.CoachScheduleID)
-                              }
-                              disabled={isActioning}
-                              className={styles.btnUnavailable}
-                            >
-                              {isActioning ? "..." : "🔴 Bận"}
-                            </button>
-                          ) : s.Status === "Unavailable" ? (
-                            <button
-                              onClick={() =>
-                                handleSetAvailable(s.CoachScheduleID)
-                              }
-                              disabled={isActioning}
-                              className={styles.btnAvailable}
-                            >
-                              {isActioning ? "..." : "🟢 Mở lại"}
-                            </button>
-                          ) : null}
-                          <button
-                            onClick={() =>
-                              handleDeleteSchedule(s.CoachScheduleID)
-                            }
-                            disabled={isActioning}
-                            className={styles.btnDelete}
-                          >
-                            {isActioning ? "..." : "🗑️"}
-                          </button>
-                        </div>
-                      )}
-
-                      {!canAction && (
-                        <span className={styles.lockedNote}>
-                          Không thể thay đổi
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-        {/* ── Tab: Bookings ─────────────────────────────── */}
-        {activeTab === "bookings" && (
-          <div className={styles.scheduleWrap}>
-            <div className={styles.scheduleHeader}>
-              <h2 className={styles.formTitle}>Danh sách đơn đặt lịch</h2>
-            </div>
-            
-            {bookingsLoading ? (
-              <StateBox variant="loading" title="Đang tải danh sách..." />
-            ) : bookings.length === 0 ? (
-              <StateBox
-                variant="empty"
-                title="Chưa có đơn đặt lịch nào"
-                description="Bạn sẽ thấy danh sách học viên đặt lịch ở đây."
-              />
-            ) : (
-              <div className={styles.scheduleList}>
-                {bookings
-                  .slice()
-                  .sort((a, b) => {
-                    const dateA = new Date(a.BookingDate).getTime();
-                    const dateB = new Date(b.BookingDate).getTime();
-                    if (dateA !== dateB) return dateB - dateA; // Mới nhất lên đầu
-                    
-                    const timeA = a.StartTime || "00:00";
-                    const timeB = b.StartTime || "00:00";
-                    return timeB.localeCompare(timeA); // Giờ trễ hơn lên đầu
-                  })
-                  .map((b) => {
-                  const bookingDateStr = b.BookingDate.includes('T') ? b.BookingDate.split('T')[0] : b.BookingDate;
-                  const sessionStartTime = new Date(`${bookingDateStr}T${b.StartTime}`);
-                  const isFutureSession = sessionStartTime > new Date();
-                  const canCancel = (b.Status === "Confirmed" || b.Status === "PendingPayment") && isFutureSession;
-                  const isActioning = bookingActionId === b.BookingID;
-                  return (
-                    <div key={b.BookingID} className={`${styles.scheduleItem} ${styles.scheduleBooked}`}>
-                      <div className={styles.scheduleDate}>
-                        📅 {new Date(b.BookingDate).toLocaleDateString("vi-VN")}
-                      </div>
-                      <div className={styles.scheduleTime}>
-                        ⏰ {b.StartTime} – {b.EndTime}
-                      </div>
-                      
-                      <div style={{ marginTop: 10, fontSize: "0.95rem" }}>
-                        <strong>Mã:</strong> {b.BookingCode} <br />
-                        <strong>Học viên:</strong> {b.PlayerName} <br />
-                        <strong>Trạng thái:</strong> {b.Status} <br />
-                        <strong>Sân:</strong> {b.CourtName || "Không kèm sân"}
-                      </div>
-
-                      {canCancel && (
-                        <div className={styles.scheduleActions}>
-                          <button
-                            className={styles.btnDelete}
-                            onClick={() => handleCancelBooking(b.BookingID)}
-                            disabled={isActioning}
-                          >
-                            {isActioning ? "Đang hủy..." : "❌ Hủy đơn"}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Tab: Income ─────────────────────────────── */}
-        {activeTab === "income" && (
-          <div className={styles.scheduleWrap}>
-            <div className={styles.scheduleHeader}>
-              <h2 className={styles.formTitle}>Thống kê & Thu nhập</h2>
-            </div>
-            
-            {incomeLoading ? (
-              <StateBox variant="loading" title="Đang tải dữ liệu thu nhập..." />
-            ) : incomeError ? (
-              <StateBox variant="error" title="Lỗi tải dữ liệu" description={incomeError} />
-            ) : !incomeData ? (
-              <StateBox variant="loading" title="Đang tải dữ liệu..." />
-            ) : (
-              <div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
-                  <div style={{ padding: "1.5rem", background: "var(--pcs-neutral-50)", borderRadius: "var(--pcs-radius-md)", border: "1px solid var(--pcs-neutral-200)" }}>
-                    <div style={{ color: "var(--pcs-neutral-600)", fontSize: "0.9rem", marginBottom: "0.5rem" }}>Tổng buổi dạy</div>
-                    <div style={{ fontSize: "1.5rem", fontWeight: "bold", color: "var(--pcs-neutral-900)" }}>{incomeData.summary.completedSessions}</div>
-                  </div>
-                  <div style={{ padding: "1.5rem", background: "var(--pcs-neutral-50)", borderRadius: "var(--pcs-radius-md)", border: "1px solid var(--pcs-neutral-200)" }}>
-                    <div style={{ color: "var(--pcs-neutral-600)", fontSize: "0.9rem", marginBottom: "0.5rem" }}>Tổng giờ dạy</div>
-                    <div style={{ fontSize: "1.5rem", fontWeight: "bold", color: "var(--pcs-neutral-900)" }}>{incomeData.summary.totalWorkingHours} giờ</div>
-                  </div>
-                  <div style={{ padding: "1.5rem", background: "var(--pcs-brand-primary-light)", borderRadius: "var(--pcs-radius-md)", border: "1px solid var(--pcs-brand-primary-light)" }}>
-                    <div style={{ color: "var(--pcs-brand-primary)", fontSize: "0.9rem", marginBottom: "0.5rem" }}>Tổng thu nhập</div>
-                    <div style={{ fontSize: "1.5rem", fontWeight: "bold", color: "var(--pcs-brand-primary-hover)" }}>{formatCurrency(incomeData.summary.totalIncome)}</div>
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: "2rem" }}>
-                  <h3 style={{ fontSize: "1.2rem", marginBottom: "1rem", color: "var(--pcs-neutral-900)" }}>Thu nhập theo tháng</h3>
-                  {incomeData.monthlyIncome.length > 0 ? (
-                    <div style={{ overflowX: "auto" }}>
-                      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "600px" }}>
-                        <thead>
-                          <tr style={{ background: "var(--pcs-neutral-50)", borderBottom: "2px solid var(--pcs-neutral-300)" }}>
-                            <th style={{ padding: "12px", textAlign: "left", color: "var(--pcs-neutral-700)" }}>Tháng</th>
-                            <th style={{ padding: "12px", textAlign: "left", color: "var(--pcs-neutral-700)" }}>Số buổi</th>
-                            <th style={{ padding: "12px", textAlign: "left", color: "var(--pcs-neutral-700)" }}>Số giờ</th>
-                            <th style={{ padding: "12px", textAlign: "right", color: "var(--pcs-neutral-700)" }}>Thu nhập</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {incomeData.monthlyIncome.map((m: any) => (
-                            <tr key={m.month} style={{ borderBottom: "1px solid var(--pcs-neutral-200)" }}>
-                              <td style={{ padding: "12px" }}>{m.month}</td>
-                              <td style={{ padding: "12px" }}>{m.sessions}</td>
-                              <td style={{ padding: "12px" }}>{m.workingHours}</td>
-                              <td style={{ padding: "12px", textAlign: "right", fontWeight: "500", color: "var(--pcs-brand-primary)" }}>
-                                {formatCurrency(m.income)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <p style={{ color: "var(--pcs-neutral-600)", fontStyle: "italic" }}>Chưa có thu nhập theo tháng.</p>
-                  )}
-                </div>
-
-                <div>
-                  <h3 style={{ fontSize: "1.2rem", marginBottom: "1rem", color: "var(--pcs-neutral-900)" }}>Chi tiết buổi dạy đã hoàn thành</h3>
-                  {incomeData.sessions.length > 0 ? (
+                {schedulesLoading ? (
+                  <StateBox variant="loading" title="Đang tải lịch" />
+                ) : schedules.length === 0 ? (
+                  <StateBox
+                    variant="empty"
+                    title="Chưa có lịch dạy"
+                    description="Bấm Thêm lịch để tạo lịch dạy đầu tiên."
+                  />
+                ) : (
+                  <>
                     <div className={styles.scheduleList}>
-                      {incomeData.sessions.map((s: any) => (
-                        <div key={s.bookingId} className={`${styles.scheduleItem} ${styles.scheduleBooked}`}>
-                          <div className={styles.scheduleDate}>
-                            📅 {new Date(s.workingDate).toLocaleDateString("vi-VN")}
-                          </div>
-                          <div className={styles.scheduleTime}>
-                            ⏰ {s.startTime} – {s.endTime} ({s.workingHours} giờ)
-                          </div>
-                          
-                          <div style={{ marginTop: 10, fontSize: "0.95rem" }}>
-                            <strong>Loại:</strong> {s.bookingType} <br />
-                            <strong>Học viên:</strong> {s.playerName} <br />
-                            <strong>Thu nhập:</strong> <span style={{ color: "var(--pcs-brand-primary)", fontWeight: "bold" }}>{formatCurrency(s.coachFee)}</span> <br />
-                            <strong>Trạng thái:</strong> {s.status}
-                          </div>
-                        </div>
-                      ))}
+                      {visibleSchedules.map((schedule) => {
+                        const isActioning = scheduleActionId === schedule.CoachScheduleID;
+                        const isPast = schedule.isExpired;
+                        const canAction =
+                          !isPast &&
+                          schedule.Status !== "Booked" &&
+                          schedule.Status !== "Holding";
+
+                        let displayStatus = STATUS_LABELS[schedule.Status] || schedule.Status;
+                        let itemClass = "";
+
+                        if (schedule.Status === "Booked") {
+                          itemClass = styles.scheduleBooked;
+                        } else if (isPast) {
+                          itemClass = styles.scheduleUnavailable;
+                          displayStatus = "Đã qua";
+                        } else if (schedule.Status === "Available") {
+                          itemClass = styles.scheduleAvailable;
+                        } else {
+                          itemClass = styles.scheduleUnavailable;
+                        }
+
+                        return (
+                          <article
+                            key={schedule.CoachScheduleID}
+                            className={`${styles.scheduleItem} ${itemClass}`}
+                          >
+                            <div className={styles.scheduleDate}>
+                              {toDateLabel(schedule.WorkingDate)}
+                            </div>
+                            <div>
+                              <strong>
+                                {schedule.StartTime} - {schedule.EndTime}
+                              </strong>
+                              <p>Slot đơn · học phí {formatCurrency(hourlyRate)}</p>
+                            </div>
+                            <span className={styles.scheduleStatus}>{displayStatus}</span>
+
+                            {canAction ? (
+                              <div className={styles.scheduleActions}>
+                                {schedule.Status === "Available" ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleSetUnavailable(schedule.CoachScheduleID)
+                                    }
+                                    disabled={isActioning}
+                                    className={styles.btnUnavailable}
+                                  >
+                                    {isActioning ? "..." : "Bận"}
+                                  </button>
+                                ) : schedule.Status === "Unavailable" ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleSetAvailable(schedule.CoachScheduleID)
+                                    }
+                                    disabled={isActioning}
+                                    className={styles.btnAvailable}
+                                  >
+                                    {isActioning ? "..." : "Mở lại"}
+                                  </button>
+                                ) : null}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleDeleteSchedule(schedule.CoachScheduleID)
+                                  }
+                                  disabled={isActioning}
+                                  className={styles.btnDelete}
+                                >
+                                  {isActioning ? "..." : "Xóa"}
+                                </button>
+                              </div>
+                            ) : (
+                              <span className={styles.lockedNote}>Không thể thay đổi</span>
+                            )}
+                          </article>
+                        );
+                      })}
                     </div>
-                  ) : (
-                    <p style={{ color: "var(--pcs-neutral-600)", fontStyle: "italic" }}>Danh sách buổi dạy rỗng.</p>
-                  )}
+
+                    {schedulePageCount > 1 && (
+                      <div className={styles.paginationBar}>
+                        <span className={styles.paginationInfo}>
+                          Hiển thị {scheduleRangeStart}-{scheduleRangeEnd} /{" "}
+                          {schedules.length} lịch
+                        </span>
+                        <div className={styles.paginationControls}>
+                          <button
+                            type="button"
+                            className={styles.pageBtn}
+                            onClick={() =>
+                              setSchedulePage((page) => Math.max(1, page - 1))
+                            }
+                            disabled={safeSchedulePage === 1}
+                          >
+                            Trước
+                          </button>
+                          <span className={styles.pageIndicator}>
+                            Trang {safeSchedulePage} / {schedulePageCount}
+                          </span>
+                          <button
+                            type="button"
+                            className={styles.pageBtn}
+                            onClick={() =>
+                              setSchedulePage((page) =>
+                                Math.min(schedulePageCount, page + 1)
+                              )
+                            }
+                            disabled={safeSchedulePage === schedulePageCount}
+                          >
+                            Sau
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {activeTab === "bookings" && (
+          <section className={styles.pageCard}>
+            <div className={styles.sectionHeader}>
+              <div>
+                <span className={styles.sectionKicker}>Học viên</span>
+                <h2 className={styles.formTitle}>Danh sách đơn đặt lịch</h2>
+                <p>Theo dõi trạng thái đơn và xử lý các trường hợp cần hủy lịch.</p>
+              </div>
+            </div>
+
+            <div className={styles.contentPad}>
+              <div className={styles.kpiGrid}>
+                <div className={styles.kpiCard}><span>Đơn gần đây</span><strong>{bookings.length}</strong></div>
+                <div className={styles.kpiCard}><span>Đã hoàn thành</span><strong>{completedBookings}</strong></div>
+                <div className={styles.kpiCard}><span>Doanh thu hoàn tất</span><strong>{formatCurrency(totalIncome)}</strong></div>
+              </div>
+
+              <div className={styles.toolbar}>
+                <div>
+                  <strong>Tất cả đơn đặt lịch</strong>
+                  <p>Sắp xếp theo lịch mới nhất.</p>
+                </div>
+                <div className={styles.badgeRow}>
+                  <span className={styles.filterChip}>Upcoming</span>
+                  <span className={styles.filterChip}>Completed</span>
+                  <span className={styles.filterChip}>Cancelled</span>
                 </div>
               </div>
-            )}
-          </div>
+
+              {bookingsLoading ? (
+                <StateBox variant="loading" title="Đang tải danh sách..." />
+              ) : bookings.length === 0 ? (
+                <StateBox
+                  variant="empty"
+                  title="Chưa có đơn đặt lịch nào"
+                  description="Bạn sẽ thấy danh sách học viên đặt lịch ở đây."
+                />
+              ) : (
+                <div className={styles.bookingList}>
+                  {sortedBookings.map((booking) => {
+                    const bookingDateStr = booking.BookingDate.includes("T")
+                      ? booking.BookingDate.split("T")[0]
+                      : booking.BookingDate;
+                    const sessionStartTime = new Date(
+                      `${bookingDateStr}T${booking.StartTime}`
+                    );
+                    const isFutureSession = sessionStartTime > new Date();
+                    const canCancel =
+                      (booking.Status === "Confirmed" ||
+                        booking.Status === "PendingPayment") &&
+                      isFutureSession;
+                    const isActioning = bookingActionId === booking.BookingID;
+                    const statusClass =
+                      booking.Status === "Completed"
+                        ? styles.bookingCompleted
+                        : booking.Status === "Cancelled"
+                        ? styles.bookingCancelled
+                        : styles.bookingUpcoming;
+                    return (
+                      <article
+                        key={booking.BookingID}
+                        className={`${styles.bookingCard} ${statusClass}`}
+                      >
+                        <div>
+                          <strong>{toDateLabel(booking.BookingDate)}</strong>
+                          <p>{booking.StartTime} - {booking.EndTime}</p>
+                        </div>
+                        <div>
+                          <strong>{booking.BookingCode}</strong>
+                          <p>
+                            {booking.PlayerName || "Học viên"} ·{" "}
+                            {booking.CourtName || "Không kèm sân"}
+                          </p>
+                        </div>
+                        <span className={styles.scheduleStatus}>{booking.Status}</span>
+                        <strong className={styles.amount}>
+                          {formatCurrency(Number(booking.CoachFee || booking.TotalAmount || 0))}
+                        </strong>
+                        {canCancel ? (
+                          <button
+                            type="button"
+                            className={styles.btnDelete}
+                            onClick={() => handleCancelBooking(booking.BookingID)}
+                            disabled={isActioning}
+                          >
+                            {isActioning ? "Đang hủy..." : "Hủy đơn"}
+                          </button>
+                        ) : (
+                          <span className={styles.lockedNote}>Chi tiết</span>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {activeTab === "income" && (
+          <section className={styles.pageCard}>
+            <div className={styles.sectionHeader}>
+              <div>
+                <span className={styles.sectionKicker}>Tài chính</span>
+                <h2 className={styles.formTitle}>Thống kê & Thu nhập</h2>
+                <p>Nhìn nhanh hiệu suất dạy, doanh thu theo tháng và chi tiết buổi hoàn thành.</p>
+              </div>
+            </div>
+
+            <div className={styles.contentPad}>
+              {incomeLoading ? (
+                <StateBox variant="loading" title="Đang tải dữ liệu thu nhập..." />
+              ) : incomeError ? (
+                <StateBox
+                  variant="error"
+                  title="Lỗi tải dữ liệu"
+                  description={incomeError}
+                />
+              ) : !incomeData ? (
+                <StateBox variant="loading" title="Đang tải dữ liệu..." />
+              ) : (
+                <>
+                  <div className={styles.incomeMetrics}>
+                    <div className={styles.kpiCard}>
+                      <span>Tổng buổi dạy</span>
+                      <strong>{incomeData.summary.completedSessions}</strong>
+                      <p>Buổi đã hoàn tất</p>
+                    </div>
+                    <div className={styles.kpiCard}>
+                      <span>Tổng giờ dạy</span>
+                      <strong>{incomeData.summary.totalWorkingHours} giờ</strong>
+                      <p>Thời lượng thực dạy</p>
+                    </div>
+                    <div className={`${styles.kpiCard} ${styles.kpiDark}`}>
+                      <span>Tổng thu nhập</span>
+                      <strong>{formatCurrency(incomeData.summary.totalIncome)}</strong>
+                      <p>Đã ghi nhận từ booking hoàn thành</p>
+                    </div>
+                  </div>
+
+                  <div className={styles.incomeLayout}>
+                    <section className={styles.panel}>
+                      <div className={styles.panelHead}>
+                        <h3>Thu nhập theo tháng</h3>
+                        <p>Theo dõi xu hướng 6 tháng gần nhất.</p>
+                      </div>
+                      <div className={styles.panelBody}>
+                        <div className={styles.chart}>
+                          {chartMonths.map((month: any) => {
+                            const income = Number(month.income || 0);
+                            const height = income > 0
+                              ? Math.max(14, (income / monthlyMax) * 100)
+                              : 4;
+
+                            return (
+                              <div
+                                className={`${styles.bar} ${
+                                  income > 0 ? styles.barActive : styles.barEmpty
+                                }`}
+                                key={month.month}
+                                title={`${toMonthLabel(month.month)}: ${formatCurrency(income)}`}
+                              >
+                                <strong>{income > 0 ? compactCurrency(income) : "0"}</strong>
+                                <i>
+                                  <span style={{ height: `${height}%` }} />
+                                </i>
+                                <em>{toMonthLabel(month.month).split("/").pop()}</em>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </section>
+
+                    <aside className={`${styles.panel} ${styles.darkPanel}`}>
+                      <div className={styles.panelHead}>
+                        <h3>Tóm tắt đối soát</h3>
+                        <p>Các khoản đã hoàn thành và sẵn sàng thanh toán.</p>
+                      </div>
+                      <div className={styles.panelBody}>
+                        <div className={styles.impactRow}>
+                          <span>Doanh thu hiện tại</span>
+                          <strong>{formatCurrency(incomeData.summary.totalIncome)}</strong>
+                        </div>
+                        <div className={styles.impactRow}>
+                          <span>Số booking hợp lệ</span>
+                          <strong>{incomeData.summary.completedSessions}</strong>
+                        </div>
+                        <div className={styles.impactRow}>
+                          <span>Trạng thái</span>
+                          <strong>Completed</strong>
+                        </div>
+                      </div>
+                    </aside>
+                  </div>
+
+                  <section className={styles.panel}>
+                    <div className={styles.panelHead}>
+                      <h3>Chi tiết buổi dạy đã hoàn thành</h3>
+                      <p>Danh sách dùng để đối chiếu thu nhập.</p>
+                    </div>
+                    <div className={styles.panelBody}>
+                      {incomeData.sessions.length > 0 ? (
+                        <div className={styles.tableScroller}>
+                          <table className={styles.incomeTable}>
+                            <thead>
+                              <tr>
+                                <th>Ngày</th>
+                                <th>Thời gian</th>
+                                <th>Học viên</th>
+                                <th>Loại</th>
+                                <th>Thu nhập</th>
+                                <th>Trạng thái</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {incomeData.sessions.map((session: any) => (
+                                <tr key={session.bookingId}>
+                                  <td>{toDateLabel(session.workingDate)}</td>
+                                  <td>
+                                    {session.startTime} - {session.endTime} (
+                                    {session.workingHours} giờ)
+                                  </td>
+                                  <td>{session.playerName}</td>
+                                  <td>{session.bookingType}</td>
+                                  <td className={styles.amount}>
+                                    {formatCurrency(session.coachFee)}
+                                  </td>
+                                  <td>{session.status}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p className={styles.emptyText}>Danh sách buổi dạy rỗng.</p>
+                      )}
+                    </div>
+                  </section>
+                </>
+              )}
+            </div>
+          </section>
         )}
       </div>
     </div>

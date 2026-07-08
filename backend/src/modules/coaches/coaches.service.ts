@@ -28,6 +28,7 @@ import {
   isValidDateFormat,
   isScheduleExpired,
 } from "./coaches.validation";
+import { calcBookingBlockedHours, checkBufferConflict } from "./coaches.buffer";
 
 // ─── PUBLIC: List active coaches ──────────────────────────────
 
@@ -209,11 +210,93 @@ export async function getMySchedules(userId: number) {
 
   const schedules = await coachRepo.findCoachSchedules(coach.CoachID);
 
-  // Add isExpired flag
-  return schedules.map(s => ({
+  const nowVN = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+
+  const activeBookedScheduleIdsArr = await coachRepo.findActiveBookedScheduleIds(coach.CoachID);
+  const activeBookedScheduleIds = new Set(activeBookedScheduleIdsArr);
+
+  const futureAvailableSchedules = schedules.filter(s => {
+    if (s.Status !== "Available") return false;
+    if (activeBookedScheduleIds.has(s.CoachScheduleID)) return false;
+
+    // ensure strict datetime compare
+    const dateStr = s.WorkingDate.split('T')[0];
+    const scheduleDate = new Date(`${dateStr}T${s.StartTime}:00`);
+    return scheduleDate > nowVN;
+  });
+
+  return futureAvailableSchedules.map(s => ({
     ...s,
-    isExpired: isScheduleExpired(s.WorkingDate, s.EndTime),
+    isExpired: false,
   }));
+}
+
+// ─── AUTH: Get schedule options ───────────────────────────────
+
+export async function getScheduleOptions(userId: number, date: string) {
+  const coach = await coachRepo.findCoachByUserId(userId);
+
+  if (!coach) {
+    throw new Error("Hồ sơ Coach không tồn tại");
+  }
+
+  // Validate date format
+  if (!isValidDateFormat(date)) {
+    throw new Error("Ngày không đúng định dạng YYYY-MM-DD");
+  }
+
+  const schedules = await coachRepo.findCoachSchedules(coach.CoachID);
+
+  // Use bookings repo dynamically to avoid circular dependencies if any,
+  // or just directly since coaches.service shouldn't strictly care.
+  const { findBookingsByCoachUserId } = require("@/modules/bookings/bookings.repository");
+  const bookings = await findBookingsByCoachUserId(userId);
+
+  // ── Step 1: Block giờ từ CoachSchedule hiện có (kể cả legacy long schedule) ──
+  const scheduleOccupied = new Set<number>();
+  schedules.forEach(s => {
+    if (s.WorkingDate.startsWith(date)) {
+      const startH = parseInt(s.StartTime.split(':')[0], 10);
+      const endH   = parseInt(s.EndTime.split(':')[0], 10);
+      // Mark every hour in [startH, endH) — handles legacy long schedules
+      for (let hr = startH; hr < endH; hr++) {
+        scheduleOccupied.add(hr);
+      }
+    }
+  });
+
+  // ── Step 2: Block giờ từ active bookings + Buffer Time 15 phút ──
+  // Sử dụng shared helper từ coaches.buffer.ts
+  // Đảm bảo nhất quán với createMySchedule và Player available-schedules
+  const { blockedHours: bookingBlocked } = calcBookingBlockedHours(bookings, date);
+
+  // ── Step 3: Hợp nhất tất cả blocked hours ──
+  const occupiedSet = new Set<number>([...scheduleOccupied, ...bookingBlocked]);
+
+  const startTimes: string[] = [];
+  const nowVN = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+  const todayStr = `${nowVN.getFullYear()}-${String(nowVN.getMonth() + 1).padStart(2, '0')}-${String(nowVN.getDate()).padStart(2, '0')}`;
+  const isToday = date === todayStr;
+  const currentHour = nowVN.getHours();
+
+  // Past dates cannot have any start times
+  if (date < todayStr) {
+    return { date, startTimes: [], occupiedHours: Array.from(occupiedSet) };
+  }
+
+  const { SYSTEM_CONFIG } = require("@/constants/system");
+  // Coach can only start a slot up to CLOSING_HOUR - 1 (i.e. 22:00 if closing is 23:00)
+  for (let h = SYSTEM_CONFIG.OPENING_HOUR; h < SYSTEM_CONFIG.CLOSING_HOUR; h++) {
+    if (isToday && h <= currentHour) continue;
+    if (occupiedSet.has(h)) continue;
+    startTimes.push(`${String(h).padStart(2, "0")}:00`);
+  }
+
+  return {
+    date,
+    startTimes,
+    occupiedHours: Array.from(occupiedSet).sort((a, b) => a - b)
+  };
 }
 
 // ─── AUTH: Create schedule ────────────────────────────────────
@@ -245,7 +328,8 @@ export async function createMySchedule(
   validateStartTimeInFuture(data.workingDate, data.startTime);
   validateTimeRange(data.startTime, data.endTime);
 
-  // Check overlap
+  // ── Check 1: Overlap với CoachSchedule hiện có (kể cả legacy long schedule) ──
+  // checkScheduleOverlap dùng half-open interval: StartTime < @EndTime AND EndTime > @StartTime
   const hasOverlap = await coachRepo.checkScheduleOverlap(
     coach.CoachID,
     data.workingDate,
@@ -257,12 +341,40 @@ export async function createMySchedule(
     throw new Error("Lịch bị trùng với lịch đã tồn tại. Vui lòng chọn khung giờ khác");
   }
 
-  return coachRepo.createCoachSchedule({
-    coachId: coach.CoachID,
-    workingDate: data.workingDate,
-    startTime: data.startTime,
-    endTime: data.endTime,
-  });
+  // ── Check 2: Buffer Time 15 phút với active bookings ──
+  // Re-check tại backend — KHÔNG tin vào schedule-options hay frontend dropdown.
+  // Shared logic từ coaches.buffer.ts (nhất quán với getScheduleOptions và Player search).
+  const { findBookingsByCoachUserId } = require("@/modules/bookings/bookings.repository");
+  const bookingsForBuffer = await findBookingsByCoachUserId(userId);
+
+  const requestStartH = parseInt(data.startTime.split(":")[0]);
+  const requestEndH   = parseInt(data.endTime.split(":")[0]);
+
+  const bufferError = checkBufferConflict(
+    bookingsForBuffer,
+    data.workingDate,
+    requestStartH,
+    requestEndH
+  );
+
+  if (bufferError) {
+    throw new Error(bufferError);
+  }
+
+  // ── Step 3: Split into 1-hour slots và insert ──
+  const slots = [];
+  for (let h = requestStartH; h < requestEndH; h++) {
+    const slotStart = `${String(h).padStart(2, "0")}:00`;
+    const slotEnd = `${String(h + 1).padStart(2, "0")}:00`;
+    slots.push({
+      coachId: coach.CoachID,
+      workingDate: data.workingDate,
+      startTime: slotStart,
+      endTime: slotEnd,
+    });
+  }
+
+  return coachRepo.createCoachSchedulesTransaction(slots);
 }
 
 // ─── AUTH: Update my schedule ─────────────────────────────────
@@ -467,10 +579,33 @@ export async function checkCoachAvailable(
  */
 export async function getCoachAvailableSlots(coachId: number, date: string) {
   const schedules = await coachRepo.findCoachSchedules(coachId);
+  const daySchedules = schedules.filter((s) => s.WorkingDate === date && !isScheduleExpired(s.WorkingDate, s.EndTime));
+  // Find all booked/holding slots for this coach on this day
+  const busySlots = daySchedules.filter(s => s.Status === 'Booked' || s.Status === 'Holding');
 
-  return schedules.filter(
-    (s) => s.WorkingDate === date && s.Status === "Available" && !isScheduleExpired(s.WorkingDate, s.EndTime)
-  );
+  return daySchedules.filter((s) => {
+    if (s.Status !== "Available") return false;
+
+    // Check buffer 15 mins against busy slots
+    const sStart = new Date(`1970-01-01T${s.StartTime}:00`);
+    const sEnd = new Date(`1970-01-01T${s.EndTime}:00`);
+
+    for (const busy of busySlots) {
+      const bStart = new Date(`1970-01-01T${busy.StartTime}:00`);
+      const bEnd = new Date(`1970-01-01T${busy.EndTime}:00`);
+
+      // bStart - 15 mins
+      const bufferStart = new Date(bStart.getTime() - 15 * 60000);
+      // bEnd + 15 mins
+      const bufferEnd = new Date(bEnd.getTime() + 15 * 60000);
+
+      // Overlap logic: A overlaps B if (StartA < EndB) and (EndA > StartB)
+      if (sStart < bufferEnd && sEnd > bufferStart) {
+        return false; // Filtered out by buffer
+      }
+    }
+    return true;
+  });
 }
 
 // ─── INCOME ───────────────────────────────────────────────────

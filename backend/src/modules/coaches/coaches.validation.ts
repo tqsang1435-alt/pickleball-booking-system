@@ -57,8 +57,17 @@ export function validateTimeRange(startTime: string, endTime: string): void {
   const [sh, sm] = startTime.split(":").map(Number);
   const [eh, em] = endTime.split(":").map(Number);
 
+  if (sm !== 0 || em !== 0) {
+    throw new Error("Thời gian bắt đầu và kết thúc phải có phút là 00 (ví dụ: 08:00, 09:00).");
+  }
+
   if (eh * 60 + em <= sh * 60 + sm) {
     throw new Error("Giờ kết thúc phải lớn hơn giờ bắt đầu");
+  }
+
+  const { SYSTEM_CONFIG } = require("@/constants/system");
+  if (sh < SYSTEM_CONFIG.OPENING_HOUR || eh > SYSTEM_CONFIG.CLOSING_HOUR) {
+    throw new Error(`Thời gian phải nằm trong khung giờ hệ thống (${String(SYSTEM_CONFIG.OPENING_HOUR).padStart(2, "0")}:00 - ${String(SYSTEM_CONFIG.CLOSING_HOUR).padStart(2, "0")}:00).`);
   }
 }
 

@@ -41,8 +41,8 @@ function Calendar({ selectedDate, onChange }: { selectedDate: string; onChange: 
   const month = current.getMonth();
 
   const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    "Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6",
+    "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"
   ];
 
   const handlePrevMonth = () => {
@@ -85,13 +85,13 @@ function Calendar({ selectedDate, onChange }: { selectedDate: string; onChange: 
         </button>
       </div>
       <div className={styles.weekdayRow}>
-        <span>Mon</span>
-        <span>Tue</span>
-        <span>Wed</span>
-        <span>Thu</span>
-        <span>Fri</span>
-        <span>Sat</span>
-        <span>Sun</span>
+        <span>T2</span>
+        <span>T3</span>
+        <span>T4</span>
+        <span>T5</span>
+        <span>T6</span>
+        <span>T7</span>
+        <span>CN</span>
       </div>
       <div className={styles.calendarDaysGrid}>
         {days.map((day, idx) => {
@@ -133,6 +133,7 @@ export default function CoachDetailPage() {
   const [schedules, setSchedules] = useState<CoachSchedule[]>([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<CoachSchedule | null>(null);
+  const [bookingSchedule, setBookingSchedule] = useState<CoachSchedule | null>(null);
 
   // Review State
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -286,6 +287,7 @@ export default function CoachDetailPage() {
 
   const handleBookNow = () => {
     if (!selectedSchedule) return;
+    setBookingSchedule(selectedSchedule);
   };
 
   const handleUpcomingSlotClick = (dayDate: string, slot: CoachSchedule) => {
@@ -367,7 +369,7 @@ export default function CoachDetailPage() {
                     }
                   }}
                 />
-                <span className={styles.availableBadge}>Available</span>
+                <span className={styles.availableBadge}>Có thể đặt</span>
               </div>
               <div className={styles.profileMainInfo}>
                 <h1 className={styles.coachName}>
@@ -383,7 +385,8 @@ export default function CoachDetailPage() {
                   {SKILL_LABELS[coach.SkillLevel ?? ""] || coach.SkillLevel} Pickleball Coach
                 </p>
                 <p className={styles.coachSubBio}>
-                  Passionate about helping players of all levels improve their skills, build confidence and enjoy the game.
+                  {coach.Biography ||
+                    "Huấn luyện viên Pickleball tập trung vào kỹ thuật, chiến thuật và sự tự tin khi thi đấu."}
                 </p>
               </div>
             </div>
@@ -397,19 +400,19 @@ export default function CoachDetailPage() {
                   </svg>
                   {Number(coach.AverageRating || 0).toFixed(1)}
                 </div>
-                <span className={styles.statLbl}>({reviewStats?.TotalReviews || 0} reviews)</span>
+                <span className={styles.statLbl}>({reviewStats?.TotalReviews || 0} đánh giá)</span>
               </div>
               <div className={styles.statCell}>
                 <div className={styles.statVal}>{coach.TotalStudents || 0}+</div>
-                <span className={styles.statLbl}>Students</span>
+                <span className={styles.statLbl}>Học viên</span>
               </div>
               <div className={styles.statCell}>
                 <div className={styles.statVal}>{coach.ExperienceYears || 0}</div>
-                <span className={styles.statLbl}>Years experience</span>
+                <span className={styles.statLbl}>Năm kinh nghiệm</span>
               </div>
               <div className={styles.statCell}>
                 <div className={styles.statVal}>PPR</div>
-                <span className={styles.statLbl}>Certified</span>
+                <span className={styles.statLbl}>Chứng nhận</span>
               </div>
             </div>
 
@@ -417,15 +420,16 @@ export default function CoachDetailPage() {
             <div className={styles.detailsCard}>
               {/* About Coach */}
               <section className={styles.section}>
-                <h2>About Coach</h2>
+                <h2>Thông tin Coach</h2>
                 <p className={styles.bioText}>
-                  {coach.Biography || `I have been coaching pickleball for over 5 years and have worked with players from beginners to advanced competitors. My coaching focuses on technique, strategy, and match mindset to help you improve faster and enjoy the game more.`}
+                  {coach.Biography ||
+                    "Coach sẽ giúp bạn cải thiện kỹ thuật nền tảng, cách di chuyển, xử lý bóng và tư duy thi đấu qua từng buổi học cá nhân."}
                 </p>
               </section>
 
               {/* Expertise */}
               <section className={styles.section}>
-                <h2>Expertise</h2>
+                <h2>Chuyên môn</h2>
                 <div className={styles.expertisePills}>
                   {expertiseList.map((skill, idx) => (
                     <span key={idx} className={styles.expertisePill}>
@@ -437,7 +441,7 @@ export default function CoachDetailPage() {
 
               {/* Experience */}
               <section className={styles.section}>
-                <h2>Experience</h2>
+                <h2>Kinh nghiệm</h2>
                 <ul className={styles.experienceList}>
                   <li>
                     <span className={styles.checkIcon}>
@@ -445,7 +449,7 @@ export default function CoachDetailPage() {
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     </span>
-                    <span>{coach.ExperienceYears || 5}+ years coaching experience</span>
+                    <span>{coach.ExperienceYears || 5}+ năm kinh nghiệm huấn luyện</span>
                   </li>
                   <li>
                     <span className={styles.checkIcon}>
@@ -453,7 +457,7 @@ export default function CoachDetailPage() {
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     </span>
-                    <span>{coach.TotalStudents || 120}+ students trained</span>
+                    <span>{coach.TotalStudents || 120}+ học viên đã được hướng dẫn</span>
                   </li>
                   <li>
                     <span className={styles.checkIcon}>
@@ -461,7 +465,7 @@ export default function CoachDetailPage() {
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     </span>
-                    <span>PPR Certified Coach</span>
+                    <span>Coach có chứng nhận chuyên môn</span>
                   </li>
                   <li>
                     <span className={styles.checkIcon}>
@@ -469,17 +473,17 @@ export default function CoachDetailPage() {
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     </span>
-                    <span>Former national tournament competitor</span>
+                    <span>Có kinh nghiệm thi đấu và xây dựng giáo án cá nhân</span>
                   </li>
                 </ul>
               </section>
 
               {/* Reviews */}
-              <section className={styles.section} style={{ position: "relative" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                  <h2 style={{ margin: 0 }}>Reviews</h2>
+              <section className={`${styles.section} ${styles.reviewSection}`}>
+                <div className={styles.reviewHeader}>
+                  <h2>Đánh giá</h2>
                   {reviewStats && reviewStats.TotalReviews > 0 && (
-                    <div style={{ color: "var(--pcs-status-success)", fontWeight: 600, fontSize: "0.9rem" }}>
+                    <div className={styles.reviewRecommend}>
                       {Math.round(((reviewStats.Star4 + reviewStats.Star5) / reviewStats.TotalReviews) * 100)}% Khách hàng giới thiệu Coach này.
                     </div>
                   )}
@@ -487,9 +491,9 @@ export default function CoachDetailPage() {
 
                 <button 
                   onClick={() => setReviewModalOpen(true)}
-                  style={{ position: "absolute", top: "0px", right: "0px", background: "#1677ff", color: "white", padding: "8px 16px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 500 }}
+                  className={styles.reviewButton}
                 >
-                  Viết Đánh giá
+                  Viết đánh giá
                 </button>
 
                 <ReviewModal
@@ -536,7 +540,7 @@ export default function CoachDetailPage() {
                   <line x1="8" y1="2" x2="8" y2="6"/>
                   <line x1="3" y1="10" x2="21" y2="10"/>
                 </svg>
-                1-1 Private Lesson
+                Buổi học cá nhân 1-1
               </span>
 
               {/* Custom monthly calendar selector */}
@@ -578,6 +582,17 @@ export default function CoachDetailPage() {
                   </div>
                 )}
               </div>
+
+              {selectedSchedule && (
+                <div className={styles.selectedSummary}>
+                  <span>Đã chọn</span>
+                  <strong>
+                    {selectedSchedule.StartTime.substring(0, 5)} -{" "}
+                    {selectedSchedule.EndTime.substring(0, 5)}
+                  </strong>
+                  <p>{new Date(date).toLocaleDateString("vi-VN")}</p>
+                </div>
+              )}
 
               {/* Booking Actions */}
               <button
@@ -677,13 +692,14 @@ export default function CoachDetailPage() {
       </div>
 
       {/* Booking confirmation modal */}
-      {selectedSchedule && coach && (
+      {bookingSchedule && coach && (
         <CoachBookingModal
           coach={coach}
-          schedule={selectedSchedule}
+          schedule={bookingSchedule}
           bookingDate={date}
-          onClose={() => setSelectedSchedule(null)}
+          onClose={() => setBookingSchedule(null)}
           onSuccess={() => {
+            setBookingSchedule(null);
             setSelectedSchedule(null);
             // Reload schedules list
             getCoachSchedulesPublic(coach.CoachID, date).then(setSchedules);

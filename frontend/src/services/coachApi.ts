@@ -103,11 +103,19 @@ export async function getMySchedules(token: string): Promise<CoachSchedule[]> {
   return response.data;
 }
 
+export async function getScheduleOptions(token: string, date: string): Promise<{ date: string; startTimes: string[]; occupiedHours: number[] }> {
+  const response = await apiClient<ApiResponse<{ date: string; startTimes: string[]; occupiedHours: number[] }>>(
+    `/api/coaches/me/schedule-options?date=${date}`,
+    { token }
+  );
+  return response.data;
+}
+
 export async function createMySchedule(
   token: string,
   payload: { workingDate: string; startTime: string; endTime: string }
-): Promise<CoachSchedule> {
-  const response = await apiClient<ApiResponse<CoachSchedule>>(
+): Promise<CoachSchedule[]> {
+  const response = await apiClient<ApiResponse<CoachSchedule[]>>(
     "/api/coaches/me/schedules",
     { method: "POST", token, body: payload }
   );
