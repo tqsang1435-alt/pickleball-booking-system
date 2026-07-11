@@ -24,7 +24,9 @@ export default function AdminTournamentManagePage({ params }: { params: Promise<
 
   // Auth & tab states
   const [isStaff, setIsStaff] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [activeTab, setActiveTab] = useState<"operations" | "registrations">("operations");
+
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [registrationsLoading, setRegistrationsLoading] = useState(false);
   const [selectedCccdUrl, setSelectedCccdUrl] = useState<string | null>(null);
@@ -35,7 +37,7 @@ export default function AdminTournamentManagePage({ params }: { params: Promise<
     divisionName: "",
     genderRequirement: "Mixed",
     ageGroup: "Open",
-    competitionFormat: "Singles",
+    competitionFormat: "MenSingles",
     bracketType: "SingleElimination",
     registrationFee: 0,
     maxTeams: 16,
@@ -85,7 +87,6 @@ export default function AdminTournamentManagePage({ params }: { params: Promise<
       })
       .finally(() => setLoading(false));
   };
-
   useEffect(() => {
     loadData();
     const user = getUser();
@@ -94,8 +95,10 @@ export default function AdminTournamentManagePage({ params }: { params: Promise<
       setIsStaff(true);
       setActiveTab("registrations");
     }
+    if (role.includes("admin")) {
+      setIsAdmin(true);
+    }
   }, [tournamentId]);
-
   const loadMatches = () => {
     if (!selectedDivisionId) return;
     tournamentApi
@@ -183,7 +186,7 @@ export default function AdminTournamentManagePage({ params }: { params: Promise<
         divisionName: "",
         genderRequirement: "Mixed",
         ageGroup: "Open",
-        competitionFormat: "Singles",
+        competitionFormat: "MenSingles",
         bracketType: "SingleElimination",
         registrationFee: 0,
         maxTeams: 16,
@@ -320,16 +323,44 @@ export default function AdminTournamentManagePage({ params }: { params: Promise<
       setError(err.message || "Thao tác thất bại.");
     }
   };
-
   const handleOpenScore = (match: any) => {
     setSelectedMatch(match);
-    setAdminOverride(false);
-    // Preset mock scores or zero
-    setSetScores([
-      { setNo: 1, teamAScore: 0, teamBScore: 0 },
-      { setNo: 2, teamAScore: 0, teamBScore: 0 },
-      { setNo: 3, teamAScore: 0, teamBScore: 0 },
-    ]);
+    if (match.MatchStatus === "Completed") {
+      setAdminOverride(true);
+      if (match.ScoreJson) {
+        try {
+          const parsed = JSON.parse(match.ScoreJson);
+          const formatted = parsed.map((s: any) => ({
+            setNo: s.setNo || s.SetNo || 1,
+            teamAScore: s.teamAScore ?? s.TeamAScore ?? 0,
+            teamBScore: s.teamBScore ?? s.TeamBScore ?? 0
+          }));
+          while (formatted.length < 3) {
+            formatted.push({ setNo: formatted.length + 1, teamAScore: 0, teamBScore: 0 });
+          }
+          setSetScores(formatted);
+        } catch (e) {
+          setSetScores([
+            { setNo: 1, teamAScore: 0, teamBScore: 0 },
+            { setNo: 2, teamAScore: 0, teamBScore: 0 },
+            { setNo: 3, teamAScore: 0, teamBScore: 0 },
+          ]);
+        }
+      } else {
+        setSetScores([
+          { setNo: 1, teamAScore: 0, teamBScore: 0 },
+          { setNo: 2, teamAScore: 0, teamBScore: 0 },
+          { setNo: 3, teamAScore: 0, teamBScore: 0 },
+        ]);
+      }
+    } else {
+      setAdminOverride(false);
+      setSetScores([
+        { setNo: 1, teamAScore: 0, teamBScore: 0 },
+        { setNo: 2, teamAScore: 0, teamBScore: 0 },
+        { setNo: 3, teamAScore: 0, teamBScore: 0 },
+      ]);
+    }
     setScoreModalOpen(true);
   };
 
@@ -350,11 +381,11 @@ export default function AdminTournamentManagePage({ params }: { params: Promise<
       setSuccess("Cập nhật tỷ số trận đấu thành công!");
       setScoreModalOpen(false);
       loadMatches();
+      loadData();
     } catch (err: any) {
       setError(err.message || "Ghi nhận tỷ số thất bại.");
     }
   };
-
   if (loading) {
     return (
       <div className={styles.wrapper} style={{ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center" }}>
@@ -520,23 +551,29 @@ export default function AdminTournamentManagePage({ params }: { params: Promise<
                             </button>
                           ) : (
                             <>
-                              {!matches.some(m => m.GroupName === "Knockout") ? (
-                                <button
-                                  onClick={handleGenerateKnockout}
-                                  disabled={matches.some(m => m.MatchStatus !== "Completed")}
-                                  className={styles.btnAccent}
-                                  style={{
-                                    flex: 1,
-                                    fontSize: "11px",
-                                    padding: "8px",
-                                    opacity: matches.some(m => m.MatchStatus !== "Completed") ? 0.6 : 1,
-                                    cursor: matches.some(m => m.MatchStatus !== "Completed") ? "not-allowed" : "pointer"
-                                  }}
-                                  title={matches.some(m => m.MatchStatus !== "Completed") ? "Hoàn thành toàn bộ vòng bảng để kích hoạt tạo nhánh" : ""}
-                                >
-                                  Tạo nhánh Knockout ({matches.some(m => m.MatchStatus !== "Completed") ? "Vòng bảng chưa xong" : "Sẵn sàng!"})
-                                </button>
-                              ) : (
+                              {!matches.some(m => m.GroupName === "Knockout") ? (() => {
+                                const groupStageNotFinished = matches.some(m => (m.MatchStage === "Group" || (m.GroupName !== "Knockout" && !m.KnockoutRound)) && ["Scheduled", "Ready", "InProgress"].includes(m.MatchStatus));
+                                const isGroupCompleted = selectedDiv?.Status === "GroupCompleted";
+                                const isBtnDisabled = !isGroupCompleted || groupStageNotFinished;
+
+                                return (
+                                  <button
+                                    onClick={handleGenerateKnockout}
+                                    disabled={isBtnDisabled}
+                                    className={styles.btnAccent}
+                                    style={{
+                                      flex: 1,
+                                      fontSize: "11px",
+                                      padding: "8px",
+                                      opacity: isBtnDisabled ? 0.6 : 1,
+                                      cursor: isBtnDisabled ? "not-allowed" : "pointer"
+                                    }}
+                                    title={groupStageNotFinished ? "Vòng bảng chưa hoàn thành hết tất cả các trận đấu" : (!isGroupCompleted ? "Trạng thái nội dung chưa chuyển sang GroupCompleted" : "")}
+                                  >
+                                    Tạo nhánh Knockout ({groupStageNotFinished ? "Vòng bảng chưa xong" : "Sẵn sàng!"})
+                                  </button>
+                                );
+                              })() : (
                                 <div style={{ color: "#22c55e", fontSize: "11px", fontWeight: "bold", textAlign: "center", width: "100%", padding: "8px 0" }}>
                                   ✓ Đã hoàn tất chia bảng & dựng nhánh SE
                                 </div>
@@ -864,10 +901,21 @@ export default function AdminTournamentManagePage({ params }: { params: Promise<
                                         
                                         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc", padding: "6px 12px", borderRadius: "8px", minWidth: "60px" }}>
                                           {m.MatchStatus === "Completed" ? (
-                                            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: "900", fontSize: "15px", color: "#2563eb" }}>
-                                              <span>{m.TeamASetWon ?? 0}</span>
-                                              <span style={{ color: "#cbd5e1" }}>-</span>
-                                              <span style={{ color: "#0f172a" }}>{m.TeamBSetWon ?? 0}</span>
+                                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+                                              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: "900", fontSize: "15px", color: "#2563eb" }}>
+                                                <span>{m.TeamASetWon ?? 0}</span>
+                                                <span style={{ color: "#cbd5e1" }}>-</span>
+                                                <span style={{ color: "#0f172a" }}>{m.TeamBSetWon ?? 0}</span>
+                                              </div>
+                                              {isAdmin && (
+                                                <button
+                                                  onClick={() => handleOpenScore(m)}
+                                                  className={styles.btnSecondary}
+                                                  style={{ padding: "2px 6px", fontSize: "10px", borderRadius: "4px", fontWeight: "600", marginTop: "2px" }}
+                                                >
+                                                  ✏️ Sửa điểm
+                                                </button>
+                                              )}
                                             </div>
                                           ) : (
                                             <span style={{ fontWeight: "700", color: "#94a3b8", fontSize: "12px" }}>
@@ -1324,17 +1372,40 @@ export default function AdminTournamentManagePage({ params }: { params: Promise<
             )}
 
             {(selectedMatch.MatchStatus === "Completed" || selectedDiv?.Status === "Completed") && (
-              <div style={{ padding: "0 20px 10px 20px", display: "flex", alignItems: "center", gap: "8px", justifyContent: "flex-start" }}>
-                <input 
-                  type="checkbox" 
-                  id="adminOverride" 
-                  checked={adminOverride} 
-                  onChange={(e) => setAdminOverride(e.target.checked)} 
-                />
-                <label htmlFor="adminOverride" style={{ fontSize: "12.5px", color: "#ef4444", fontWeight: "bold", cursor: "pointer" }}>
-                  ⚠️ Xác nhận ghi đè kết quả của Admin (Override)
-                </label>
-              </div>
+              <>
+                <div style={{ padding: "0 20px 10px 20px", display: "flex", alignItems: "center", gap: "8px", justifyContent: "flex-start" }}>
+                  <input 
+                    type="checkbox" 
+                    id="adminOverride" 
+                    checked={adminOverride} 
+                    onChange={(e) => setAdminOverride(e.target.checked)} 
+                  />
+                  <label htmlFor="adminOverride" style={{ fontSize: "12.5px", color: "#ef4444", fontWeight: "bold", cursor: "pointer" }}>
+                    ⚠️ Xác nhận ghi đè kết quả của Admin (Override)
+                  </label>
+                </div>
+                {adminOverride && (
+                  <>
+                    <div style={{ margin: "0 20px 10px 20px", padding: "12px", background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: "8px", color: "#92400e", fontSize: "12px", fontWeight: "600", lineHeight: "1.5" }}>
+                      ⚠️ Cảnh báo: Bạn đang thực hiện ghi đè kết quả của trận đấu đã hoàn thành. Hành động này sẽ được ghi nhận vào hệ thống.
+                    </div>
+                    <div className={styles.formGroup} style={{ margin: "0 20px 10px 20px" }}>
+                      <label className={styles.formLabel} style={{ fontSize: "11px", fontWeight: "700" }}>Lý do ghi đè kết quả *</label>
+                      <input 
+                        type="text" 
+                        placeholder="Nhập lý do thay đổi kết quả (ví dụ: Trọng tài nhập sai)..."
+                        className={styles.formInput} 
+                        required
+                        value={(selectedMatch as any).actionReason || ""}
+                        onChange={(e) => {
+                          const updated = { ...selectedMatch, actionReason: e.target.value };
+                          setSelectedMatch(updated);
+                        }}
+                      />
+                    </div>
+                  </>
+                )}
+              </>
             )}
 
             <div className={styles.modalFooter}>

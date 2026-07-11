@@ -131,14 +131,15 @@ export async function getRefundByCode(refundCode: string): Promise<RefundRecord 
     .input("RefundCode", sql.NVarChar(100), refundCode)
     .query(`
       SELECT
-        r.RefundID, r.BookingID, r.PaymentID,
+        r.RefundID, r.BookingID, r.PaymentID, r.RegistrationID, r.TournamentPaymentID,
         r.RefundCode, r.RefundMethod, r.RefundAmount, r.Reason,
         r.GatewayRefundId, r.GatewayResponse,
         r.Status, r.RequestedAt, r.ProcessedAt,
         r.CreatedBy, r.ProcessedBy, r.UpdatedAt,
-        p.PaymentMethod
+        COALESCE(p.PaymentMethod, tp.PaymentMethod) AS PaymentMethod
       FROM Refunds r
-      JOIN Payments p ON p.PaymentID = r.PaymentID
+      LEFT JOIN Payments p ON p.PaymentID = r.PaymentID
+      LEFT JOIN TournamentPayments tp ON tp.TournamentPaymentID = r.TournamentPaymentID
       WHERE r.RefundCode = @RefundCode
     `);
   return result.recordset[0] ?? null;
@@ -154,14 +155,15 @@ export async function getRefundById(refundId: number): Promise<RefundRecord | nu
     .input("RefundID", sql.Int, refundId)
     .query(`
       SELECT
-        r.RefundID, r.BookingID, r.PaymentID,
+        r.RefundID, r.BookingID, r.PaymentID, r.RegistrationID, r.TournamentPaymentID,
         r.RefundCode, r.RefundMethod, r.RefundAmount, r.Reason,
         r.GatewayRefundId, r.GatewayResponse,
         r.Status, r.RequestedAt, r.ProcessedAt,
         r.CreatedBy, r.ProcessedBy, r.UpdatedAt,
-        p.PaymentMethod
+        COALESCE(p.PaymentMethod, tp.PaymentMethod) AS PaymentMethod
       FROM Refunds r
-      JOIN Payments p ON p.PaymentID = r.PaymentID
+      LEFT JOIN Payments p ON p.PaymentID = r.PaymentID
+      LEFT JOIN TournamentPayments tp ON tp.TournamentPaymentID = r.TournamentPaymentID
       WHERE r.RefundID = @RefundID
     `);
   return result.recordset[0] ?? null;
@@ -177,16 +179,16 @@ export async function getMyRefunds(userId: number): Promise<RefundRecord[]> {
     .input("UserID", sql.Int, userId)
     .query(`
       SELECT
-        r.RefundID, r.BookingID, r.PaymentID,
+        r.RefundID, r.BookingID, r.PaymentID, r.RegistrationID, r.TournamentPaymentID,
         r.RefundCode, r.RefundMethod, r.RefundAmount, r.Reason,
         r.GatewayRefundId, r.GatewayResponse,
         r.Status, r.RequestedAt, r.ProcessedAt,
         r.CreatedBy, r.ProcessedBy, r.UpdatedAt,
-        p.PaymentMethod
+        COALESCE(p.PaymentMethod, tp.PaymentMethod) AS PaymentMethod
       FROM Refunds r
-      JOIN Payments p ON p.PaymentID = r.PaymentID
-      JOIN Bookings b ON b.BookingID = r.BookingID
-      WHERE b.UserID = @UserID
+      LEFT JOIN Payments p ON p.PaymentID = r.PaymentID
+      LEFT JOIN TournamentPayments tp ON tp.TournamentPaymentID = r.TournamentPaymentID
+      WHERE r.CreatedBy = @UserID
       ORDER BY r.RequestedAt DESC
     `);
   return result.recordset;

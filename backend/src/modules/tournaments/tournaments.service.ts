@@ -49,8 +49,16 @@ export async function recomputeDivisionStatus(divisionId: number): Promise<strin
     const hasKnockoutMatches = matches.some(m => m.GroupName === "Knockout" || (m.KnockoutRound && m.KnockoutRound !== ""));
     const groupMatches = matches.filter(m => m.GroupName && m.GroupName !== "Knockout");
     
-    const allMatchesCompleted = matches.every(m => m.MatchStatus === MATCH_STATUS.COMPLETED || m.MatchStatus === MATCH_STATUS.FORFEIT);
-    const anyInProgressOrCompleted = matches.some(m => m.MatchStatus === MATCH_STATUS.IN_PROGRESS || m.MatchStatus === MATCH_STATUS.COMPLETED || m.MatchStatus === MATCH_STATUS.FORFEIT);
+    const allMatchesCompleted = matches.every(m => 
+      m.MatchStatus === MATCH_STATUS.COMPLETED || 
+      m.MatchStatus === MATCH_STATUS.FORFEIT || 
+      m.MatchStatus === MATCH_STATUS.BYE_COMPLETED
+    );
+    const anyInProgressOrCompleted = matches.some(m => 
+      m.MatchStatus === MATCH_STATUS.IN_PROGRESS || 
+      m.MatchStatus === MATCH_STATUS.COMPLETED || 
+      m.MatchStatus === MATCH_STATUS.FORFEIT
+    );
     const hasAllocatedCourts = matches.some(m => m.CourtID !== null || m.ScheduledStart !== null);
 
     if (division.BracketType === "RoundRobin" || division.BracketType === "SingleElimination") {
@@ -66,14 +74,22 @@ export async function recomputeDivisionStatus(divisionId: number): Promise<strin
     } else if (division.BracketType === "GroupKnockout") {
       if (hasKnockoutMatches) {
         const knockoutMatches = matches.filter(m => m.GroupName === "Knockout" || (m.KnockoutRound && m.KnockoutRound !== ""));
-        const allKnockoutCompleted = knockoutMatches.every(m => m.MatchStatus === MATCH_STATUS.COMPLETED || m.MatchStatus === MATCH_STATUS.FORFEIT);
+        const allKnockoutCompleted = knockoutMatches.every(m => 
+          m.MatchStatus === MATCH_STATUS.COMPLETED || 
+          m.MatchStatus === MATCH_STATUS.FORFEIT || 
+          m.MatchStatus === MATCH_STATUS.BYE_COMPLETED
+        );
         if (allKnockoutCompleted) {
           newStatus = DIVISION_STATUS.COMPLETED;
         } else {
           newStatus = DIVISION_STATUS.KNOCKOUT_STAGE;
         }
       } else {
-        const allGroupCompleted = groupMatches.length > 0 && groupMatches.every(m => m.MatchStatus === MATCH_STATUS.COMPLETED || m.MatchStatus === MATCH_STATUS.FORFEIT);
+        const allGroupCompleted = groupMatches.length > 0 && groupMatches.every(m => 
+          m.MatchStatus === MATCH_STATUS.COMPLETED || 
+          m.MatchStatus === MATCH_STATUS.FORFEIT || 
+          m.MatchStatus === MATCH_STATUS.BYE_COMPLETED
+        );
         if (allGroupCompleted) {
           newStatus = DIVISION_STATUS.GROUP_COMPLETED;
         } else if (anyInProgressOrCompleted) {
@@ -86,6 +102,7 @@ export async function recomputeDivisionStatus(divisionId: number): Promise<strin
       }
     }
   }
+
 
   if (newStatus !== division.Status) {
     await tournamentRepo.updateDivisionStatus(divisionId, newStatus);
@@ -208,15 +225,20 @@ export async function transitionDivisionStatus(divisionId: number, targetStatus:
   return updated;
 }
 
-/**
- * Set Match Ready
- */
 export async function setMatchReady(matchId: number, userId: number) {
   const match = await tournamentRepo.findMatchDetail(matchId);
   if (!match) throw Object.assign(new Error("Không tìm thấy trận đấu"), { statusCode: 404 });
 
-  if (match.MatchStatus === MATCH_STATUS.COMPLETED || match.MatchStatus === MATCH_STATUS.CANCELLED) {
-    throw Object.assign(new Error(`Không thể chuyển trận đấu ở trạng thái ${match.MatchStatus} sang Ready`), { statusCode: 400 });
+  if (match.MatchStatus !== MATCH_STATUS.SCHEDULED) {
+    throw Object.assign(new Error(`Không thể chuyển trạng thái trận đấu từ ${match.MatchStatus} sang Ready. Chỉ chấp nhận các trận đang Lập lịch (Scheduled).`), { statusCode: 400 });
+  }
+
+  if (!match.TeamAID || !match.TeamBID) {
+    throw Object.assign(new Error("Không thể chuyển trận đấu sang Ready khi chưa xác định đầy đủ hai đội thi đấu"), { statusCode: 400 });
+  }
+
+  if (match.ScoreText === "BYE" || match.MatchStatus === MATCH_STATUS.BYE_COMPLETED) {
+    throw Object.assign(new Error("Không thể chuyển trận đấu miễn thi đấu (BYE) sang Ready"), { statusCode: 400 });
   }
 
   const updated = await tournamentRepo.updateMatchStatus(matchId, MATCH_STATUS.READY);
@@ -226,12 +248,48 @@ export async function setMatchReady(matchId: number, userId: number) {
 /**
  * Start Match (InProgress)
  */
-export async function startMatch(matchId: number, userId: number) {
+export async function startMatch(
+  matchId: number,
+  userId: number,
+  userRole: string,
+  adminOverride?: boolean,
+  reason?: string
+) {
   const match = await tournamentRepo.findMatchDetail(matchId);
   if (!match) throw Object.assign(new Error("Không tìm thấy trận đấu"), { statusCode: 404 });
 
-  if (match.MatchStatus === MATCH_STATUS.COMPLETED || match.MatchStatus === MATCH_STATUS.CANCELLED) {
-    throw Object.assign(new Error(`Không thể bắt đầu trận đấu ở trạng thái ${match.MatchStatus}`), { statusCode: 400 });
+  // terminal statuses check
+  if ([MATCH_STATUS.COMPLETED, MATCH_STATUS.CANCELLED, MATCH_STATUS.FORFEIT, MATCH_STATUS.BYE_COMPLETED].includes(match.MatchStatus as any)) {
+    throw Object.assign(new Error(`Không thể bắt đầu trận đấu đang ở trạng thái ${match.MatchStatus}`), { statusCode: 400 });
+  }
+
+  // missing teams check
+  if (!match.TeamAID || !match.TeamBID) {
+    throw Object.assign(new Error("Không thể bắt đầu trận đấu khi chưa xác định đầy đủ hai đội thi đấu"), { statusCode: 400 });
+  }
+
+  if (match.MatchStatus === MATCH_STATUS.SCHEDULED) {
+    if (!adminOverride || userRole !== "Admin") {
+      throw Object.assign(new Error("Trận đấu đang ở trạng thái Lập lịch (Scheduled) và chưa Sẵn sàng (Ready). Cần quyền Admin ghi đè (adminOverride = true) để bắt đầu."), { statusCode: 400 });
+    }
+
+    // Write override start log
+    const oldStatus = match.MatchStatus;
+    const newStatus = MATCH_STATUS.IN_PROGRESS;
+    const actionReason = reason || "Không có lý do cụ thể";
+    const desc = `OVERRIDE_START: user=${userId}, role=${userRole}, match=${matchId}, from=${oldStatus} to=${newStatus}, Reason=${actionReason}`;
+    
+    await createAuditLog({
+      userId,
+      actionName: "ADMIN_OVERRIDE_START_MATCH",
+      tableName: "TournamentMatches",
+      entityId: matchId,
+      description: desc.slice(0, 490),
+    });
+  } else if (match.MatchStatus !== MATCH_STATUS.READY) {
+    if (match.MatchStatus !== MATCH_STATUS.IN_PROGRESS) {
+      throw Object.assign(new Error(`Không thể chuyển trận đấu từ trạng thái ${match.MatchStatus} sang InProgress`), { statusCode: 400 });
+    }
   }
 
   const updated = await tournamentRepo.updateMatchStatus(matchId, MATCH_STATUS.IN_PROGRESS);
@@ -241,8 +299,6 @@ export async function startMatch(matchId: number, userId: number) {
 
   return updated;
 }
-
-
 // ─── TOURNAMENTS ─────────────────────────────────────────────
 
 /**
@@ -321,6 +377,25 @@ export async function updateTournament(id: number, data: UpdateTournamentInput, 
         new Error("Không thể thay đổi ngày khi giải đấu đang diễn ra (Ongoing)"),
         { statusCode: 400 }
       );
+    }
+  }
+
+  // Khóa thông tin quan trọng sát giờ G
+  if (process.env.ENABLE_STRICT_VALIDATIONS === "true") {
+    const hoursToStart = (new Date(tournament.TournamentStart).getTime() - Date.now()) / (1000 * 60 * 60);
+    if (hoursToStart > 0 && hoursToStart < 24) {
+      const isModifyingCriticalFields =
+        data.tournamentName ||
+        data.location ||
+        data.tournamentStart ||
+        data.tournamentEnd;
+
+      if (isModifyingCriticalFields && !data.adminOverride) {
+        throw Object.assign(
+          new Error("Không thể thay đổi tên giải đấu, địa điểm hoặc thời gian trong vòng 24 giờ trước khi giải đấu bắt đầu. Cần quyền Admin ghi đè (adminOverride = true) để tiếp tục."),
+          { statusCode: 400 }
+        );
+      }
     }
   }
 
@@ -556,6 +631,12 @@ export async function createDivision(tournamentId: number, data: CreateDivisionI
     teamSize,
     genderRequirement,
   });
+
+  // Nếu giải đấu đã được công bố (Status là Open), tự động chuyển Division sang Open để mở đăng ký
+  if (tournament.Status === TOURNAMENT_STATUS.OPEN) {
+    await tournamentRepo.updateDivisionStatus(division.DivisionID, DIVISION_STATUS.OPEN);
+    division.Status = DIVISION_STATUS.OPEN;
+  }
 
   // Write audit log
   await createAuditLog({
@@ -1612,15 +1693,11 @@ export async function generateBracket(tournamentId: number, divisionId: number, 
 
   // 6. Save matches into database via transaction
   await tournamentRepo.saveBracketMatchesTransaction(divisionId, matchesList, "SingleElimination");
-
   // Update division status
   await tournamentRepo.updateDivisionStatus(divisionId, DIVISION_STATUS.DRAW_GENERATED);
 
-  // Update tournament status to DrawGenerated if it's currently Draft/Open/Closed
-  if (["Draft", "Open", "Closed"].includes(tournament.Status)) {
-    await tournamentRepo.updateTournamentStatus(tournamentId, TOURNAMENT_STATUS.DRAW_GENERATED);
-  }
-
+  // Recompute tournament status
+  await recomputeTournamentStatus(tournamentId);
   // Write audit log
   await createAuditLog({
     userId,
@@ -2438,6 +2515,7 @@ export async function reportMatchScore(
   body: {
     sets: Array<{ setNo: number; teamAScore: number; teamBScore: number }>;
     adminOverride?: boolean;
+    reason?: string;
   },
   user: { userId: number; role: string }
 ) {
@@ -2456,23 +2534,53 @@ export async function reportMatchScore(
     throw Object.assign(new Error("Chỉ Admin hoặc Staff mới có quyền nhập điểm chính thức cho trận đấu"), { statusCode: 403 });
   }
 
+  const isCompleted = match.MatchStatus === MATCH_STATUS.COMPLETED;
   const isReadyOrInProgress = match.MatchStatus === MATCH_STATUS.READY || match.MatchStatus === MATCH_STATUS.IN_PROGRESS;
 
-  if (!isReadyOrInProgress) {
+  if (isCompleted || !isReadyOrInProgress) {
     if (!body.adminOverride || user.role !== "Admin") {
-      throw Object.assign(
-        new Error(`Trận đấu đang ở trạng thái ${match.MatchStatus}. Chỉ có thể nhập điểm khi trận đấu ở trạng thái Ready/InProgress hoặc khi Admin bật override (adminOverride = true).`),
-        { statusCode: 400 }
-      );
+      const errMsg = isCompleted 
+        ? "Trận đấu đã hoàn thành. Chỉ Admin mới có quyền cập nhật lại kết quả bằng quyền ghi đè (adminOverride = true)."
+        : `Trận đấu đang ở trạng thái ${match.MatchStatus}. Chỉ có thể nhập điểm khi trận đấu ở trạng thái Ready/InProgress hoặc khi Admin bật override (adminOverride = true).`;
+      throw Object.assign(new Error(errMsg), { statusCode: 400 });
+    }
+  }
+
+  // 1.5. Strict validations based on time
+  if (process.env.ENABLE_STRICT_VALIDATIONS === "true") {
+    // Chặn báo cáo điểm trước giờ thi đấu dự kiến
+    if (match.ScheduledStart) {
+      const scheduledStart = new Date(match.ScheduledStart);
+      const now = new Date();
+      if (now < scheduledStart) {
+        if (!body.adminOverride || user.role !== "Admin") {
+          throw Object.assign(
+            new Error("Không thể báo cáo tỷ số trước thời gian bắt đầu dự kiến của trận đấu. Cần quyền Admin ghi đè (adminOverride = true) để tiếp tục."),
+            { statusCode: 400 }
+          );
+        }
+      }
     }
 
-    await createAuditLog({
-      userId: user.userId,
-      actionName: "ADMIN_OVERRIDE_SCORE",
-      tableName: "TournamentMatches",
-      entityId: matchId,
-      description: `Admin override nhập điểm trực tiếp cho trận ID: ${matchId} từ trạng thái: ${match.MatchStatus}`,
-    });
+    // Khóa sửa kết quả sau 24 giờ
+    if (isCompleted && match.UpdatedAt) {
+      const lastUpdate = new Date(match.UpdatedAt);
+      const hoursSinceLastUpdate = (Date.now() - lastUpdate.getTime()) / (1000 * 60 * 60);
+      if (hoursSinceLastUpdate >= 24) {
+        if (!body.adminOverride || user.role !== "Admin") {
+          throw Object.assign(
+            new Error("Trận đấu đã hoàn thành quá 24 giờ. Chỉ Admin mới có quyền cập nhật lại kết quả bằng quyền ghi đè (adminOverride = true)."),
+            { statusCode: 400 }
+          );
+        }
+        if (!body.reason || body.reason.trim() === "") {
+          throw Object.assign(
+            new Error("Yêu cầu nhập lý do cập nhật khi ghi đè kết quả trận đấu đã hoàn thành trên 24 giờ."),
+            { statusCode: 400 }
+          );
+        }
+      }
+    }
   }
 
   if (!match.TeamAID || !match.TeamBID) {
@@ -2532,15 +2640,28 @@ export async function reportMatchScore(
   await recomputeTournamentStatus(match.TournamentID);
 
   // Write audit log
-  await createAuditLog({
-    userId: user.userId,
-    actionName: "REPORT_MATCH_SCORE",
-    tableName: "TournamentMatches",
-    entityId: matchId,
-    description: `Báo cáo tỷ số trận ID: ${matchId} (KQ: ${scoreText}) bởi user ID: ${user.userId}`,
-  });
-
-  // Notify team members
+  if (body.adminOverride) {
+    const oldScoreJson = match.ScoreJson || null;
+    const newScoreJson = JSON.stringify(body.sets);
+    const reason = (body as any).actionReason || (body as any).reason || "Không có lý do cụ thể";
+    const desc = `OVERRIDE_SCORE: user=${user.userId}, role=${user.role}, match=${matchId}, from=${match.MatchStatus} to=Completed. OldScore=${oldScoreJson}, NewScore=${newScoreJson}, Reason=${reason}`;
+    
+    await createAuditLog({
+      userId: user.userId,
+      actionName: "ADMIN_OVERRIDE_SCORE",
+      tableName: "TournamentMatches",
+      entityId: matchId,
+      description: desc.slice(0, 490),
+    });
+  } else {
+    await createAuditLog({
+      userId: user.userId,
+      actionName: "REPORT_MATCH_SCORE",
+      tableName: "TournamentMatches",
+      entityId: matchId,
+      description: `Báo cáo tỷ số trận ID: ${matchId} (KQ: ${scoreText}) bởi user ID: ${user.userId}`,
+    });
+  }  // Notify team members
   void createNotification({
     userId: user.userId, // trigger notification to system if needed or we notify the leader of both teams
     title: "Kết quả trận đấu đã được cập nhật",

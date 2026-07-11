@@ -78,8 +78,8 @@ export default function AdminTournamentsPage() {
       endDate: t.EndDate ? t.EndDate.slice(0, 10) : "",
       registrationStart: t.RegistrationStart ? t.RegistrationStart.slice(0, 10) : "",
       registrationEnd: t.RegistrationEnd ? t.RegistrationEnd.slice(0, 10) : "",
-      location: t.Location,
-      organizerName: t.OrganizerName,
+      location: t.Location || "",
+      organizerName: t.OrganizerName || "",
       rules: (t as any).PrizeInfo || "",
     });
     setModalOpen(true);

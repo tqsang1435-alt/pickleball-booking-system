@@ -672,7 +672,21 @@ export async function startMatchController(
     const roleError = requireRoles(auth, ["Admin", "Staff"]);
     if (roleError) return roleError;
 
-    const updated = await tournamentService.startMatch(matchId, auth.userId);
+    const userRole = Array.isArray(auth.roles) && auth.roles.length > 0 ? auth.roles[0] : (auth.role || "Player");
+
+    let adminOverride = false;
+    let reason = "";
+    try {
+      const body = await req.json();
+      adminOverride = !!body.adminOverride;
+      reason = body.reason || body.actionReason || "";
+    } catch (e) {
+      const { searchParams } = new URL(req.url);
+      adminOverride = searchParams.get("adminOverride") === "true";
+      reason = searchParams.get("reason") || "";
+    }
+
+    const updated = await tournamentService.startMatch(matchId, auth.userId, userRole, adminOverride, reason);
     return successResponse(updated, "Trận đấu bắt đầu (InProgress)");
   } catch (error) {
     return handleError(error);

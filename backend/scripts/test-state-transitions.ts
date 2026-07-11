@@ -606,7 +606,7 @@ async function runVerification() {
     // 4. Chuyển Trận 1 sang InProgress và kiểm tra xếp lại sân không làm mất block
     const m1 = matches9[0];
     await tournamentService.setMatchReady(m1.MatchID, adminId);
-    await tournamentService.startMatch(m1.MatchID, adminId);
+    await tournamentService.startMatch(m1.MatchID, adminId, "Admin");
 
     console.log(" -> Xếp lại sân lần 2 (Đổi mốc giờ bắt đầu sang 13:00)...");
     await tournamentService.allocateDivisionSchedule(tourney9.TournamentID, div9.DivisionID, {

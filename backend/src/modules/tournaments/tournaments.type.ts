@@ -37,6 +37,7 @@ export interface TournamentDivision {
   MaxTeams: number;
   RegistrationFee: number;
   BracketType: string;
+  EnableThirdPlace?: boolean | number;
   Status: string;
   CreatedAt: string;
   UpdatedAt: string;
@@ -212,7 +213,9 @@ export interface UpdateTournamentInput {
   tournamentStart?: string;
   tournamentEnd?: string;
   prizeInfo?: string;
+  adminOverride?: boolean;
 }
+
 
 export interface CreateDivisionInput {
   divisionName: string;
@@ -226,6 +229,7 @@ export interface CreateDivisionInput {
   maxTeams: number;
   registrationFee?: number;
   bracketType: "SingleElimination" | "RoundRobin" | "GroupKnockout";
+  enableThirdPlace?: boolean;
 }
 
 export interface UpdateDivisionInput {

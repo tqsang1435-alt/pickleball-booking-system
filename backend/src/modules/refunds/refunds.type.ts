@@ -43,8 +43,10 @@ export type RefundResult = {
 // Record từ DB — dùng cho Player (my refunds)
 export type RefundRecord = {
   RefundID: number;
-  BookingID: number;
-  PaymentID: number;
+  BookingID: number | null;
+  PaymentID: number | null;
+  RegistrationID?: number | null;
+  TournamentPaymentID?: number | null;
   RefundCode: string | null;
   RefundMethod: RefundMethod | null;
   RefundAmount: number;

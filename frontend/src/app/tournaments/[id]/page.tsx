@@ -535,6 +535,7 @@ export default function TournamentDetailPage({ params }: { params: Promise<{ id:
       case "Published":
         return <span className="tm-badge tm-badge-published">Đang mở đăng ký</span>;
       case "Closed":
+      case "RegistrationClosed":
         return <span className="tm-badge tm-badge-closed">Đóng đăng ký</span>;
       case "Ongoing":
         return <span className="tm-badge" style={{ background: "#dbeafe", color: "#1e40af", borderColor: "#bfdbfe", padding: "4px 12px", fontSize: "0.75rem", fontWeight: "600", borderRadius: "9999px", border: "1px solid" }}>Đang diễn ra</span>;

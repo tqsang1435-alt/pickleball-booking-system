@@ -97,7 +97,14 @@ export default function TournamentsPage() {
       t.Location.toLowerCase().includes(search.toLowerCase());
     
     // Status
-    const matchStatus = statusFilter === "ALL" || t.Status === statusFilter;
+    let matchStatus = false;
+    if (statusFilter === "ALL") {
+      matchStatus = true;
+    } else if (statusFilter === "RegistrationClosed" || statusFilter === "Closed") {
+      matchStatus = t.Status === "RegistrationClosed" || t.Status === "Closed";
+    } else {
+      matchStatus = t.Status === statusFilter;
+    }
 
     // Divisions properties
     const tDivs = divisionsMap[t.TournamentID] || [];
@@ -298,7 +305,7 @@ export default function TournamentsPage() {
               <select className="tm-form-select" style={{ borderRadius: "12px", height: "42px", borderColor: "#cbd5e1" }} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                 <option value="ALL">Tất cả trạng thái</option>
                 <option value="Open">Đang mở đăng ký</option>
-                <option value="Closed">Đã đóng đăng ký</option>
+                <option value="RegistrationClosed">Đã đóng đăng ký</option>
                 <option value="Ongoing">Đang diễn ra</option>
                 <option value="Completed">Đã kết thúc</option>
               </select>
@@ -366,7 +373,8 @@ export default function TournamentsPage() {
               const minFee = tournDivs.length > 0 ? Math.min(...tournDivs.map(d => d.RegistrationFee)) : 0;
               const isOpen = t.Status === "Open" || t.Status === "Published";
               const isOngoing = t.Status === "Ongoing";
-              const isClosed = t.Status === "Closed";
+              const isClosed = t.Status === "Closed" || t.Status === "RegistrationClosed";
+
               
               // Dynamic banner background illustration index
               const bannerImages = [

@@ -1824,7 +1824,7 @@ export async function saveMatchScoreTransaction(params: {
           .input("DivisionID", sql.Int, match.DivisionID)
           .query(`
             SELECT COUNT(*) AS UncompletedCount FROM TournamentMatches
-            WHERE DivisionID = @DivisionID AND MatchStatus NOT IN ('Completed', 'Cancelled', 'Forfeit')
+            WHERE DivisionID = @DivisionID AND MatchStatus NOT IN ('Completed', 'Forfeit', 'ByeCompleted')
           `);
         if (uncompletedResult.recordset[0].UncompletedCount === 0) {
           await new sql.Request(transaction)
@@ -1844,7 +1844,7 @@ export async function saveMatchScoreTransaction(params: {
             .input("DivisionID", sql.Int, match.DivisionID)
             .query(`
               SELECT COUNT(*) AS UncompletedGroup FROM TournamentMatches
-              WHERE DivisionID = @DivisionID AND GroupName != 'Knockout' AND MatchStatus NOT IN ('Completed', 'Cancelled', 'Forfeit')
+              WHERE DivisionID = @DivisionID AND GroupName != 'Knockout' AND MatchStatus NOT IN ('Completed', 'Forfeit', 'ByeCompleted')
             `);
           if (uncompletedGroupRes.recordset[0].UncompletedGroup === 0) {
             await new sql.Request(transaction)
@@ -1857,7 +1857,7 @@ export async function saveMatchScoreTransaction(params: {
             .input("DivisionID", sql.Int, match.DivisionID)
             .query(`
               SELECT COUNT(*) AS UncompletedKnockout FROM TournamentMatches
-              WHERE DivisionID = @DivisionID AND GroupName = 'Knockout' AND MatchStatus NOT IN ('Completed', 'Cancelled', 'Forfeit')
+              WHERE DivisionID = @DivisionID AND GroupName = 'Knockout' AND MatchStatus NOT IN ('Completed', 'Forfeit', 'ByeCompleted')
             `);
           if (uncompletedKnockoutRes.recordset[0].UncompletedKnockout === 0) {
             await new sql.Request(transaction)

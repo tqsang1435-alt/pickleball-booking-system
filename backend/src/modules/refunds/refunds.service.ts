@@ -485,6 +485,13 @@ export async function processMomoRefund(
     });
   }
 
+  if (!refund.BookingID || !refund.PaymentID) {
+    throw Object.assign(
+      new Error("Không tìm thấy thông tin Booking hoặc Payment cho yêu cầu hoàn tiền MoMo."),
+      { statusCode: 400 }
+    );
+  }
+
   // Lấy payment trực tiếp theo PaymentID từ refund record (không query theo BookingID+Paid
   // vì sau khi booking bị cancel, payment status có thể không còn là Paid)
   const payment = await _getPaymentForRefund(refund.BookingID, refund.PaymentID);
@@ -620,6 +627,12 @@ export async function completeManualRefund(
     }
   } else {
     // Normal court booking flow
+    if (!refund.BookingID || !refund.PaymentID) {
+      throw Object.assign(
+        new Error("Không tìm thấy thông tin Booking hoặc Payment cho yêu cầu hoàn tiền."),
+        { statusCode: 400 }
+      );
+    }
     await refundRepo.markBookingRefunded(refund.BookingID);
 
     // Nếu full refund → Update Payment → Refunded

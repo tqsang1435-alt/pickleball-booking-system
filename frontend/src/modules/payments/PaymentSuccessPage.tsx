@@ -56,6 +56,9 @@ export default function PaymentSuccessPage() {
   const tournamentIdStr = searchParams.get("tournamentId");
   const tournamentId = Number(tournamentIdStr);
 
+  const registrationIdStr = searchParams.get("registrationId");
+  const registrationId = Number(registrationIdStr);
+
   const [status, setStatus] = useState<PaymentStatusResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -77,11 +80,16 @@ export default function PaymentSuccessPage() {
       try {
         if (isTournament) {
           const { tournamentApi } = await import("@/services/tournamentApi");
-          const reg = await tournamentApi.getMyRegistration(tournamentId);
-          if (!reg) {
+          const regs = await tournamentApi.getMyRegistration(tournamentId);
+          if (!regs || regs.length === 0) {
             setError("Không tìm thấy thông tin đăng ký giải đấu.");
             return null;
           }
+          // Tìm registration khớp với registrationId từ URL, nếu không thấy thì lấy cái mới nhất (đầu tiên)
+          const reg = registrationId
+            ? (regs.find((r: any) => r.RegistrationID === registrationId) || regs[0])
+            : regs[0];
+
           // Map tournament registration status to synthetic PaymentStatusResult
           const synthStatus: PaymentStatusResult = {
             bookingId: reg.RegistrationID,
@@ -112,7 +120,7 @@ export default function PaymentSuccessPage() {
         setLoading(false);
       }
     },
-    [isTournament, tournamentId, method, paymentCode, orderCode]
+    [isTournament, tournamentId, method, paymentCode, orderCode, registrationId]
   );
 
   useEffect(() => {

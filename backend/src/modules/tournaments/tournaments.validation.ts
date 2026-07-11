@@ -36,6 +36,7 @@ export const updateTournamentSchema = z.object({
   tournamentStart: z.string().optional(),
   tournamentEnd: z.string().optional(),
   prizeInfo: z.string().optional(),
+  adminOverride: z.boolean().optional(),
 });
 
 export const createDivisionSchema = z.object({
@@ -129,4 +130,5 @@ export const reportMatchScoreSchema = z.object({
     teamBScore: z.number().int().nonnegative(),
   })).min(1, "Phải cung cấp ít nhất 1 set"),
   adminOverride: z.boolean().optional(),
+  reason: z.string().optional(),
 });

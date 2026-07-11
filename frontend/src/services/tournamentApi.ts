@@ -43,13 +43,22 @@ const getHeaders = () => {
 
 export const tournamentApi = {
   getTournaments: async () => {
-    const res = await apiClient<{ data: Tournament[] }>("/api/tournaments");
-    return res.data;
+    const res = await apiClient<{ data: any[] }>("/api/tournaments");
+    return res.data.map(t => ({
+      ...t,
+      StartDate: t.StartDate || t.TournamentStart,
+      EndDate: t.EndDate || t.TournamentEnd
+    })) as Tournament[];
   },
 
   getTournamentDetail: async (id: number) => {
-    const res = await apiClient<{ data: Tournament }>(`/api/tournaments/${id}`);
-    return res.data;
+    const res = await apiClient<{ data: any }>(`/api/tournaments/${id}`);
+    const t = res.data;
+    return {
+      ...t,
+      StartDate: t.StartDate || t.TournamentStart,
+      EndDate: t.EndDate || t.TournamentEnd
+    } as Tournament;
   },
 
   createTournament: async (data: any) => {
