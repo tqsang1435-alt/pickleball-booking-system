@@ -139,3 +139,11 @@ export async function createReview(userId: number, payload: CreateReviewDTO) {
 
   return newReview;
 }
+
+export async function checkReviewEligibility(
+  userId: number,
+  courtId?: number,
+  coachId?: number
+) {
+  return await reviewsRepository.findUnreviewedCompletedBooking(userId, courtId, coachId);
+}

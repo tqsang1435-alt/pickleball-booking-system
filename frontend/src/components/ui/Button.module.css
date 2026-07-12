@@ -1,0 +1,123 @@
+.button {
+  --button-bg: var(--pcs-brand-primary);
+  --button-color: #ffffff;
+  --button-border: transparent;
+  --button-shadow: var(--pcs-shadow-xs);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid var(--button-border);
+  border-radius: var(--pcs-radius-md);
+  background: var(--button-bg);
+  color: var(--button-color);
+  box-shadow: var(--button-shadow);
+  font-family: inherit;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--pcs-shadow-md);
+}
+
+.button:focus-visible {
+  outline: none;
+  box-shadow: var(--pcs-focus-ring);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
+}
+
+.sm {
+  min-height: 2.25rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.md {
+  min-height: 2.75rem;
+  padding: 0.6875rem 1rem;
+  font-size: 0.875rem;
+}
+
+.lg {
+  min-height: 3.25rem;
+  padding: 0.875rem 1.25rem;
+  font-size: 0.9375rem;
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.primary {
+  --button-bg: var(--pcs-brand-primary);
+  --button-color: #ffffff;
+}
+
+.primary:hover:not(:disabled) {
+  --button-bg: var(--pcs-brand-primary-hover);
+}
+
+.secondary {
+  --button-bg: var(--pcs-brand-primary-light);
+  --button-color: var(--pcs-brand-primary-hover);
+  --button-border: var(--pcs-brand-primary-border);
+}
+
+.outline {
+  --button-bg: #ffffff;
+  --button-color: var(--pcs-neutral-700);
+  --button-border: var(--pcs-neutral-300);
+  --button-shadow: none;
+}
+
+.outline:hover:not(:disabled) {
+  --button-color: var(--pcs-brand-primary-hover);
+  --button-border: var(--pcs-brand-primary);
+}
+
+.ghost {
+  --button-bg: transparent;
+  --button-color: var(--pcs-neutral-700);
+  --button-border: transparent;
+  --button-shadow: none;
+}
+
+.ghost:hover:not(:disabled) {
+  --button-bg: var(--pcs-neutral-100);
+  --button-color: var(--pcs-neutral-900);
+}
+
+.danger {
+  --button-bg: var(--pcs-status-error);
+  --button-color: #ffffff;
+}
+
+.danger:hover:not(:disabled) {
+  --button-bg: #dc2626;
+}
+
+.spinner {
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

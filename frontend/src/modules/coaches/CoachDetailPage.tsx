@@ -13,6 +13,7 @@ import CoachBookingModal from "./CoachBookingModal";
 import ReviewList from "@/components/reviews/ReviewList";
 import ReviewStatsView from "@/components/reviews/ReviewStatsView";
 import ReviewModal from "@/components/reviews/ReviewModal";
+import { getToken } from "@/utils/authStorage";
 import styles from "./CoachDetailPage.module.css";
 
 const todayVN = () => {
@@ -490,7 +491,23 @@ export default function CoachDetailPage() {
                 </div>
 
                 <button 
-                  onClick={() => setReviewModalOpen(true)}
+                  onClick={async () => {
+                    const token = getToken();
+                    if (!token) {
+                      alert("Vui lòng đăng nhập để viết đánh giá.");
+                      return;
+                    }
+                    try {
+                      const res = await reviewApi.checkEligibility({ coachId: coach.CoachID }, token);
+                      if (res && res.canReview) {
+                        setReviewModalOpen(true);
+                      } else {
+                        alert("Bạn chỉ có thể đánh giá huấn luyện viên này sau khi đã đặt lịch và hoàn thành khóa học với họ.");
+                      }
+                    } catch (err: any) {
+                      alert(err.message || "Đã xảy ra lỗi khi kiểm tra quyền đánh giá.");
+                    }
+                  }}
                   className={styles.reviewButton}
                 >
                   Viết đánh giá

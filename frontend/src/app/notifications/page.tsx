@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui";
+import StateBox from "@/components/common/StateBox";
 import { getToken } from "@/utils/authStorage";
 import { getMyNotifications, markNotificationAsRead, markAllNotificationsAsRead } from "@/services/notificationApi";
 import type { NotificationItem } from "@/types/operationTypes";
+import styles from "./NotificationsPage.module.css";
 
 export default function NotificationsPage() {
   const router = useRouter();
@@ -36,8 +39,8 @@ export default function NotificationsPage() {
     if (!token) return;
     try {
       await markNotificationAsRead(token, id);
-      setNotifs(notifs.map(n => n.notificationId === id ? { ...n, status: "Read" } : n));
-      window.dispatchEvent(new Event("auth-change")); // To update the bell badge
+      setNotifs(notifs.map((n) => n.notificationId === id ? { ...n, status: "Read" } : n));
+      window.dispatchEvent(new Event("auth-change"));
     } catch (err) {
       console.error(err);
     }
@@ -48,67 +51,60 @@ export default function NotificationsPage() {
     if (!token) return;
     try {
       await markAllNotificationsAsRead(token);
-      setNotifs(notifs.map(n => ({ ...n, status: "Read" })));
-      window.dispatchEvent(new Event("auth-change")); // To update the bell badge
+      setNotifs(notifs.map((n) => ({ ...n, status: "Read" })));
+      window.dispatchEvent(new Event("auth-change"));
     } catch (err) {
       console.error(err);
     }
   }
 
-  const hasUnread = notifs.some(n => n.status === "Unread");
+  const hasUnread = notifs.some((n) => n.status === "Unread");
 
   return (
-    <div style={{ maxWidth: 800, margin: "40px auto", padding: "0 20px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 900, color: "#171a2a", margin: 0 }}>Trung tâm thông báo</h1>
-        {hasUnread && (
-          <button
-            onClick={handleMarkAllAsRead}
-            style={{
-              padding: "8px 16px",
-              background: "#eef9df",
-              color: "#2f5a24",
-              border: "1.5px solid #3f6b32",
-              borderRadius: 14,
-              cursor: "pointer",
-              fontWeight: 700,
-              fontSize: 14
-            }}
-          >
+    <main className={styles.page}>
+      <header className={styles.header}>
+        <div>
+          <h1>Trung tâm thông báo</h1>
+          <p>Theo dõi cập nhật booking, thanh toán, nhóm chơi và hệ thống.</p>
+        </div>
+        {hasUnread ? (
+          <Button type="button" variant="secondary" onClick={handleMarkAllAsRead}>
             Đánh dấu tất cả đã đọc
-          </button>
-        )}
-      </div>
+          </Button>
+        ) : null}
+      </header>
 
       {loading ? (
-        <div style={{ textAlign: "center", padding: 40, color: "#64748b" }}>Đang tải thông báo...</div>
+        <StateBox variant="loading" title="Đang tải thông báo" description="Vui lòng chờ trong giây lát." />
       ) : notifs.length === 0 ? (
-        <div style={{ textAlign: "center", padding: 60, background: "#f8f9fa", borderRadius: 16, color: "#64748b" }}>
-          Bạn chưa có thông báo nào.
-        </div>
+        <StateBox variant="empty" title="Bạn chưa có thông báo nào" description="Các cập nhật quan trọng sẽ xuất hiện tại đây." />
       ) : (
-        <div style={{ background: "#ffffff", borderRadius: 16, border: "1px solid #dff5c7", overflow: "hidden" }}>
-          {notifs.map(n => (
-            <div
-              key={n.notificationId}
-              onClick={() => n.status === "Unread" && handleMarkAsRead(n.notificationId)}
-              style={{
-                padding: 20,
-                borderBottom: "1px solid #f0f0f0",
-                background: n.status === "Unread" ? "#f5ffec" : "#ffffff",
-                cursor: n.status === "Unread" ? "pointer" : "default",
-                transition: "0.2s ease"
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
-                <div style={{ fontWeight: 700, color: "#171a2a", fontSize: 16 }}>{n.title}</div>
-                <div style={{ fontSize: 12, color: "#94a3b8" }}>{new Date(n.createdAt).toLocaleString("vi-VN")}</div>
-              </div>
-              <div style={{ color: "#475569", fontSize: 14, lineHeight: 1.5 }}>{n.message}</div>
-            </div>
-          ))}
-        </div>
+        <section className={styles.list} aria-label="Danh sách thông báo">
+          {notifs.map((notification) => {
+            const isUnread = notification.status === "Unread";
+            return (
+              <button
+                key={notification.notificationId}
+                type="button"
+                className={`${styles.item} ${isUnread ? styles.itemUnread : ""}`}
+                onClick={() => isUnread && handleMarkAsRead(notification.notificationId)}
+                aria-disabled={!isUnread}
+              >
+                <span>
+                  <span className={styles.titleRow}>
+                    {isUnread ? <span className={styles.unreadDot} aria-hidden="true" /> : null}
+                    <span className={styles.itemTitle}>{notification.title}</span>
+                  </span>
+                  <span className={styles.itemMessage}>{notification.message}</span>
+                </span>
+                <span className={styles.itemTime}>
+                  {new Date(notification.createdAt).toLocaleString("vi-VN")}
+                </span>
+              </button>
+            );
+          })}
+        </section>
       )}
-    </div>
+    </main>
   );
 }

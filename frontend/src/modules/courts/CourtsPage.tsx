@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { getCourts, getCourtSlots, type CourtSlot } from "@/services/courtApi";
 import type { Court } from "@/types/court";
@@ -15,10 +16,19 @@ import { CourtScheduleDrawer } from "./CourtScheduleDrawer";
 // Trang danh sách sân — Player
 // ─────────────────────────────────────────────────────────────
 export default function CourtsPage() {
+  const searchParams = useSearchParams();
   const [courts, setCourts] = useState<Court[]>([]);
   const [type, setType] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [keyword, setKeyword] = useState("");
+
+  // Sync keyword state with URL search query parameter from home search bar
+  useEffect(() => {
+    const qSearch = searchParams.get("search");
+    if (qSearch !== null) {
+      setKeyword(qSearch);
+    }
+  }, [searchParams]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 

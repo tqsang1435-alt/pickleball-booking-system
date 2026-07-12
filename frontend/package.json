@@ -14,9 +14,12 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-icons": "^5.6.0",
+    "react-is": "^19.2.7",
     "recharts": "^3.8.1"
   },
   "devDependencies": {
+    "@frontman-ai/nextjs": "^1.0.1",
+    "@opentelemetry/sdk-node": "^0.220.0",
     "@types/node": "^22.10.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",

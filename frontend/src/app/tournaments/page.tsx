@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { tournamentApi, Tournament, TournamentDivision } from "@/services/tournamentApi";
 import { getUser } from "@/utils/authStorage";
@@ -21,6 +21,92 @@ export default function TournamentsPage() {
   const [error, setError] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
 
+  // Hero Slides Carousel - Dynamically matches fetched tournaments from API
+  const [activeHeroIndex, setActiveHeroIndex] = useState(0);
+
+  const heroSlides = useMemo(() => {
+    const bannerImages = [
+      "/images/tournament_banner_2026_4_3.jpg",
+      "/images/summer_cup_banner.png",
+      "/images/tournament_banner_2026.png"
+    ];
+
+    if (tournaments.length === 0) {
+      // Fallback preview slides if database list is empty or loading
+      return [
+        {
+          title: <>GIẢI ĐẤU <br /><span>PICKLEBALL</span> <br />QUỐC GIA 2026</>,
+          season: "SEASON 2026 • OPEN",
+          desc: "Khởi động chiến dịch tranh tài lớn nhất năm cùng PickleClub. Nâng cao thứ hạng DUPR, cọ xát đỉnh cao cùng các vận động viên chuyên nghiệp và chinh phục ngôi vị vô địch quốc gia.",
+          image: bannerImages[0],
+          primaryBtnText: "Khám phá giải đấu",
+          href: "#tournament-list-section"
+        },
+        {
+          title: <>HÀ NỘI <br /><span>SUMMER OPEN</span> <br />CUP 2026</>,
+          season: "SUMMER 2026 • CHAMPIONSHIP",
+          desc: "Giải đấu mùa hè sôi động quy tụ các tay vợt hàng đầu tranh tài tại hệ thống sân ngoài trời chuẩn quốc tế của PickleClub.",
+          image: bannerImages[1],
+          primaryBtnText: "Đăng ký ngay",
+          href: "#featured-tournament-section"
+        },
+        {
+          title: <>PICKLECLUB <br /><span>CHAMPIONSHIP</span> <br />SERIES</>,
+          season: "SERIES 2026 • DUPR RATED",
+          desc: "Chuỗi giải đấu tính điểm DUPR chính thức định kỳ. Cơ hội cọ xát chuyên nghiệp và khẳng định thứ hạng của bạn.",
+          image: bannerImages[2],
+          primaryBtnText: "Xem bảng đấu",
+          href: "#featured-tournament-section"
+        }
+      ];
+    }
+
+    // Map actual active tournaments dynamically to slides (up to 4)
+    return tournaments.slice(0, 4).map((t, idx) => {
+      const words = t.TournamentName.split(" ");
+      let titleElement = <>{t.TournamentName}</>;
+      if (words.length > 2) {
+        const mid = Math.ceil(words.length / 2);
+        titleElement = (
+          <>
+            {words.slice(0, mid).join(" ")} <br />
+            <span>{words.slice(mid).join(" ")}</span>
+          </>
+        );
+      }
+
+      const isOpen = t.Status === "Open" || t.Status === "Published";
+      const statusText = isOpen ? "Đăng ký tham gia ➜" : "Xem chi tiết giải ➜";
+      const seasonText = `PC-SEASON 2026 • ${t.Status === "Open" ? "OPENING" : t.Status.toUpperCase()}`;
+
+      return {
+        title: titleElement,
+        season: seasonText,
+        desc: t.Description || `Giải đấu Pickleball ${t.TournamentName} chính thức khởi tranh tại ${t.Location}. Tranh tài hấp dẫn cùng hàng chục cặp vận động viên chuyên nghiệp.`,
+        image: t.ImageURL || (t as any).BannerUrl || (t as any).bannerUrl || bannerImages[idx % 3],
+        primaryBtnText: statusText,
+        href: `/tournaments/${t.TournamentID}`
+      };
+    });
+  }, [tournaments]);
+
+  const nextHeroSlide = () => {
+    setActiveHeroIndex((prev) => (prev + 1) % heroSlides.length);
+  };
+
+  const prevHeroSlide = () => {
+    setActiveHeroIndex((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
+  };
+
+  // Auto-play slides every 5.5 seconds
+  useEffect(() => {
+    if (heroSlides.length <= 1) return;
+    const timer = setInterval(() => {
+      setActiveHeroIndex((prev) => (prev + 1) % heroSlides.length);
+    }, 5500);
+    return () => clearInterval(timer);
+  }, [heroSlides.length]);
+
   useEffect(() => {
     // Check Admin authorization from localStorage
     const currentUser = getUser();
@@ -33,7 +119,7 @@ export default function TournamentsPage() {
       .getTournaments()
       .then(async (data) => {
         // Active tournaments for player view
-        const activeTourns = data.filter((t) => t.Status !== "Draft");
+        const activeTourns = data.filter((t) => t.Status !== "Draft" && t.Status !== "Cancelled");
         setTournaments(activeTourns);
 
         // Fetch divisions for each tournament to show metadata tags
@@ -137,58 +223,97 @@ export default function TournamentsPage() {
     <div className="tm-body min-h-screen pb-16">
       {/* Hero Banner Section */}
       <div className="tm-hero-custom">
-        <div className="container tm-hero-container">
+        {/* Editorial Background Layers */}
+        <div className="tm-hero-bg-glow"></div>
+        <div className="tm-hero-bg-lines"></div>
+        <div className="tm-hero-bg-mesh"></div>
+        <div className="tm-hero-watermark">2026</div>
+        <div className="tm-hero-watermark-sub">PICKLEBALL CHAMPIONSHIP</div>
+
+        {/* Carousel Navigation Arrows */}
+        {heroSlides.length > 1 && (
+          <>
+            <button className="tm-hero-arrow tm-hero-arrow-prev" onClick={prevHeroSlide} aria-label="Previous Slide">
+              ‹
+            </button>
+            <button className="tm-hero-arrow tm-hero-arrow-next" onClick={nextHeroSlide} aria-label="Next Slide">
+              ›
+            </button>
+          </>
+        )}
+
+        <div className="container tm-hero-container tm-hero-container-animate" key={activeHeroIndex}>
           <div className="tm-hero-left">
-            <span className="tm-season-badge">Mùa giải 2026</span>
-            <h1 className="tm-hero-title-new">
-              Giải Đấu <span>Pickleball</span> 2026
+            <span className="tm-season-badge">{heroSlides[activeHeroIndex]?.season}</span>
+            <h1 className="tm-hero-main-title">
+              {heroSlides[activeHeroIndex]?.title}
             </h1>
             <p className="tm-hero-desc">
-              Tham gia tranh tài tại các giải đấu chuyên nghiệp và phong trào lớn nhất của hệ thống PickleClub. 
-              Cơ hội giao lưu, nâng hạng DUPR và giành những giải thưởng hấp dẫn!
+              {heroSlides[activeHeroIndex]?.desc}
             </p>
-            <div style={{ display: "flex", gap: "16px" }}>
-              <button 
-                onClick={() => {
-                  const el = document.getElementById("tournament-list-section");
-                  if (el) el.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="tm-btn tm-btn-primary" 
-                style={{ borderRadius: "12px", padding: "12px 28px", fontWeight: "700" }}
-              >
-                Khám phá giải đấu
-              </button>
+            <div className="tm-hero-buttons-container">
+              {heroSlides[activeHeroIndex]?.href?.startsWith("#") ? (
+                <button 
+                  onClick={() => {
+                    const el = document.getElementById(heroSlides[activeHeroIndex].href.replace("#", ""));
+                    if (el) el.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="tm-hero-btn tm-hero-btn-primary" 
+                >
+                  {heroSlides[activeHeroIndex]?.primaryBtnText}
+                </button>
+              ) : (
+                <Link 
+                  href={heroSlides[activeHeroIndex]?.href || "/"}
+                  className="tm-hero-btn tm-hero-btn-primary flex items-center justify-center" 
+                >
+                  {heroSlides[activeHeroIndex]?.primaryBtnText}
+                </Link>
+              )}
               <button 
                 onClick={() => {
                   const el = document.getElementById("featured-tournament-section");
                   if (el) el.scrollIntoView({ behavior: "smooth" });
                 }}
-                className="tm-btn tm-btn-secondary" 
-                style={{ borderRadius: "12px", padding: "12px 28px", fontWeight: "700", border: "1.5px solid #cbd5e1" }}
+                className="tm-hero-btn tm-hero-btn-secondary" 
               >
                 Xem giải nổi bật
               </button>
             </div>
           </div>
-          <div className="tm-hero-right">
-            <img 
-              src="/images/tournament_banner_2026_4_3.jpg" 
-              alt="Pickleball 2026" 
-              className="tm-hero-img"
-              style={{
-                maxWidth: "540px",
-                width: "100%",
-                height: "auto",
-                borderRadius: "16px",
-                boxShadow: "0 12px 24px rgba(15, 23, 42, 0.08)",
-                border: "1px solid #cbd5e1"
-              }}
-            />
+          <div className="tm-hero-right" onClick={nextHeroSlide} style={{ cursor: "pointer" }} title="Click để chuyển giải đấu khác">
+            {/* Dynamic athlete container overlapping banner boundaries */}
+            <div className="tm-hero-athlete-container">
+              <div className="tm-hero-glow-lime"></div>
+              <div className="tm-hero-angle-shard-1"></div>
+              <div className="tm-hero-angle-shard-2"></div>
+              <div className="tm-hero-img-wrap">
+                <img 
+                  src={heroSlides[activeHeroIndex]?.image} 
+                  alt="Pickleball 2026" 
+                  className="tm-hero-img"
+                />
+              </div>
+              <div className="tm-hero-slide-hint">
+                Chuyển giải khác ➜
+              </div>
+            </div>
           </div>
+        </div>
+
+        {/* Slide navigation dots */}
+        <div className="tm-hero-dots">
+          {heroSlides.map((_, idx) => (
+            <button 
+              key={idx} 
+              className={`tm-hero-dot ${idx === activeHeroIndex ? "active" : ""}`}
+              onClick={() => setActiveHeroIndex(idx)}
+            />
+          ))}
         </div>
       </div>
 
-      <div className="container" style={{ marginTop: "40px" }}>
+      <div className="container tm-main-content">
         
         {/* Featured Tournament Card Section */}
         {featuredTournament && (
@@ -197,49 +322,49 @@ export default function TournamentsPage() {
               {/* Left Column: Information */}
               <div className="tm-featured-left">
                 <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "16px" }}>
-                    <span style={{ color: "#eab308", fontSize: "1.2rem" }}>★</span>
-                    <span style={{ fontSize: "0.75rem", fontWeight: "800", color: "#059669", letterSpacing: "1px", textTransform: "uppercase" }}>
+                  <div className="tm-featured-header">
+                    <span className="tm-featured-star">★</span>
+                    <span className="tm-featured-subtitle">
                       GIẢI ĐẤU NỔI BẬT
                     </span>
                   </div>
                   
-                  <h2 style={{ fontSize: "2.1rem", fontWeight: "900", color: "#0f172a", marginBottom: "16px", textTransform: "uppercase", lineHeight: "1.2" }}>
+                  <h2 className="tm-featured-title">
                     {featuredTournament.TournamentName}
                   </h2>
                   
-                  <p style={{ color: "#475569", fontSize: "0.9rem", lineHeight: "1.6", marginBottom: "24px" }}>
+                  <p className="tm-featured-desc">
                     {featuredTournament.Description || "Giải đấu quy tụ những vận động viên xuất sắc nhất khu vực, với giải thưởng lớn. Hệ thống tính điểm DUPR chuẩn quốc tế."}
                   </p>
                   
                   {/* Specs Grid */}
-                  <div className="tm-spec-grid">
-                    <div className="tm-spec-item">
-                      <div className="tm-spec-icon">📍</div>
+                  <div className="tm-featured-specs">
+                    <div className="tm-featured-spec-item">
+                      <div className="tm-featured-spec-icon">📍</div>
                       <div>
-                        <div className="tm-spec-label">Địa điểm</div>
-                        <div className="tm-spec-val">{featuredTournament.Location}</div>
+                        <div className="tm-featured-spec-label">Địa điểm</div>
+                        <div className="tm-featured-spec-value">{featuredTournament.Location}</div>
                       </div>
                     </div>
-                    <div className="tm-spec-item">
-                      <div className="tm-spec-icon">📅</div>
+                    <div className="tm-featured-spec-item">
+                      <div className="tm-featured-spec-icon">📅</div>
                       <div>
-                        <div className="tm-spec-label">Thời gian</div>
-                        <div className="tm-spec-val">{formatDate(featuredTournament.StartDate)} - {formatDate(featuredTournament.EndDate)}</div>
+                        <div className="tm-featured-spec-label">Thời gian</div>
+                        <div className="tm-featured-spec-value">{formatDate(featuredTournament.StartDate)} - {formatDate(featuredTournament.EndDate)}</div>
                       </div>
                     </div>
-                    <div className="tm-spec-item">
-                      <div className="tm-spec-icon tm-spec-icon-red">⏰</div>
+                    <div className="tm-featured-spec-item">
+                      <div className="tm-featured-spec-icon tm-featured-spec-icon-red">⏰</div>
                       <div>
-                        <div className="tm-spec-label">Hạn đăng ký</div>
-                        <div className="tm-spec-val tm-spec-val-red">{formatDate(featuredTournament.RegistrationEnd)}</div>
+                        <div className="tm-featured-spec-label">Hạn đăng ký</div>
+                        <div className="tm-featured-spec-value tm-featured-spec-value-red">{formatDate(featuredTournament.RegistrationEnd)}</div>
                       </div>
                     </div>
-                    <div className="tm-spec-item">
-                      <div className="tm-spec-icon">👥</div>
+                    <div className="tm-featured-spec-item">
+                      <div className="tm-featured-spec-icon">👥</div>
                       <div>
-                        <div className="tm-spec-label">Nội dung</div>
-                        <div className="tm-spec-val">
+                        <div className="tm-featured-spec-label">Nội dung</div>
+                        <div className="tm-featured-spec-value">
                           {divisionsMap[featuredTournament.TournamentID]?.map(d => d.DivisionName).join(", ") || "Đơn & Đôi Nam/Nữ"}
                         </div>
                       </div>
@@ -248,16 +373,15 @@ export default function TournamentsPage() {
                 </div>
 
                 {/* Footer of Left Column */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f1f5f9", paddingTop: "24px", marginTop: "20px" }}>
-                  <div className="tm-tags-row">
-                    <span className="tm-tag-pill">DUPR 3.0+</span>
-                    <span className="tm-tag-pill">OPEN</span>
-                    <span className="tm-tag-pill">U35</span>
+                <div className="tm-featured-footer">
+                  <div className="tm-featured-tags">
+                    <span className="tm-featured-tag">DUPR 3.0+</span>
+                    <span className="tm-featured-tag">OPEN</span>
+                    <span className="tm-featured-tag">U35</span>
                   </div>
                   <Link 
                     href={`/tournaments/${featuredTournament.TournamentID}`} 
-                    className="tm-btn tm-btn-primary" 
-                    style={{ padding: "12px 36px", borderRadius: "12px", fontWeight: "800" }}
+                    className="tm-hero-btn tm-hero-btn-primary tm-featured-btn" 
                   >
                     Đăng ký ngay
                   </Link>
@@ -267,7 +391,7 @@ export default function TournamentsPage() {
               {/* Right Column: Image */}
               <div className="tm-featured-right">
                 <img 
-                  src="/images/cogai.png" 
+                  src={featuredTournament.ImageURL || "/images/tournament_banner_2026_4_3.jpg"} 
                   alt="Featured Tournament" 
                   className="tm-featured-img"
                 />
@@ -277,32 +401,31 @@ export default function TournamentsPage() {
         )}
 
         {/* Filter Bar */}
-        <div id="tournament-list-section" className="tm-actions-bar" style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px", padding: "20px", borderRadius: "20px", border: "1px solid #e2e8f0" }}>
+        <div id="tournament-list-section" className="tm-filter-container">
           {/* Search Input Row */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
-            <div className="tm-search-wrapper" style={{ flex: 1, minWidth: "280px" }}>
-              <span className="tm-search-icon" style={{ left: "16px", fontSize: "1.1rem" }}>🔍</span>
+          <div className="tm-filter-search-row">
+            <div className="tm-filter-search-box">
+              <span className="tm-filter-search-icon">🔍</span>
               <input
                 type="text"
                 placeholder="Tìm kiếm tên giải đấu hoặc địa điểm..."
-                className="tm-search-input"
-                style={{ padding: "12px 16px 12px 48px", borderRadius: "12px", border: "1px solid #cbd5e1" }}
+                className="tm-filter-search-input"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
             {isAdmin && (
-              <Link href="/admin/tournaments" className="tm-btn tm-btn-accent" style={{ display: "inline-flex", gap: "6px", borderRadius: "12px", padding: "12px 24px" }}>
+              <Link href="/admin/tournaments" className="tm-btn tm-btn-accent tm-filter-admin-btn">
                 ⚙️ Bảng Quản Trị
               </Link>
             )}
           </div>
 
           {/* Selector Filters Row */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", borderTop: "1px solid #f1f5f9", paddingTop: "16px", alignItems: "center" }}>
-            <div>
-              <label style={{ fontSize: "0.75rem", fontWeight: "700", display: "block", marginBottom: "6px", color: "#475569" }}>Trạng thái</label>
-              <select className="tm-form-select" style={{ borderRadius: "12px", height: "42px", borderColor: "#cbd5e1" }} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <div className="tm-filter-dropdowns-grid">
+            <div className="tm-filter-group">
+              <label className="tm-filter-label">Trạng thái</label>
+              <select className="tm-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                 <option value="ALL">Tất cả trạng thái</option>
                 <option value="Open">Đang mở đăng ký</option>
                 <option value="RegistrationClosed">Đã đóng đăng ký</option>
@@ -310,9 +433,9 @@ export default function TournamentsPage() {
                 <option value="Completed">Đã kết thúc</option>
               </select>
             </div>
-            <div>
-              <label style={{ fontSize: "0.75rem", fontWeight: "700", display: "block", marginBottom: "6px", color: "#475569" }}>Hình thức đấu</label>
-              <select className="tm-form-select" style={{ borderRadius: "12px", height: "42px", borderColor: "#cbd5e1" }} value={formatFilter} onChange={(e) => setFormatFilter(e.target.value)}>
+            <div className="tm-filter-group">
+              <label className="tm-filter-label">Hình thức đấu</label>
+              <select className="tm-filter-select" value={formatFilter} onChange={(e) => setFormatFilter(e.target.value)}>
                 <option value="ALL">Tất cả hình thức</option>
                 <option value="MenSingles">Đơn Nam</option>
                 <option value="WomenSingles">Đơn Nữ</option>
@@ -321,19 +444,19 @@ export default function TournamentsPage() {
                 <option value="MixedDoubles">Đôi Nam Nữ</option>
               </select>
             </div>
-            <div>
-              <label style={{ fontSize: "0.75rem", fontWeight: "700", display: "block", marginBottom: "6px", color: "#475569" }}>Trình độ DUPR</label>
-              <select className="tm-form-select" style={{ borderRadius: "12px", height: "42px", borderColor: "#cbd5e1" }} value={skillFilter} onChange={(e) => setSkillFilter(e.target.value)}>
+            <div className="tm-filter-group">
+              <label className="tm-filter-label">Trình độ DUPR</label>
+              <select className="tm-filter-select" value={skillFilter} onChange={(e) => setSkillFilter(e.target.value)}>
                 <option value="ALL">Tất cả trình độ</option>
                 <option value="Under4.0">Dưới 4.0 DUPR</option>
                 <option value="Above4.0">Từ 4.0 DUPR trở lên</option>
               </select>
             </div>
-            <div>
-              <label style={{ fontSize: "0.75rem", fontWeight: "700", display: "block", marginBottom: "6px", color: "#475569" }}>Từ ngày</label>
-              <input type="date" className="tm-form-input" style={{ borderRadius: "12px", height: "42px", borderColor: "#cbd5e1" }} value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
+            <div className="tm-filter-group">
+              <label className="tm-filter-label">Từ ngày</label>
+              <input type="date" className="tm-filter-input-date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
             </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", height: "42px", marginTop: "20px" }}>
+            <div className="tm-filter-reset-wrapper">
               <button 
                 onClick={() => {
                   setSearch("");
@@ -342,8 +465,7 @@ export default function TournamentsPage() {
                   setSkillFilter("ALL");
                   setDateFilter("");
                 }}
-                className="tm-btn" 
-                style={{ background: "transparent", color: "#059669", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}
+                className="tm-filter-reset-btn" 
               >
                 🔄 Đặt lại bộ lọc
               </button>
@@ -351,20 +473,27 @@ export default function TournamentsPage() {
           </div>
         </div>
 
+        {/* Results count indicator */}
+        {!loading && (
+          <span className="tm-filter-results-count">
+            Tìm thấy {filtered.length} giải đấu
+          </span>
+        )}
+
         {error && (
-          <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl mb-8 text-center text-sm">
+          <div className="tm-state-error">
             {error}
           </div>
         )}
 
         {loading ? (
-          <div style={{ padding: "80px 0", textAlign: "center" }}>
-            <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-slate-400 text-sm">Đang tải danh sách giải đấu...</p>
+          <div className="tm-state-container">
+            <div className="tm-spinner"></div>
+            <p className="tm-card-description">Đang tải danh sách giải đấu...</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: "80px 0", textAlign: "center", border: "1px solid #e2e8f0", borderRadius: "20px", background: "#ffffff" }}>
-            <p className="text-slate-500 font-semibold">Không tìm thấy giải đấu nào phù hợp với bộ lọc.</p>
+          <div className="tm-state-empty">
+            <p>Không tìm thấy giải đấu nào phù hợp với bộ lọc.</p>
           </div>
         ) : (
           <div className="tm-grid">
@@ -373,16 +502,14 @@ export default function TournamentsPage() {
               const minFee = tournDivs.length > 0 ? Math.min(...tournDivs.map(d => d.RegistrationFee)) : 0;
               const isOpen = t.Status === "Open" || t.Status === "Published";
               const isOngoing = t.Status === "Ongoing";
-              const isClosed = t.Status === "Closed" || t.Status === "RegistrationClosed";
 
-              
               // Dynamic banner background illustration index
               const bannerImages = [
-                "/images/courts/court1.jpg",
-                "/images/court_illustration.png",
-                "/images/summer_cup_banner.png"
+                "/images/tournament_banner_2026_4_3.jpg",
+                "/images/summer_cup_banner.png",
+                "/images/tournament_banner_2026.png"
               ];
-              const bannerSrc = (t as any).BannerUrl || (t as any).bannerUrl || bannerImages[t.TournamentID % 3];
+              const bannerSrc = t.ImageURL || (t as any).BannerUrl || (t as any).bannerUrl || bannerImages[t.TournamentID % 3];
 
               let statusText = "Đã đóng đăng ký";
               let statusClass = "tm-status-closed";
@@ -397,15 +524,15 @@ export default function TournamentsPage() {
                 statusClass = "tm-status-closed";
               } else if (t.Status === "Cancelled") {
                 statusText = "Đã hủy";
-                statusClass = "tm-status-closed"; // You can use closed style or make a red one
+                statusClass = "tm-status-closed";
               } else if (t.Status === "Completed") {
                 statusText = "Đã kết thúc";
                 statusClass = "tm-status-closed";
               }
 
               return (
-                <div key={t.TournamentID} className="tm-card-new">
-                  <div>
+                <div key={t.TournamentID} className="tm-card">
+                  <div className="tm-card-body">
                     {/* Visual Tournament Banner Image */}
                     <div className="tm-card-image-wrap">
                       <img 
@@ -417,7 +544,7 @@ export default function TournamentsPage() {
                         }}
                       />
                       {/* Status Overlay Badge */}
-                      <span className={`tm-card-status-badge ${statusClass}`} style={isOngoing ? { background: "#3b82f6", color: "#fff" } : {}}>
+                      <span className={`tm-card-status-badge ${statusClass}`}>
                         {statusText}
                       </span>
                       {/* ID tag overlay */}
@@ -426,37 +553,37 @@ export default function TournamentsPage() {
                       </span>
                     </div>
 
-                    <h3 className="tm-card-title" style={{ fontSize: "1.2rem", fontWeight: "850", color: "#0f172a", marginBottom: "8px" }}>
+
+
+                    <h3 className="tm-card-title">
                       {t.TournamentName}
                     </h3>
                     
-                    <p className="tm-card-desc" style={{ fontSize: "0.85rem", color: "#64748b", height: "42px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", textOverflow: "ellipsis", marginBottom: "16px" }}>
+                    <p className="tm-card-description">
                       {t.Description || "Giải đấu phong trào định kỳ hàng tháng nhằm tạo sân chơi cọ xát cho cộng đồng Pickleball..."}
                     </p>
 
-                    <div className="tm-info-list" style={{ borderTop: "1px solid #f1f5f9", paddingTop: "14px", marginBottom: "16px" }}>
-                      <div className="tm-info-item-new">
+                    <div className="tm-card-info">
+                      <div className="tm-card-info-item">
                         <span>📍</span>
-                        <span style={{ fontWeight: "600", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                          {t.Location}
-                        </span>
+                        <span>{t.Location}</span>
                       </div>
-                      <div className="tm-info-item-new">
+                      <div className="tm-card-info-item">
                         <span>📅</span>
                         <span>{formatDate(t.StartDate)} - {formatDate(t.EndDate)}</span>
                       </div>
-                      <div className="tm-info-item-new">
+                      <div className="tm-card-info-item">
                         <span>💰</span>
-                        <span style={{ color: isOpen ? "#059669" : "#64748b", fontWeight: "800" }}>
+                        <span className={isOpen ? "tm-card-fee-open" : ""}>
                           {isOpen ? `Lệ phí từ: ${minFee.toLocaleString()} VNĐ` : (isOngoing ? "Đang thi đấu" : (t.Status === "DrawGenerated" ? "Đã chốt danh sách" : (t.Status === "Cancelled" ? "Đã hủy" : (t.Status === "Completed" ? "Đã kết thúc" : "Hết chỗ đăng ký"))))}
                         </span>
                       </div>
                     </div>
 
                     {tournDivs.length > 0 && (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "16px" }}>
+                      <div className="tm-card-tags">
                         {tournDivs.slice(0, 3).map((d) => (
-                          <span key={d.DivisionID} className="tm-tag-pill" style={{ fontSize: "0.68rem", padding: "4px 8px" }}>
+                          <span key={d.DivisionID} className="tm-card-tag">
                             {d.DivisionName}
                           </span>
                         ))}
@@ -464,20 +591,18 @@ export default function TournamentsPage() {
                     )}
                   </div>
 
-                  <div>
+                  <div className="tm-card-footer">
                     {isOpen ? (
                       <Link 
                         href={`/tournaments/${t.TournamentID}`} 
-                        className="tm-btn tm-btn-primary-outline" 
-                        style={{ width: "100%", borderRadius: "12px", padding: "12px", fontWeight: "750", fontSize: "0.875rem" }}
+                        className="tm-card-btn-primary tm-card-actions" 
                       >
                         Chi tiết & Đăng ký →
                       </Link>
                     ) : (
                       <Link 
                         href={`/tournaments/${t.TournamentID}`} 
-                        className="tm-btn tm-btn-gray-filled" 
-                        style={{ width: "100%", borderRadius: "12px", padding: "12px", fontWeight: "750", fontSize: "0.875rem", display: "inline-block", textAlign: "center" }}
+                        className="tm-card-btn-secondary tm-card-actions" 
                       >
                         Xem kết quả bốc thăm →
                       </Link>
@@ -492,13 +617,13 @@ export default function TournamentsPage() {
         {/* Pagination bar */}
         {!loading && filtered.length > 0 && (
           <div className="tm-pagination">
-            <button className="tm-page-btn" style={{ fontWeight: "700" }}>‹</button>
+            <button className="tm-page-btn">‹</button>
             <button className="tm-page-btn tm-page-btn-active">1</button>
             <button className="tm-page-btn">2</button>
             <button className="tm-page-btn">3</button>
-            <button className="tm-page-btn" style={{ cursor: "default" }}>...</button>
+            <button className="tm-page-btn">...</button>
             <button className="tm-page-btn">10</button>
-            <button className="tm-page-btn" style={{ fontWeight: "700" }}>›</button>
+            <button className="tm-page-btn">›</button>
           </div>
         )}
       </div>

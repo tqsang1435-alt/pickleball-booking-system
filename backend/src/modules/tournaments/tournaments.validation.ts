@@ -15,6 +15,8 @@ export const createTournamentSchema = z.object({
   tournamentStart: z.string().min(1, "Ngày bắt đầu giải đấu là bắt buộc"),
   tournamentEnd: z.string().min(1, "Ngày kết thúc giải đấu là bắt buộc"),
   prizeInfo: z.string().optional(),
+  imageURL: z.string().optional(),
+  organizerName: z.string().optional(),
 }).refine(data => {
   const regStart = new Date(data.registrationStart);
   const regEnd = new Date(data.registrationEnd);
@@ -36,6 +38,8 @@ export const updateTournamentSchema = z.object({
   tournamentStart: z.string().optional(),
   tournamentEnd: z.string().optional(),
   prizeInfo: z.string().optional(),
+  imageURL: z.string().optional(),
+  organizerName: z.string().optional(),
   adminOverride: z.boolean().optional(),
 });
 

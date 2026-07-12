@@ -14,6 +14,19 @@ export default function AdminTournamentsPage() {
   const [success, setSuccess] = useState("");
   const [search, setSearch] = useState("");
   const [isStaff, setIsStaff] = useState(false);
+  const [activeDropdownId, setActiveDropdownId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && target.closest && target.closest(`.${styles.dropdownContainer}`)) {
+        return;
+      }
+      setActiveDropdownId(null);
+    };
+    document.addEventListener("click", handleOutsideClick);
+    return () => document.removeEventListener("click", handleOutsideClick);
+  }, []);
 
   useEffect(() => {
     const user = getUser();
@@ -25,6 +38,7 @@ export default function AdminTournamentsPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     tournamentName: "",
     description: "",
@@ -35,6 +49,7 @@ export default function AdminTournamentsPage() {
     location: "",
     organizerName: "",
     rules: "",
+    imageURL: "",
   });
 
   const loadData = () => {
@@ -65,6 +80,7 @@ export default function AdminTournamentsPage() {
       location: "",
       organizerName: "",
       rules: "",
+      imageURL: "",
     });
     setModalOpen(true);
   };
@@ -81,8 +97,34 @@ export default function AdminTournamentsPage() {
       location: t.Location || "",
       organizerName: t.OrganizerName || "",
       rules: (t as any).PrizeInfo || "",
+      imageURL: t.ImageURL || "",
     });
     setModalOpen(true);
+  };
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+      const res = await fetch(`${baseUrl}/api/tournaments/upload`, {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Upload thất bại");
+
+      setFormData(prev => ({ ...prev, imageURL: data.data.url }));
+    } catch (err: any) {
+      alert("Lỗi tải ảnh lên: " + err.message);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -97,6 +139,7 @@ export default function AdminTournamentsPage() {
         location: formData.location,
         organizerName: formData.organizerName,
         prizeInfo: formData.rules,
+        imageURL: formData.imageURL || null,
         registrationStart: formData.registrationStart ? new Date(formData.registrationStart).toISOString() : undefined,
         registrationEnd: formData.registrationEnd ? new Date(formData.registrationEnd).toISOString() : undefined,
         tournamentStart: formData.startDate ? new Date(formData.startDate).toISOString() : undefined,
@@ -151,6 +194,19 @@ export default function AdminTournamentsPage() {
       loadData();
     } catch (err: any) {
       setError(err.message);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa hoàn toàn giải đấu nháp này? Thao tác này không thể khôi phục.")) return;
+    setError("");
+    setSuccess("");
+    try {
+      await tournamentApi.deleteTournament(id);
+      setSuccess("Đã xóa giải đấu thành công.");
+      loadData();
+    } catch (err: any) {
+      setError(err.message || "Không thể xóa giải đấu.");
     }
   };
 
@@ -265,9 +321,15 @@ export default function AdminTournamentsPage() {
                           ? styles.badgePublished
                           : t.Status === "RegistrationClosed"
                           ? styles.badgeClosed
+                          : t.Status === "Scheduled"
+                          ? styles.badgeScheduled
+                          : t.Status === "Ongoing"
+                          ? styles.badgeOngoing
+                          : t.Status === "Completed"
+                          ? styles.badgeCompleted
                           : t.Status === "Cancelled"
                           ? styles.badgeCancelled
-                          : styles.badgeClosed
+                          : styles.badgeDraft
                       }`}>
                         {t.Status === "Draft"
                           ? "Nháp"
@@ -296,20 +358,59 @@ export default function AdminTournamentsPage() {
                             <button onClick={() => handleOpenEdit(t)} className={styles.btnEdit}>
                               Sửa
                             </button>
-                            {t.Status === "Draft" && (
-                              <button onClick={() => handlePublish(t.TournamentID)} className={styles.btnPublish}>
-                                Công bố
-                              </button>
-                            )}
-                            {t.Status === "Open" && (
-                              <button onClick={() => handleClose(t.TournamentID)} className={styles.btnEdit}>
-                                Đóng ĐK
-                              </button>
-                            )}
-                            {t.Status !== "Cancelled" && t.Status !== "Completed" && (
-                              <button onClick={() => handleCancel(t.TournamentID)} className={styles.btnCancel}>
-                                Hủy giải
-                              </button>
+                            {(t.Status === "Draft" || t.Status === "Open" || (t.Status !== "Cancelled" && t.Status !== "Completed")) && (
+                              <div className={styles.dropdownContainer}>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveDropdownId(activeDropdownId === t.TournamentID ? null : t.TournamentID);
+                                  }}
+                                  className={styles.btnMore}
+                                >
+                                  •••
+                                </button>
+                                {activeDropdownId === t.TournamentID && (
+                                  <div className={styles.dropdownMenu}>
+                                    {t.Status === "Draft" && (
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={() => handlePublish(t.TournamentID)}
+                                          className={`${styles.dropdownItem} ${styles.dropdownItemSuccess}`}
+                                        >
+                                          🚀 Công bố
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDelete(t.TournamentID)}
+                                          className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+                                        >
+                                          🗑️ Xóa nháp
+                                        </button>
+                                      </>
+                                    )}
+                                    {t.Status === "Open" && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleClose(t.TournamentID)}
+                                        className={styles.dropdownItem}
+                                      >
+                                        🔒 Đóng ĐK
+                                      </button>
+                                    )}
+                                    {t.Status !== "Cancelled" && t.Status !== "Completed" && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCancel(t.TournamentID)}
+                                        className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+                                      >
+                                        🚫 Hủy giải
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             )}
                           </>
                         )}
@@ -344,6 +445,40 @@ export default function AdminTournamentsPage() {
                   value={formData.tournamentName}
                   onChange={(e) => setFormData({ ...formData, tournamentName: e.target.value })}
                 />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Ảnh banner giải đấu</label>
+                {formData.imageURL ? (
+                  <div className={styles.bannerPreviewContainer}>
+                    <img src={formData.imageURL} alt="Banner Preview" className={styles.bannerPreview} />
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, imageURL: "" }))}
+                      className={styles.btnRemoveBanner}
+                    >
+                      Gỡ ảnh banner
+                    </button>
+                  </div>
+                ) : (
+                  <div className={styles.uploadBox}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      id="banner-upload"
+                      className={styles.uploadInput}
+                      disabled={uploading}
+                    />
+                    <label htmlFor="banner-upload" className={styles.uploadLabel}>
+                      {uploading ? (
+                        <span>⏳ Đang tải ảnh lên...</span>
+                      ) : (
+                        <span>📸 Chọn ảnh làm banner (JPG, PNG, WEBP tối đa 5MB)</span>
+                      )}
+                    </label>
+                  </div>
+                )}
               </div>
 
               <div className={styles.formGroup}>

@@ -372,7 +372,12 @@ export async function updateTournament(id: number, data: UpdateTournamentInput, 
 
   // Không cho sửa ngày nếu đã Ongoing
   if (tournament.Status === TOURNAMENT_STATUS.ONGOING) {
-    if (data.registrationStart || data.registrationEnd || data.tournamentStart || data.tournamentEnd) {
+    const isRegStartChanged = data.registrationStart && new Date(data.registrationStart).getTime() !== new Date(tournament.RegistrationStart).getTime();
+    const isRegEndChanged = data.registrationEnd && new Date(data.registrationEnd).getTime() !== new Date(tournament.RegistrationEnd).getTime();
+    const isTourStartChanged = data.tournamentStart && new Date(data.tournamentStart).getTime() !== new Date(tournament.TournamentStart).getTime();
+    const isTourEndChanged = data.tournamentEnd && new Date(data.tournamentEnd).getTime() !== new Date(tournament.TournamentEnd).getTime();
+
+    if (isRegStartChanged || isRegEndChanged || isTourStartChanged || isTourEndChanged) {
       throw Object.assign(
         new Error("Không thể thay đổi ngày khi giải đấu đang diễn ra (Ongoing)"),
         { statusCode: 400 }
@@ -384,11 +389,12 @@ export async function updateTournament(id: number, data: UpdateTournamentInput, 
   if (process.env.ENABLE_STRICT_VALIDATIONS === "true") {
     const hoursToStart = (new Date(tournament.TournamentStart).getTime() - Date.now()) / (1000 * 60 * 60);
     if (hoursToStart > 0 && hoursToStart < 24) {
-      const isModifyingCriticalFields =
-        data.tournamentName ||
-        data.location ||
-        data.tournamentStart ||
-        data.tournamentEnd;
+      const isNameChanged = data.tournamentName && data.tournamentName !== tournament.TournamentName;
+      const isLocationChanged = data.location && data.location !== tournament.Location;
+      const isStartChanged = data.tournamentStart && new Date(data.tournamentStart).getTime() !== new Date(tournament.TournamentStart).getTime();
+      const isEndChanged = data.tournamentEnd && new Date(data.tournamentEnd).getTime() !== new Date(tournament.TournamentEnd).getTime();
+
+      const isModifyingCriticalFields = isNameChanged || isLocationChanged || isStartChanged || isEndChanged;
 
       if (isModifyingCriticalFields && !data.adminOverride) {
         throw Object.assign(
@@ -562,6 +568,39 @@ export async function cancelTournament(id: number, userId: number) {
   }
 
   return cancelled;
+}
+
+/**
+ * Delete Tournament (only if Status is Draft)
+ */
+export async function deleteTournament(id: number, userId: number) {
+  const tournament = await tournamentRepo.findTournamentById(id);
+  if (!tournament) {
+    throw Object.assign(new Error("Không tìm thấy giải đấu"), { statusCode: 404 });
+  }
+
+  if (tournament.Status !== TOURNAMENT_STATUS.DRAFT) {
+    throw Object.assign(
+      new Error("Chỉ được phép xóa giải đấu ở trạng thái Nháp (Draft). Các giải đấu khác vui lòng thực hiện Hủy giải."),
+      { statusCode: 400 }
+    );
+  }
+
+  const success = await tournamentRepo.softDeleteTournament(id);
+  if (!success) {
+    throw Object.assign(new Error("Không thể xóa giải đấu"), { statusCode: 500 });
+  }
+
+  // Write audit log
+  await createAuditLog({
+    userId,
+    actionName: "DELETE_TOURNAMENT",
+    tableName: "Tournaments",
+    entityId: id,
+    description: `Admin xóa giải đấu ID: ${id} (Trạng thái Nháp)`,
+  });
+
+  return { success: true };
 }
 
 // ─── DIVISIONS ───────────────────────────────────────────────

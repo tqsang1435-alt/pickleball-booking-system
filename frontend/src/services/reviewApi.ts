@@ -45,4 +45,16 @@ export const reviewApi = {
     });
     return res.data;
   },
+
+  checkEligibility: async (params: { courtId?: number; coachId?: number }, token?: string) => {
+    const query = new URLSearchParams();
+    if (params.courtId) query.append("courtId", String(params.courtId));
+    if (params.coachId) query.append("coachId", String(params.coachId));
+    
+    const res = await apiClient<ApiResponse<{ canReview: boolean; bookingId?: number }>>(
+      `/api/reviews/check-eligibility?${query.toString()}`,
+      { token }
+    );
+    return res.data;
+  },
 };

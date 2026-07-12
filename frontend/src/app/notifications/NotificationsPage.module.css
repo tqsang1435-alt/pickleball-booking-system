@@ -1,0 +1,121 @@
+.page {
+  width: min(860px, calc(100% - 2rem));
+  margin: clamp(1.5rem, 5vw, 3rem) auto;
+  color: var(--pcs-neutral-900);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  line-height: var(--pcs-line-height-tight);
+  letter-spacing: -0.04em;
+}
+
+.header p {
+  margin: 0.375rem 0 0;
+  color: var(--pcs-neutral-600);
+  font-size: var(--pcs-font-size-sm);
+  line-height: var(--pcs-line-height-normal);
+}
+
+.list {
+  overflow: hidden;
+  border: 1px solid var(--pcs-border-subtle);
+  border-radius: var(--pcs-radius-lg);
+  background: var(--pcs-surface);
+  box-shadow: var(--pcs-shadow-xs);
+}
+
+.item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border: 0;
+  border-bottom: 1px solid var(--pcs-border-subtle);
+  background: var(--pcs-surface);
+  text-align: left;
+  cursor: default;
+  transition: background-color 0.16s ease;
+}
+
+.item:last-child {
+  border-bottom: 0;
+}
+
+.itemUnread {
+  background: var(--pcs-brand-primary-light);
+  cursor: pointer;
+}
+
+.itemUnread:hover {
+  background: #dcfce7;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.unreadDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--pcs-brand-primary);
+  flex-shrink: 0;
+}
+
+.itemTitle {
+  margin: 0;
+  color: var(--pcs-neutral-900);
+  font-size: var(--pcs-font-size-md);
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.itemMessage {
+  margin: 0.375rem 0 0;
+  color: var(--pcs-neutral-700);
+  font-size: var(--pcs-font-size-sm);
+  line-height: var(--pcs-line-height-normal);
+}
+
+.itemTime {
+  color: var(--pcs-neutral-500);
+  font-size: var(--pcs-font-size-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .page {
+    width: min(100% - 1rem, 860px);
+    margin-top: 1rem;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .item {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    padding: 1rem;
+  }
+
+  .itemTime {
+    white-space: normal;
+  }
+}

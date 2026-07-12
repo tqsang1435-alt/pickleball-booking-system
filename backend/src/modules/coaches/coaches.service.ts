@@ -284,7 +284,7 @@ export async function getScheduleOptions(userId: number, date: string) {
     return { date, startTimes: [], occupiedHours: Array.from(occupiedSet) };
   }
 
-  const { SYSTEM_CONFIG } = require("@/constants/system");
+  const { SYSTEM_CONFIG } = require("../../constants/system");
   // Coach can only start a slot up to CLOSING_HOUR - 1 (i.e. 22:00 if closing is 23:00)
   for (let h = SYSTEM_CONFIG.OPENING_HOUR; h < SYSTEM_CONFIG.CLOSING_HOUR; h++) {
     if (isToday && h <= currentHour) continue;

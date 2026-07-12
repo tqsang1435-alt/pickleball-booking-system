@@ -15,6 +15,8 @@ export interface Tournament {
   TournamentEnd: string;
   Status: string;
   PrizeInfo?: string;
+  ImageURL?: string;
+  OrganizerName?: string;
   CreatedBy: number;
   CreatedAt: string;
   UpdatedAt: string;
@@ -202,6 +204,8 @@ export interface CreateTournamentInput {
   tournamentStart: string;
   tournamentEnd: string;
   prizeInfo?: string;
+  imageURL?: string;
+  organizerName?: string;
 }
 
 export interface UpdateTournamentInput {
@@ -213,6 +217,8 @@ export interface UpdateTournamentInput {
   tournamentStart?: string;
   tournamentEnd?: string;
   prizeInfo?: string;
+  imageURL?: string;
+  organizerName?: string;
   adminOverride?: boolean;
 }
 

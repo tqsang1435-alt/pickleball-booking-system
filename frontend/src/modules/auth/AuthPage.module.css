@@ -355,11 +355,3 @@
     gap: 10px;
   }
 }
-.avatar {
-  color: #ffffff;
-}
-
-.inputGroup svg {
-  color: var(--pcs-brand-primary);
-  flex-shrink: 0;
-}

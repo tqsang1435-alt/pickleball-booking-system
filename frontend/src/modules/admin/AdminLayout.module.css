@@ -217,6 +217,7 @@
   background: #f8fafc;
   overflow-y: auto;
   height: 100vh;
+  min-width: 0;
 }
 
 .userProfileBottom {
@@ -310,4 +311,127 @@
 .logoutBtn:hover {
   background: #ef444415;
   color: #f87171;
+}
+
+@media (max-width: 860px) {
+  .admin,
+  .adminCollapsed {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: var(--pcs-page-bg);
+  }
+
+  .sidebar,
+  .sidebarCollapsed {
+    position: sticky;
+    top: 0;
+    z-index: 80;
+    width: 100%;
+    height: auto;
+    max-height: 42vh;
+    padding: 12px 14px;
+    align-items: stretch;
+    border-right: 0;
+    border-bottom: 1px solid #1e293b;
+    overflow-y: auto;
+  }
+
+  .logo,
+  .sidebarCollapsed .logo {
+    margin-bottom: 12px;
+    padding: 0;
+    justify-content: space-between;
+  }
+
+  .logoMain,
+  .sidebarCollapsed .logoMain {
+    width: auto;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .toggleBtn {
+    display: none;
+  }
+
+  .nav {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    flex: 0 0 auto;
+    scrollbar-width: thin;
+  }
+
+  .navSection {
+    min-width: max-content;
+    gap: 6px;
+  }
+
+  .sectionHeader,
+  .sidebarCollapsed .sectionHeader {
+    max-height: 20px;
+    margin: 0 0 4px;
+    padding-left: 4px;
+    opacity: 1;
+    font-size: 8px;
+  }
+
+  .sectionList {
+    flex-direction: row;
+    gap: 6px;
+  }
+
+  .nav a,
+  .sidebarCollapsed .nav a {
+    min-height: 38px;
+    justify-content: center;
+    padding: 8px 10px;
+  }
+
+  .nav a span,
+  .sidebarCollapsed .nav a span {
+    max-width: 120px;
+    opacity: 1;
+    overflow: visible;
+  }
+
+  .userProfileBottom {
+    display: none;
+  }
+
+  .main {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 520px) {
+  .sidebar,
+  .sidebarCollapsed {
+    max-height: 46vh;
+    padding: 10px 12px;
+  }
+
+  .logoTitle {
+    font-size: 15px;
+  }
+
+  .logoSubtitle {
+    font-size: 8px;
+  }
+
+  .nav a,
+  .sidebarCollapsed .nav a {
+    font-size: 12px;
+    padding: 8px;
+  }
+
+  .nav a span,
+  .sidebarCollapsed .nav a span {
+    max-width: 96px;
+  }
 }

@@ -2,7 +2,9 @@
 
 .page {
   min-height: 100vh;
-  background-color: var(--pcs-neutral-50);
+  background:
+    radial-gradient(circle at top right, rgba(35, 190, 120, 0.07), transparent 35%),
+    linear-gradient(180deg, #F7FAF5 0%, #F1F7EF 100%);
   font-family: inherit;
   padding: 30px 0 60px;
 }

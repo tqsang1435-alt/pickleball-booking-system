@@ -59,9 +59,33 @@
   --pcs-radius-xl: 16px;
 
   /* Shadows */
-  --pcs-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --pcs-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --pcs-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  --pcs-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --pcs-shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  --pcs-shadow-md: 0 10px 24px -18px rgba(15, 23, 42, 0.35), 0 2px 8px rgba(15, 23, 42, 0.06);
+  --pcs-shadow-lg: 0 24px 64px -32px rgba(15, 23, 42, 0.45), 0 8px 20px rgba(15, 23, 42, 0.08);
+
+  /* Surfaces */
+  --pcs-page-bg: #f8fafc;
+  --pcs-surface: #ffffff;
+  --pcs-surface-muted: #f8fafc;
+  --pcs-border-subtle: #eef2f7;
+  --pcs-border-default: #dbe3ee;
+
+  /* Layout */
+  --pcs-content-max: 1200px;
+  --pcs-card-padding: 1.25rem;
+  --pcs-header-height: 64px;
+
+  /* Typography */
+  --pcs-font-size-xs: 0.75rem;
+  --pcs-font-size-sm: 0.875rem;
+  --pcs-font-size-md: 1rem;
+  --pcs-font-size-lg: 1.125rem;
+  --pcs-font-size-xl: 1.25rem;
+  --pcs-font-size-2xl: 1.5rem;
+  --pcs-font-size-3xl: 1.875rem;
+  --pcs-line-height-tight: 1.2;
+  --pcs-line-height-normal: 1.5;
 
   /* Spacing */
   --pcs-spacing-xs: 0.25rem;
@@ -79,7 +103,7 @@ html {
 }
 
 body {
-  background: #fbfff5;
+  background: #F4F8F2;
   color: var(--text);
 }
 
@@ -90,8 +114,14 @@ a {
 
 button,
 input,
-select {
+select,
+textarea {
   font-family: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(5, 150, 105, 0.32);
+  outline-offset: 2px;
 }
 
 button {

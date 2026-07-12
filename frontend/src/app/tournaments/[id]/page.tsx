@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { tournamentApi, Tournament, TournamentDivision } from "@/services/tournamentApi";
 import { getMyProfile } from "@/services/profileApi";
-import { getPlayerProfile } from "@/services/matchingApi";
+import { getPlayerProfile, getSuitableTeammates, sendInvitation } from "@/services/matchingApi";
+import { LuTrophy, LuClock, LuUser, LuCalendar, LuPhone, LuUsers, LuFileText, LuMapPin, LuBuilding, LuWallet, LuShieldCheck, LuHandshake, LuGift, LuFlame, LuSparkles } from "react-icons/lu";
 import "../../tournaments.css";
 
 function PendingRegistrationBanner({ reg, handleRetryPayment, registerLoading, onExpired }: { reg: any; handleRetryPayment: any; registerLoading: boolean; onExpired: () => void }) {
@@ -34,66 +35,100 @@ function PendingRegistrationBanner({ reg, handleRetryPayment, registerLoading, o
 
   return (
     <div style={{
-      background: "#fffbeb",
-      border: "1px solid #fef3c7",
-      borderRadius: "16px",
+      background: "linear-gradient(135deg, #fffbeb 0%, #fffbeb 100%)",
+      border: "1.5px solid #fef3c7",
+      borderRadius: "20px",
       padding: "24px",
-      marginBottom: "20px",
-      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+      marginBottom: "24px",
+      boxShadow: "0 10px 25px rgba(245, 158, 11, 0.05)",
       display: "flex",
       flexDirection: "column",
-      gap: "16px"
+      gap: "20px",
+      animation: "bannerSlideUpIn 0.4s ease-out"
     }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-        <span style={{ fontSize: "24px" }}>⚠️</span>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: "16px" }}>
+        <span style={{ fontSize: "36px", lineHeight: 1 }}>⏳</span>
         <div style={{ flex: 1 }}>
-          <h4 style={{ margin: "0 0 4px 0", fontSize: "1.1rem", fontWeight: "750", color: "#92400e" }}>
+          <h4 style={{ margin: "0 0 6px 0", fontSize: "1.15rem", fontWeight: "900", color: "#92400e" }}>
             Đăng ký nội dung {reg.DivisionName} đang chờ thanh toán
           </h4>
-          <p style={{ margin: "0", fontSize: "0.9rem", color: "#b45309", lineHeight: "1.5" }}>
+          <p style={{ margin: "0 0 10px 0", fontSize: "0.9rem", color: "#b45309", lineHeight: "1.6" }}>
             Bạn đã đăng ký tham gia nội dung <strong>{reg.DivisionName}</strong> với tên đội <strong>{reg.TeamName}</strong>. 
-            Vui lòng hoàn tất thanh toán trong vòng 10 phút để giữ chỗ chính thức.
+            Vui lòng hoàn tất thanh toán để giữ chỗ chính thức.
           </p>
           {timeLeft && (
-            <p style={{ margin: "8px 0 0 0", fontSize: "0.875rem", fontWeight: "bold", color: "#ef4444" }}>
+            <div style={{ 
+              display: "inline-flex", 
+              alignItems: "center", 
+              gap: "6px", 
+              background: "#fee2e2", 
+              color: "#ef4444", 
+              padding: "6px 12px", 
+              borderRadius: "8px", 
+              fontSize: "0.85rem", 
+              fontWeight: "800" 
+            }}>
               ⏱️ Thời gian giữ chỗ còn lại: {timeLeft}
-            </p>
+            </div>
           )}
-          
-          {/* Note section */}
-          <div style={{ 
-            fontSize: "0.8rem", 
-            color: "#92400e", 
-            background: "#fffbeb", 
-            border: "1px solid #fde68a",
-            borderRadius: "12px",
-            padding: "12px 16px",
-            marginTop: "12px",
-            lineHeight: "1.5"
-          }}>
-            <strong style={{ color: "#92400e", display: "block", marginBottom: "4px" }}>⚠️ Lưu ý về quy định giải đấu:</strong>
-            <ul style={{ margin: 0, paddingLeft: "16px" }}>
-              <li>Nếu Ban tổ chức kiểm tra phát hiện điểm DUPR hoặc thông tin cá nhân khai báo không đúng sự thật, hồ sơ đăng ký sẽ bị <strong>Từ chối</strong> và Ban tổ chức sẽ thực hiện hoàn trả lệ phí theo quy chế.</li>
-              <li>Trường hợp vận động viên chủ động hủy đăng ký sau khi đã thanh toán thành công sẽ <strong>Không được hoàn trả lệ phí</strong>.</li>
-            </ul>
-          </div>
         </div>
       </div>
-      <div style={{ display: "flex", gap: "12px", borderTop: "1px solid #fde68a", paddingTop: "16px" }}>
+      
+      <div style={{ display: "flex", gap: "12px", borderTop: "1px solid #fde68a", paddingTop: "20px", flexWrap: "wrap" }}>
         <button
+          type="button"
           onClick={() => handleRetryPayment(reg.RegistrationID, reg.RegistrationFee)}
           disabled={registerLoading || isExpired}
-          className="tm-btn tm-btn-primary"
+          className="tm-btn"
           style={{ 
-            padding: "10px 24px", 
+            padding: "12px 28px", 
             fontSize: "0.9rem",
-            opacity: (registerLoading || isExpired) ? 0.6 : 1,
+            background: isExpired ? "#cbd5e1" : "linear-gradient(135deg, #059669, #047857)",
+            color: isExpired ? "#64748b" : "#ffffff",
+            fontWeight: "800",
+            borderRadius: "12px",
+            border: "none",
             cursor: (registerLoading || isExpired) ? "not-allowed" : "pointer",
-            backgroundColor: isExpired ? "#cbd5e1" : undefined,
-            color: isExpired ? "#64748b" : undefined
+            boxShadow: isExpired ? "none" : "0 4px 12px rgba(5, 150, 105, 0.2)"
           }}
         >
-          {registerLoading ? "Đang xử lý..." : isExpired ? "Đã hết hạn thanh toán" : `Thanh toán ngay (${reg.RegistrationFee.toLocaleString()} VNĐ)`}
+          {registerLoading ? "Đang xử lý..." : isExpired ? "Đã hết hạn" : `Thanh toán ngay (${reg.RegistrationFee.toLocaleString()} VNĐ)`}
+        </button>
+        
+        <button
+          type="button"
+          onClick={() => window.location.href = '/bookings'}
+          className="tm-btn"
+          style={{
+            padding: "12px 20px",
+            fontSize: "0.9rem",
+            background: "#ffffff",
+            color: "#64748b",
+            border: "1.5px solid #e2e8f0",
+            borderRadius: "12px",
+            fontWeight: "700",
+            cursor: "pointer"
+          }}
+        >
+          Xem hồ sơ
+        </button>
+
+        <button
+          type="button"
+          onClick={() => window.location.href = 'mailto:support@pickleclub.com'}
+          className="tm-btn"
+          style={{
+            padding: "12px 20px",
+            fontSize: "0.9rem",
+            background: "transparent",
+            color: "#b45309",
+            border: "none",
+            borderRadius: "12px",
+            fontWeight: "700",
+            cursor: "pointer"
+          }}
+        >
+          Liên hệ BTC 💬
         </button>
       </div>
     </div>
@@ -103,26 +138,109 @@ function PendingRegistrationBanner({ reg, handleRetryPayment, registerLoading, o
 function ConfirmedRegistrationBanner({ reg }: { reg: any }) {
   return (
     <div style={{
-      background: "#f0fdf4",
-      border: "1px solid #dcfce7",
-      borderRadius: "16px",
+      background: "linear-gradient(135deg, #f0fdf4 0%, #e8fbf0 100%)",
+      border: "1.5px solid #a7f3d0",
+      borderRadius: "20px",
       padding: "24px",
-      marginBottom: "20px",
-      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+      marginBottom: "24px",
+      boxShadow: "0 10px 25px rgba(16, 185, 129, 0.05)",
       display: "flex",
-      alignItems: "flex-start",
-      gap: "12px"
+      flexDirection: "column",
+      gap: "20px",
+      animation: "bannerSlideUpIn 0.4s ease-out"
     }}>
-      <span style={{ fontSize: "24px" }}>✅</span>
-      <div>
-        <h4 style={{ margin: "0 0 4px 0", fontSize: "1.1rem", fontWeight: "750", color: "#166534" }}>
-          Đã đăng ký thành công nội dung {reg.DivisionName}
-        </h4>
-        <p style={{ margin: "0", fontSize: "0.9rem", color: "#15803d", lineHeight: "1.5" }}>
-          Bạn đã đăng ký nội dung <strong>{reg.DivisionName}</strong> thành công (Mã đội: <strong>{reg.TeamCode}</strong>). 
-          Trạng thái hồ sơ: <strong>Đã duyệt & Xác nhận tham gia</strong>.
-        </p>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: "16px" }}>
+        <span style={{ fontSize: "36px", lineHeight: 1 }}>✅</span>
+        <div style={{ flex: 1 }}>
+          <h4 style={{ margin: "0 0 6px 0", fontSize: "1.15rem", fontWeight: "900", color: "#166534" }}>
+            Đã đăng ký thành công nội dung {reg.DivisionName}
+          </h4>
+          <p style={{ margin: "0", fontSize: "0.9rem", color: "#15803d", lineHeight: "1.6" }}>
+            Bạn đã đăng ký nội dung <strong>{reg.DivisionName}</strong> thành công (Mã đội: <strong>{reg.TeamCode}</strong>). 
+            Trạng thái hồ sơ: <span style={{ background: "#dcfce7", color: "#166534", padding: "2px 8px", borderRadius: "6px", fontWeight: "700", fontSize: "0.8rem" }}>Đã duyệt & Xác nhận tham gia</span>.
+          </p>
+        </div>
       </div>
+      
+      <div style={{ display: "flex", gap: "12px", borderTop: "1px solid #a7f3d0", paddingTop: "20px", flexWrap: "wrap" }}>
+        <button
+          type="button"
+          onClick={() => window.location.href = '/bookings'}
+          className="tm-btn"
+          style={{
+            padding: "12px 28px",
+            fontSize: "0.9rem",
+            background: "linear-gradient(135deg, #059669, #047857)",
+            color: "#ffffff",
+            fontWeight: "800",
+            borderRadius: "12px",
+            border: "none",
+            cursor: "pointer",
+            boxShadow: "0 4px 12px rgba(5, 150, 105, 0.2)"
+          }}
+        >
+          Xem hồ sơ đăng ký
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            alert("Đang khởi tạo tải xuống file PDF phiếu xác nhận đăng ký giải đấu...");
+          }}
+          className="tm-btn"
+          style={{
+            padding: "12px 20px",
+            fontSize: "0.9rem",
+            background: "#ffffff",
+            color: "#64748b",
+            border: "1.5px solid #e2e8f0",
+            borderRadius: "12px",
+            fontWeight: "700",
+            cursor: "pointer"
+          }}
+        >
+          Tải xác nhận 📥
+        </button>
+
+        <button
+          type="button"
+          onClick={() => window.location.href = 'mailto:support@pickleclub.com'}
+          className="tm-btn"
+          style={{
+            padding: "12px 20px",
+            fontSize: "0.9rem",
+            background: "transparent",
+            color: "#166534",
+            border: "none",
+            borderRadius: "12px",
+            fontWeight: "700",
+            cursor: "pointer"
+          }}
+        >
+          Liên hệ BTC 💬
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AccordionItem({ title, content }: { title: string; content: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className="td-accordion-item">
+      <button 
+        type="button" 
+        className="td-accordion-trigger" 
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span>{title}</span>
+        <span className="td-accordion-arrow">{isOpen ? "▲" : "▼"}</span>
+      </button>
+      {isOpen && (
+        <div className="td-accordion-content">
+          <p style={{ margin: 0 }}>{content}</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -136,9 +254,11 @@ export default function TournamentDetailPage({ params }: { params: Promise<{ id:
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [divisions, setDivisions] = useState<TournamentDivision[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"info" | "divisions" | "bracket" | "standings">("info");
+  const [activeTab, setActiveTab] = useState<"info" | "divisions" | "bracket" | "standings" | "rules">("info");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [divisionFilter, setDivisionFilter] = useState<string>("All");
+  const [onlyAvailable, setOnlyAvailable] = useState<boolean>(false);
 
   // Bracket & matches data
   const [selectedDivisionId, setSelectedDivisionId] = useState<number | null>(null);
@@ -155,6 +275,15 @@ export default function TournamentDetailPage({ params }: { params: Promise<{ id:
 
   // Mapped registration result details
   const [registrationResult, setRegistrationResult] = useState<any>(null);
+
+  // Matching suitable players modal states
+  const [matchingModalOpen, setMatchingModalOpen] = useState(false);
+  const [suitablePlayers, setSuitablePlayers] = useState<any[]>([]);
+  const [loadingPlayers, setLoadingPlayers] = useState(false);
+  const [expandedPlayerIds, setExpandedPlayerIds] = useState<number[]>([]);
+  const [invitationStatus, setInvitationStatus] = useState<Record<number, { sending: boolean; sent: boolean; error?: string }>>({});
+  const [customInviteMsg, setCustomInviteMsg] = useState("");
+  const [invitingPlayer, setInvitingPlayer] = useState<any | null>(null);
 
   // Form states for Athlete 1 and Athlete 2
   const [athlete1, setAthlete1] = useState({
@@ -266,12 +395,19 @@ export default function TournamentDetailPage({ params }: { params: Promise<{ id:
   useEffect(() => {
     if (!selectedDivisionId) return;
 
-    if (activeTab === "bracket") {
-      tournamentApi
-        .getMatches(tournamentId, selectedDivisionId)
-        .then((data) => setMatches(data))
-        .catch((err) => console.error("Error loading matches", err));
-    } else if (activeTab === "standings") {
+    tournamentApi
+      .getMatches(tournamentId, selectedDivisionId)
+      .then((data) => setMatches(data || []))
+      .catch((err) => {
+        console.error("Error loading matches", err);
+        setMatches([]);
+      });
+  }, [selectedDivisionId, tournamentId]);
+
+  useEffect(() => {
+    if (!selectedDivisionId) return;
+
+    if (activeTab === "standings") {
       tournamentApi
         .getStandings(tournamentId, selectedDivisionId)
         .then((data) => setStandings(data))
@@ -548,6 +684,63 @@ export default function TournamentDetailPage({ params }: { params: Promise<{ id:
     }
   };
 
+  const handleOpenMatchingModal = async () => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("pickleclub_token") : null;
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+    setMatchingModalOpen(true);
+    setLoadingPlayers(true);
+    try {
+      const data = await getSuitableTeammates(token);
+      setSuitablePlayers(data || []);
+    } catch (err) {
+      console.error("Error loading suitable players:", err);
+    } finally {
+      setLoadingPlayers(false);
+    }
+  };
+
+  const handleToggleExpandPlayer = (playerId: number) => {
+    setExpandedPlayerIds(prev => 
+      prev.includes(playerId) ? prev.filter(id => id !== playerId) : [...prev, playerId]
+    );
+  };
+
+  const handleSendInviteToPlayer = async (player: any) => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("pickleclub_token") : null;
+    if (!token) {
+      alert("Vui lòng đăng nhập để gửi lời mời.");
+      return;
+    }
+    setInvitationStatus(prev => ({
+      ...prev,
+      [player.UserID]: { sending: true, sent: false }
+    }));
+    try {
+      const message = customInviteMsg.trim() || `Chào bạn, mình muốn gửi lời mời ghép cặp cùng tham gia giải đấu ${tournament?.TournamentName || ""} nhé!`;
+      await sendInvitation(token, {
+        receiverId: player.UserID,
+        groupId: null,
+        invitationType: "InviteToPlay",
+        message: message,
+      });
+      setInvitationStatus(prev => ({
+        ...prev,
+        [player.UserID]: { sending: false, sent: true }
+      }));
+      setInvitingPlayer(null);
+      setCustomInviteMsg("");
+    } catch (err: any) {
+      console.error("Error sending invitation:", err);
+      setInvitationStatus(prev => ({
+        ...prev,
+        [player.UserID]: { sending: false, sent: false, error: err.message || "Gửi lời mời thất bại. Có thể hai người đã có lời mời chờ xử lý hoặc đã ghép cặp." }
+      }));
+    }
+  };
+
   if (loading) {
     return (
       <div className="tm-body min-h-screen flex flex-col items-center justify-center gap-4" style={{ height: "100vh" }}>
@@ -567,109 +760,98 @@ export default function TournamentDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="tm-body min-h-screen pb-20">
-      {/* Redesigned Premium Header Banner */}
-      <div className="container" style={{ marginTop: "24px" }}>
-        <div style={{ 
-          width: "100%", 
-          borderRadius: "24px", 
-          overflow: "hidden", 
-          position: "relative",
-          background: "linear-gradient(135deg, #064e3b 0%, #022c22 100%)",
-          padding: "56px 48px",
-          color: "#ffffff",
-          boxShadow: "0 20px 40px rgba(2, 44, 34, 0.15)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
-          minHeight: "280px",
-          justifyContent: "center",
-          border: "1px solid #047857"
-        }}>
-          {/* Subtle Pickleball Graphic/Circle Background on the right */}
-          <div style={{
-            position: "absolute",
-            right: "-50px",
-            bottom: "-50px",
-            width: "300px",
-            height: "300px",
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(0, 0, 0, 0) 70%)",
-            pointerEvents: "none"
-          }} />
-          <div style={{
-            position: "absolute",
-            right: "8%",
-            top: "12%",
-            fontSize: "10rem",
-            opacity: 0.05,
-            fontWeight: 900,
-            pointerEvents: "none",
-            userSelect: "none"
-          }}>
-            🏓
-          </div>
+      {/* Redesigned Premium Header Banner with surrounding glass effects */}
+      <div className="td-banner-wrapper container">
+        {/* Floating surrounding glass shards (hiệu ứng xung quanh) */}
+        <div className="td-banner-shard-1"></div>
+        <div className="td-banner-shard-2"></div>
+        
+        <div className="td-banner-container" style={tournament.ImageURL ? {
+          backgroundImage: `linear-gradient(to right, #053225 0%, #053225 40%, rgba(5, 50, 37, 0.3) 75%, rgba(5, 50, 37, 0) 100%), url(${tournament.ImageURL})`,
+          backgroundSize: "60% 100%",
+          backgroundPosition: "right center",
+          backgroundRepeat: "no-repeat",
+          backgroundColor: "#053225",
+        } : undefined}>
+          {/* Subtle Background Elements */}
+          <div className="td-banner-bg-lines"></div>
+          <div className="td-banner-bg-mesh"></div>
+          <div className="td-banner-glow"></div>
+          <div className="td-banner-watermark">CHAMPIONSHIP</div>
 
-          {/* Badge */}
-          <div style={{ display: "inline-block", alignSelf: "flex-start" }}>
-            <span style={{ 
-              background: "rgba(16, 185, 129, 0.2)", 
-              color: "#34d399", 
-              padding: "6px 16px", 
-              borderRadius: "20px", 
-              fontSize: "0.75rem", 
-              fontWeight: "800",
-              textTransform: "uppercase",
-              letterSpacing: "1px",
-              border: "1px solid rgba(52, 211, 153, 0.3)",
-              backdropFilter: "blur(4px)"
-            }}>
-              MÙA GIẢI {new Date(tournament.StartDate || Date.now()).getFullYear()}
-            </span>
-          </div>
+          <div className="td-banner-container-split">
+            {/* Left Column */}
+            <div className="td-banner-left-col">
+              {/* Badge */}
+              <div style={{ display: "inline-block", alignSelf: "flex-start", marginBottom: "16px" }}>
+                <span className="td-season-badge">
+                  MÙA GIẢI {new Date(tournament.StartDate || Date.now()).getFullYear()}
+                </span>
+              </div>
 
-          {/* Title */}
-          <h1 style={{ 
-            fontSize: "2.65rem", 
-            fontWeight: "900", 
-            margin: 0, 
-            lineHeight: "1.2",
-            color: "#ffffff",
-            maxWidth: "850px"
-          }}>
-            {tournament.TournamentName}
-          </h1>
+              {/* Title */}
+              <h1 className="td-banner-title">
+                {tournament.TournamentName}
+              </h1>
 
-          {/* Subtitle */}
-          <p style={{ 
-            fontSize: "1rem", 
-            color: "#94a3b8", 
-            margin: 0, 
-            maxWidth: "700px", 
-            lineHeight: "1.6"
-          }}>
-            {tournament.Description || "Sân chơi Pickleball chuyên nghiệp quy tụ những tay vợt hàng đầu. Tham gia ngay để khẳng định đẳng cấp."}
-          </p>
+              {/* Short desc */}
+              <p className="td-banner-desc" style={{ marginTop: "12px", marginBottom: "8px" }}>
+                “Giải đấu pickleball phong trào dành cho các tay vợt muốn giao lưu, thử sức và chinh phục danh hiệu mùa hè.”
+              </p>
 
-          {/* Location and Date Specs */}
-          <div style={{ 
-            display: "flex", 
-            gap: "24px", 
-            flexWrap: "wrap", 
-            marginTop: "16px",
-            fontSize: "0.925rem",
-            color: "#cbd5e1",
-            borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-            paddingTop: "20px"
-          }}>
-            <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ color: "#34d399" }}>📅</span> <b>Thời gian:</b> {formatDate(tournament.StartDate)} - {formatDate(tournament.EndDate)}
-            </span>
-            <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ color: "#34d399" }}>📍</span> <b>Địa điểm:</b> {tournament.Location}
-            </span>
-            <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ color: "#ef4444" }}>⏱️</span> <b>Hạn đăng ký:</b> {formatDate(tournament.RegistrationEnd)}
-            </span>
+              {/* Info chips */}
+              <div className="td-banner-info-chips">
+                <span className="td-info-chip">📅 {formatDate(tournament.StartDate)} - {formatDate(tournament.EndDate)}</span>
+                <span className="td-info-chip">📍 {tournament.Location}</span>
+                <span className="td-info-chip">⏱️ Hạn: {formatDate(tournament.RegistrationEnd)}</span>
+                <span className="td-info-chip">🏆 Trình độ: 3.0 - 4.5</span>
+              </div>
+            </div>
+
+            {/* Right Column: CTA card */}
+            <div className="td-banner-cta-card">
+              <div className="td-cta-header">
+                <span className="td-cta-status-label">Trạng thái:</span>
+                {getStatusBadge(tournament.Status)}
+              </div>
+              
+              <div className="td-cta-price-row">
+                <span className="td-cta-price-lbl">Lệ phí tham gia:</span>
+                <span className="td-cta-price-val">
+                  {divisions.length > 0 
+                    ? `${Math.min(...divisions.map(d => d.RegistrationFee)).toLocaleString()} VNĐ` 
+                    : "Liên hệ BTC"}
+                </span>
+              </div>
+
+              <div className="td-cta-deadline-row">
+                <span>⏱️ Hạn đăng ký:</span>
+                <strong>{formatDate(tournament.RegistrationEnd)}</strong>
+              </div>
+
+              <div className="td-cta-actions">
+                <button 
+                  type="button"
+                  className="tm-btn tm-btn-primary w-full"
+                  onClick={() => {
+                    setActiveTab("divisions");
+                    document.getElementById("tournament-tabs-section")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                >
+                  Đăng ký ngay ➜
+                </button>
+                <button 
+                  type="button"
+                  className="tm-btn tm-btn-secondary w-full"
+                  onClick={() => {
+                    setActiveTab("info");
+                    document.getElementById("tournament-tabs-section")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                >
+                  Xem điều lệ
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -686,36 +868,18 @@ export default function TournamentDetailPage({ params }: { params: Promise<{ id:
           </div>
         )}
 
-        {/* Tab Controls */}
-        <div style={{ 
-          display: "flex", 
-          borderBottom: "1px solid #e2e8f0", 
-          gap: "36px", 
-          marginBottom: "32px", 
-          padding: "0 8px",
-          background: "transparent"
-        }}>
+        {/* Tab Controls - Sticky Tab Bar with icons */}
+        <div id="tournament-tabs-section" className="td-sticky-tab-bar">
           {[
-            { id: "info", label: "Thông tin chi tiết" },
-            { id: "divisions", label: "Nội dung & Đăng ký" },
-            { id: "bracket", label: "Nhánh đấu / Lịch đấu" },
-            { id: "standings", label: "Bảng xếp hạng" },
+            { id: "info", label: "Tổng quan", icon: "📊" },
+            { id: "divisions", label: "Nội dung & Đăng ký", icon: "📝" },
+            { id: "bracket", label: "Nhánh đấu / Lịch đấu", icon: "🏆" },
+            { id: "standings", label: "Bảng xếp hạng", icon: "📈" },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              style={{
-                background: "transparent",
-                border: "none",
-                padding: "16px 4px",
-                fontSize: "0.95rem",
-                fontWeight: activeTab === tab.id ? "700" : "600",
-                color: activeTab === tab.id ? "#047857" : "#64748b",
-                cursor: "pointer",
-                position: "relative",
-                borderBottom: activeTab === tab.id ? "3px solid #059669" : "3px solid transparent",
-                transition: "all 0.2s"
-              }}
+              className={`td-tab-button ${activeTab === tab.id ? "td-tab-button-active" : ""}`}
             >
               {tab.label}
             </button>
@@ -725,329 +889,768 @@ export default function TournamentDetailPage({ params }: { params: Promise<{ id:
         {/* Tab Contents */}
         {activeTab === "info" && (
           <div className="tm-details-layout">
-            <div className="tm-details-panel">
-              <h3 className="tm-details-panel-title">Điều lệ và Quy định giải đấu</h3>
-              <div style={{ color: "var(--tm-text)", fontSize: "0.9375rem", lineHeight: "1.7", whiteSpace: "pre-line" }}>
-                {(tournament as any).PrizeInfo || "Quy định giải đấu chưa được ban tổ chức công bố."}
+            {/* Left: General info, Timeline, Accordions */}
+            <div className="tm-details-panel-left">
+              {/* Stat cards row */}
+              <div className="td-stat-cards-row">
+                <div className="td-stat-card">
+                  <strong>Nội dung</strong>
+                  <span>Đơn & Đôi</span>
+                </div>
+                <div className="td-stat-card">
+                  <strong>Trình độ</strong>
+                  <span>3.0 / 3.5 / 4.0</span>
+                </div>
+                <div className="td-stat-card">
+                  <strong>Thể thức</strong>
+                  <span>Vòng bảng + Loại</span>
+                </div>
+                <div className="td-stat-card">
+                  <strong>Check-in</strong>
+                  <span>Trước 30 phút</span>
+                </div>
+              </div>
+
+              {/* Giới thiệu giải đấu */}
+              <div className="tm-details-panel" style={{ marginTop: "24px" }}>
+                <h3 className="tm-details-panel-title">
+                  <span className="td-title-icon-wrapper td-title-sparkles"><LuSparkles size={18} /></span> Giới thiệu giải đấu
+                </h3>
+                <p style={{ color: "var(--tm-text)", fontSize: "0.9375rem", lineHeight: "1.75", marginBottom: "20px" }}>
+                  Giải đấu Pickleball vô địch PickleClub lần này quy tụ các câu lạc bộ và cá nhân đam mê thể thao trên toàn quốc. Đây là sân chơi lý tưởng để cọ xát, nâng cao trình độ thi đấu chuyên nghiệp, đồng thời mở rộng mạng lưới giao lưu cộng đồng pickleball Việt Nam.
+                </p>
+                <div className="td-highlights-grid">
+                  <div className="td-highlight-item">
+                    <span className="td-hl-icon-badge td-hl-icon-shield"><LuShieldCheck size={18} /></span>
+                    <div>
+                      <strong>Minh bạch & Công bằng</strong>
+                      <p>Trọng tài điều hành đạt chuẩn, DUPR được xác minh nghiêm ngặt.</p>
+                    </div>
+                  </div>
+                  <div className="td-highlight-item">
+                    <span className="td-hl-icon-badge td-hl-icon-handshake"><LuHandshake size={18} /></span>
+                    <div>
+                      <strong>Giao lưu cộng đồng</strong>
+                      <p>Cơ hội học hỏi kinh nghiệm từ các tay vợt xuất sắc trên toàn quốc.</p>
+                    </div>
+                  </div>
+                  <div className="td-highlight-item">
+                    <span className="td-hl-icon-badge td-hl-icon-gift"><LuGift size={18} /></span>
+                    <div>
+                      <strong>Nhiều phần thưởng</strong>
+                      <p>Tổng cơ cấu giải thưởng hấp dẫn lên tới hàng chục triệu đồng.</p>
+                    </div>
+                  </div>
+                  <div className="td-highlight-item">
+                    <span className="td-hl-icon-badge td-hl-icon-flame"><LuFlame size={18} /></span>
+                    <div>
+                      <strong>Tổ chức chuyên nghiệp</strong>
+                      <p>Đầy đủ dịch vụ nước uống, y tế, truyền thông phục vụ vận động viên.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Timeline */}
+              <div className="tm-details-panel" style={{ marginTop: "24px" }}>
+                <h3 className="tm-details-panel-title">
+                  <span className="td-title-icon-wrapper td-title-calendar"><LuCalendar size={18} /></span> Timeline giải đấu
+                </h3>
+                <div className="td-timeline">
+                  {[
+                    { label: "Mở đăng ký", date: formatDate(tournament.RegistrationStart), done: true },
+                    { label: "Đóng đăng ký", date: formatDate(tournament.RegistrationEnd), done: true },
+                    { label: "Công bộ lịch đấu", date: "Dự kiến trước thi đấu 3 ngày", done: false },
+                    { label: "Thi đấu chính thức", date: formatDate(tournament.StartDate), done: false },
+                    { label: "Chung kết & Trao giải", date: formatDate(tournament.EndDate), done: false }
+                  ].map((item, idx) => (
+                    <div key={idx} className={`td-timeline-node ${item.done ? "td-timeline-node-done" : ""}`}>
+                      <div className="td-node-indicator">
+                        {item.done ? "✓" : idx + 1}
+                      </div>
+                      <div className="td-node-content">
+                        <strong>{item.label}</strong>
+                        <span>{item.date}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Accordion Điều lệ */}
+              <div id="tournament-rules-section" className="tm-details-panel" style={{ marginTop: "24px" }}>
+                <h3 className="tm-details-panel-title">
+                  <span className="td-title-icon-wrapper td-title-rules"><LuFileText size={18} /></span> Điều lệ & Quy định chi tiết
+                </h3>
+                <div className="td-accordion-wrap">
+                  {[
+                    { 
+                      title: "Thể thức thi đấu chi tiết", 
+                      content: "Giải đấu áp dụng thể thức thi đấu chia bảng (vòng tròn tính điểm 1 lượt). Chọn ra 2 đội có điểm số cao nhất mỗi bảng để tiến vào vòng loại trực tiếp. Các trận đấu ở vòng bảng thi đấu chạm 11 hoặc 15, vòng knock-out thi đấu chạm 21 hoặc Best of 3 set."
+                    },
+                    { 
+                      title: "Quy định check-in & Hồ sơ", 
+                      content: "Vận động viên phải check-in tại bàn BTC tối thiểu 30 phút trước thời gian trận đấu diễn ra. VĐV cần mang theo CCCD bản gốc để xác minh danh tính. Mọi khiếu nại về hồ sơ chỉ được giải quyết trước giờ thi đấu 15 phút."
+                    },
+                    { 
+                      title: "Quy định trang phục & Thiết bị", 
+                      content: "Vận động viên mặc trang phục thể thao lịch sự, đi giày đế bằng chuyên dụng (non-marking soles) để tránh làm hỏng mặt sân. Vợt thi đấu phải là vợt pickleball tiêu chuẩn, không có các chất hỗ trợ lực hoặc thiết kế bề mặt nhám sai quy định."
+                    },
+                    { 
+                      title: "Luật tính điểm & Trọng tài", 
+                      content: "Luật tính điểm áp dụng theo hệ thống tính điểm quốc tế USAPA. Các quyết định của Trọng tài chính trên sân là quyết định cuối cùng. Trong trường hợp có tranh chấp hoặc khiếu nại nghiêm trọng, Ban tổ chức sẽ họp và đưa ra phán quyết xử lý."
+                    },
+                    { 
+                      title: "Liên hệ & Giải quyết khiếu nại", 
+                      content: "Mọi thắc mắc hoặc khiếu nại, vui lòng liên hệ trực tiếp văn phòng BTC hoặc gửi email hỗ trợ thông qua đường dây nóng. BTC có quyền thay đổi khung giờ hoặc lịch thi đấu nếu điều kiện thời tiết không cho phép."
+                    }
+                  ].map((item, idx) => (
+                    <AccordionItem key={idx} title={item.title} content={item.content} />
+                  ))}
+                </div>
               </div>
             </div>
 
-            <div className="tm-details-panel">
-              <h3 className="tm-details-panel-title">Chi tiết tổ chức</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: "18px", fontSize: "0.875rem" }}>
-                <div>
-                  <span style={{ fontSize: "0.75rem", color: "var(--tm-muted)", display: "block", textTransform: "uppercase", fontWeight: "700" }}>Địa điểm thi đấu</span>
-                  <p style={{ fontWeight: "700", marginTop: "4px", color: "var(--tm-text)" }}>{tournament.Location}</p>
+            {/* Right: Chi tiết tổ chức */}
+            <div className="tm-details-panel-right">
+              <div className="td-org-card">
+                <h3 className="td-org-card-title">Chi tiết tổ chức</h3>
+                
+                <div className="td-org-list">
+                  <div className="td-org-item">
+                    <span className="td-org-icon-badge td-icon-location"><LuMapPin size={16} /></span>
+                    <div>
+                      <strong>Địa điểm</strong>
+                      <p>{tournament.Location}</p>
+                    </div>
+                  </div>
+                  <div className="td-org-item">
+                    <span className="td-org-icon-badge td-icon-calendar"><LuCalendar size={16} /></span>
+                    <div>
+                      <strong>Thời gian thi đấu</strong>
+                      <p>{formatDate(tournament.StartDate)} - {formatDate(tournament.EndDate)}</p>
+                    </div>
+                  </div>
+                  <div className="td-org-item">
+                    <span className="td-org-icon-badge td-icon-deadline"><LuClock size={16} /></span>
+                    <div>
+                      <strong>Đóng đăng ký</strong>
+                      <p>{formatDate(tournament.RegistrationEnd)}</p>
+                    </div>
+                  </div>
+                  <div className="td-org-item">
+                    <span className="td-org-icon-badge td-icon-organizer"><LuBuilding size={16} /></span>
+                    <div>
+                      <strong>Nhà tổ chức</strong>
+                      <p>{tournament.OrganizerName}</p>
+                    </div>
+                  </div>
+                  <div className="td-org-item">
+                    <span className="td-org-icon-badge td-icon-support"><LuPhone size={16} /></span>
+                    <div>
+                      <strong>Liên hệ hỗ trợ</strong>
+                      <p>support@pickleclub.com / 1900 1234</p>
+                    </div>
+                  </div>
+                  <div className="td-org-item">
+                    <span className="td-org-icon-badge td-icon-fee"><LuWallet size={16} /></span>
+                    <div>
+                      <strong>Phí tham gia tối thiểu</strong>
+                      <p>
+                        {divisions.length > 0 
+                          ? `${Math.min(...divisions.map(d => d.RegistrationFee)).toLocaleString()} VNĐ` 
+                          : "Liên hệ BTC"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="td-org-item">
+                    <span className="td-org-icon-badge td-icon-teams"><LuUsers size={16} /></span>
+                    <div>
+                      <strong>Số lượng tối đa</strong>
+                      <p>Không giới hạn / Theo từng nội dung</p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <span style={{ fontSize: "0.75rem", color: "var(--tm-muted)", display: "block", textTransform: "uppercase", fontWeight: "700" }}>Thời gian thi đấu</span>
-                  <p style={{ fontWeight: "700", marginTop: "4px", color: "var(--tm-text)" }}>
-                    {formatDate(tournament.StartDate)} - {formatDate(tournament.EndDate)}
-                  </p>
-                </div>
-                <div>
-                  <span style={{ fontSize: "0.75rem", color: "var(--tm-muted)", display: "block", textTransform: "uppercase", fontWeight: "700" }}>Thời gian đăng ký</span>
-                  <p style={{ fontWeight: "700", marginTop: "4px", color: "var(--tm-text)" }}>
-                    {formatDate(tournament.RegistrationStart)} - {formatDate(tournament.RegistrationEnd)}
-                  </p>
-                </div>
-                <div>
-                  <span style={{ fontSize: "0.75rem", color: "var(--tm-muted)", display: "block", textTransform: "uppercase", fontWeight: "700" }}>Nhà tổ chức</span>
-                  <p style={{ fontWeight: "700", marginTop: "4px", color: "var(--tm-text)" }}>{tournament.OrganizerName}</p>
+
+                <div className="td-org-divider" />
+
+                <div className="td-org-actions">
+                  <button 
+                    type="button" 
+                    className="tm-btn tm-btn-primary w-full"
+                    onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(tournament.Location)}`, "_blank")}
+                  >
+                    Xem bản đồ
+                  </button>
+                  <button 
+                    type="button" 
+                    className="tm-btn tm-btn-secondary w-full"
+                    onClick={() => window.location.href = "mailto:support@pickleclub.com"}
+                  >
+                    Liên hệ BTC
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {activeTab === "divisions" && (
-          <div>
-            {myRegistrations.filter(r => r.RegistrationStatus === "PendingPayment").map((reg) => (
-              <PendingRegistrationBanner 
-                key={reg.RegistrationID} 
-                reg={reg} 
-                handleRetryPayment={handleRetryPayment} 
-                registerLoading={registerLoading} 
-                onExpired={refreshRegistrations}
-              />
-            ))}
+        {activeTab === "divisions" && (() => {
+          const filteredDivisions = divisions.filter(div => {
+            if (onlyAvailable) {
+              const maxTeams = div.MaxTeams || 48;
+              const registeredCount = (div as any).RegisteredCount || 0;
+              if (registeredCount >= maxTeams) return false;
+            }
 
-            {myRegistrations.filter(r => r.RegistrationStatus === "Confirmed").map((reg) => (
-              <ConfirmedRegistrationBanner 
-                key={reg.RegistrationID} 
-                reg={reg} 
-              />
-            ))}
+            if (divisionFilter === "All") return true;
 
-            {divisions.length === 0 ? (
-              <div style={{ padding: "48px", textAlign: "center", border: "1px solid var(--tm-border)", borderRadius: "16px", background: "#fff" }}>
-                <p className="text-slate-400">Chưa cập nhật nội dung thi đấu cho giải này.</p>
+            if (divisionFilter === "MenSingles") {
+              return div.CompetitionFormat === "MenSingles" || (div.CompetitionFormat === "Singles" && div.GenderRequirement === "MaleOnly");
+            }
+            if (divisionFilter === "WomenSingles") {
+              return div.CompetitionFormat === "WomenSingles" || (div.CompetitionFormat === "Singles" && div.GenderRequirement === "FemaleOnly");
+            }
+            if (divisionFilter === "MenDoubles") {
+              return div.CompetitionFormat === "MenDoubles" || (div.CompetitionFormat === "Doubles" && div.GenderRequirement === "MaleOnly");
+            }
+            if (divisionFilter === "WomenDoubles") {
+              return div.CompetitionFormat === "WomenDoubles" || (div.CompetitionFormat === "Doubles" && div.GenderRequirement === "FemaleOnly");
+            }
+            if (divisionFilter === "MixedDoubles") {
+              return div.CompetitionFormat === "MixedDoubles" || (div.CompetitionFormat === "Doubles" && (div.GenderRequirement === "Coed" || div.GenderRequirement === "None"));
+            }
+            return true;
+          });
+
+          const showSinglesCard = (() => {
+            if (divisionFilter === "MenSingles" || divisionFilter === "WomenSingles") return true;
+            if (divisionFilter === "MenDoubles" || divisionFilter === "WomenDoubles" || divisionFilter === "MixedDoubles") return false;
+            
+            if (myRegistrations.length > 0) {
+              const registeredDivIds = myRegistrations.map(r => r.DivisionID);
+              const registeredDivs = divisions.filter(d => registeredDivIds.includes(d.DivisionID));
+              const hasSingles = registeredDivs.some(d => 
+                d.CompetitionFormat === "MenSingles" || d.CompetitionFormat === "WomenSingles" || d.CompetitionFormat === "Singles"
+              );
+              const hasDoubles = registeredDivs.some(d => 
+                d.CompetitionFormat === "MenDoubles" || d.CompetitionFormat === "WomenDoubles" || d.CompetitionFormat === "MixedDoubles" || d.CompetitionFormat === "Doubles"
+              );
+              if (hasSingles && !hasDoubles) return true;
+              if (hasDoubles && !hasSingles) return false;
+            }
+
+            if (filteredDivisions.length > 0) {
+              const allSingles = filteredDivisions.every(d => 
+                d.CompetitionFormat === "MenSingles" || d.CompetitionFormat === "WomenSingles" || d.CompetitionFormat === "Singles"
+              );
+              if (allSingles) return true;
+            }
+            
+            return false;
+          })();
+
+          const currentDivReg = myRegistrations.find(reg => {
+            if (selectedDivisionId && reg.DivisionID === selectedDivisionId) return true;
+            const div = divisions.find(d => d.DivisionID === reg.DivisionID);
+            if (!div) return false;
+            if (divisionFilter === "MenSingles") {
+              return div.CompetitionFormat === "MenSingles" || (div.CompetitionFormat === "Singles" && div.GenderRequirement === "MaleOnly");
+            }
+            if (divisionFilter === "WomenSingles") {
+              return div.CompetitionFormat === "WomenSingles" || (div.CompetitionFormat === "Singles" && div.GenderRequirement === "FemaleOnly");
+            }
+            return false;
+          }) || myRegistrations[0];
+
+          let registrationStatusText = "Chưa đăng ký tham gia";
+          if (currentDivReg) {
+            if (currentDivReg.RegistrationStatus === "Confirmed" || currentDivReg.RegistrationStatus === "Paid") {
+              registrationStatusText = "Đã duyệt & Xác nhận";
+            } else if (currentDivReg.RegistrationStatus === "PendingPayment") {
+              registrationStatusText = "Chờ thanh toán";
+            } else {
+              registrationStatusText = "Đã đăng ký (Chờ duyệt)";
+            }
+            const regDiv = divisions.find(d => d.DivisionID === currentDivReg.DivisionID);
+            if (regDiv) {
+              registrationStatusText += ` (${regDiv.DivisionName})`;
+            }
+          }
+
+          const getRegStatusText = (status: string) => {
+            switch (status) {
+              case "Confirmed":
+                return "đã xác nhận tham gia";
+              case "Paid":
+                return "đã duyệt";
+              case "PendingPayment":
+                return "chờ xác nhận";
+              default:
+                return "chờ xác nhận";
+            }
+          };
+
+          return (
+            <div>
+              {myRegistrations.filter(r => r.RegistrationStatus === "PendingPayment").map((reg) => (
+                <PendingRegistrationBanner 
+                  key={reg.RegistrationID} 
+                  reg={reg} 
+                  handleRetryPayment={handleRetryPayment} 
+                  registerLoading={registerLoading} 
+                  onExpired={refreshRegistrations}
+                />
+              ))}
+
+              {myRegistrations.filter(r => r.RegistrationStatus === "Confirmed").map((reg) => (
+                <ConfirmedRegistrationBanner 
+                  key={reg.RegistrationID} 
+                  reg={reg} 
+                />
+              ))}
+
+              {/* Filter Bar */}
+              <div className="td-filter-bar">
+                <div className="td-filter-pills">
+                  {[
+                    { id: "All", label: "Tất cả" },
+                    { id: "MenSingles", label: "Đơn nam" },
+                    { id: "WomenSingles", label: "Đơn nữ" },
+                    { id: "MenDoubles", label: "Đôi nam" },
+                    { id: "WomenDoubles", label: "Đôi nữ" },
+                    { id: "MixedDoubles", label: "Đôi nam nữ" }
+                  ].map((pill) => (
+                    <button
+                      key={pill.id}
+                      type="button"
+                      className={`td-filter-pill ${divisionFilter === pill.id ? "td-filter-pill-active" : ""}`}
+                      onClick={() => setDivisionFilter(pill.id)}
+                    >
+                      {pill.label}
+                    </button>
+                  ))}
+                </div>
+                <label className="td-filter-switch-label">
+                  <input 
+                    type="checkbox" 
+                    checked={onlyAvailable}
+                    onChange={(e) => setOnlyAvailable(e.target.checked)}
+                  />
+                  <span>Chỉ hiện nội dung còn chỗ</span>
+                </label>
               </div>
-            ) : (
-              <div>
-                <div className="tm-div-grid" style={{ 
-                  display: "grid", 
-                  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", 
-                  gap: "24px", 
-                  marginBottom: "40px" 
-                }}>
-                  {divisions.map((div) => {
-                    const isSingles = div.CompetitionFormat === "MenSingles" || div.CompetitionFormat === "WomenSingles" || div.CompetitionFormat === "Singles";
-                    const maxTeams = div.MaxTeams || 48;
-                    const registeredCount = (div as any).RegisteredCount || 0;
-                    const slotsLeft = Math.max(0, maxTeams - registeredCount);
-                    const pct = Math.round((registeredCount / maxTeams) * 100);
-                    
-                    // Determine division badge name
-                    let formatName = isSingles ? "Đơn" : "Đôi";
-                    if (div.CompetitionFormat === "MenSingles") formatName = "Đơn Nam";
-                    else if (div.CompetitionFormat === "WomenSingles") formatName = "Đơn Nữ";
-                    else if (div.CompetitionFormat === "MenDoubles") formatName = "Đôi Nam";
-                    else if (div.CompetitionFormat === "WomenDoubles") formatName = "Đôi Nữ";
-                    else if (div.CompetitionFormat === "MixedDoubles") formatName = "Đôi Nam Nữ";
-                    else if (div.CompetitionFormat === "Doubles") {
-                      if (div.GenderRequirement === "MaleOnly") formatName = "Đôi Nam";
-                      else if (div.GenderRequirement === "FemaleOnly") formatName = "Đôi Nữ";
-                      else formatName = "Đôi Nam Nữ";
-                    }
 
-                    // Format fee nicely (e.g. 150k)
-                    const feeK = div.RegistrationFee >= 1000 ? `${div.RegistrationFee / 1000}k` : div.RegistrationFee.toLocaleString();
-                    const feeUnit = isSingles ? "NGƯỜI" : "ĐÔI";
+              {divisions.length === 0 ? (
+                <div style={{ padding: "48px", textAlign: "center", border: "1px solid var(--tm-border)", borderRadius: "16px", background: "#fff" }}>
+                  <p className="text-slate-400">Chưa cập nhật nội dung thi đấu cho giải này.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="tm-details-layout-divisions">
+                  {/* Left Column: Division Cards list */}
+                  <div className="tm-details-panel-left" style={{ display: "flex", flexDirection: "column", gap: "20px", height: "100%" }}>
+                    {filteredDivisions.length === 0 ? (
+                      <div style={{ padding: "36px", textAlign: "center", border: "1.5px dashed rgba(0, 168, 107, 0.15)", borderRadius: "16px", background: "#fff", color: "var(--tm-muted)" }}>
+                        Không tìm thấy nội dung thi đấu phù hợp bộ lọc.
+                      </div>
+                    ) : (
+                      filteredDivisions.map((div) => {
+                        const isSingles = div.CompetitionFormat === "MenSingles" || div.CompetitionFormat === "WomenSingles" || div.CompetitionFormat === "Singles";
+                        const maxTeams = div.MaxTeams || 48;
+                        const registeredCount = (div as any).RegisteredCount || 0;
+                        const slotsLeft = Math.max(0, maxTeams - registeredCount);
+                        const pct = Math.round((registeredCount / maxTeams) * 100);
+                        
+                        let formatName = isSingles ? "Đơn" : "Đôi";
+                        if (div.CompetitionFormat === "MenSingles") formatName = "Đơn Nam";
+                        else if (div.CompetitionFormat === "WomenSingles") formatName = "Đơn Nữ";
+                        else if (div.CompetitionFormat === "MenDoubles") formatName = "Đôi Nam";
+                        else if (div.CompetitionFormat === "WomenDoubles") formatName = "Đôi Nữ";
+                        else if (div.CompetitionFormat === "MixedDoubles") formatName = "Đôi Nam Nữ";
+                        else if (div.CompetitionFormat === "Doubles") {
+                          if (div.GenderRequirement === "MaleOnly") formatName = "Đôi Nam";
+                          else if (div.GenderRequirement === "FemaleOnly") formatName = "Đôi Nữ";
+                          else formatName = "Đôi Nam Nữ";
+                        }
 
-                    // Determine progress text styling
-                    const isFull = registeredCount >= maxTeams;
-                    const isNearFull = pct >= 80;
-                    const progressText = isFull 
-                      ? "Hết chỗ!" 
-                      : isNearFull 
-                        ? `Sắp hết! (${pct}%)` 
-                        : `${pct}% Full`;
-                    const progressColor = isNearFull ? "#ef4444" : "#059669";
+                        const feeK = div.RegistrationFee >= 1000 ? `${div.RegistrationFee.toLocaleString()}đ` : `${div.RegistrationFee.toLocaleString()} VNĐ`;
+                        const feeUnit = isSingles ? "người" : "đôi";
 
-                    const myDivReg = myRegistrations.find(r => r.DivisionID === div.DivisionID);
+                        const isFull = registeredCount >= maxTeams;
+                        const isNearFull = pct >= 80;
+                        const progressText = isFull ? "Hết chỗ" : "Còn chỗ";
+                        const progressColor = isFull ? "#ef4444" : isNearFull ? "#f97316" : "#00a86b";
 
-                    return (
-                      <div key={div.DivisionID} style={{
-                        background: "#ffffff",
-                        border: "1px solid #f1f5f9",
-                        borderRadius: "24px",
-                        padding: "28px",
-                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.02), 0 4px 6px -2px rgba(0, 0, 0, 0.02)",
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between",
-                        gap: "20px"
-                      }}>
-                        <div>
-                          {/* Card Top Row */}
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-                            <span style={{ 
-                              background: "#f0fdf4", 
-                              color: "#166534", 
-                              padding: "6px 12px", 
-                              borderRadius: "20px", 
-                              fontSize: "0.75rem", 
-                              fontWeight: "750" 
-                            }}>
-                              {formatName}
-                            </span>
-                            <div style={{ textAlign: "right" }}>
-                              <p style={{ fontSize: "1.35rem", fontWeight: "950", color: "#0f172a", margin: 0 }}>
-                                {feeK}
-                              </p>
-                              <p style={{ fontSize: "0.65rem", color: "#64748b", fontWeight: "700", margin: "2px 0 0 0", letterSpacing: "0.5px" }}>
-                                VNĐ / {feeUnit}
-                              </p>
+                        const myDivReg = myRegistrations.find(r => r.DivisionID === div.DivisionID);
+                        const isActive = selectedDivision?.DivisionID === div.DivisionID;
+
+                        return (
+                          <div key={div.DivisionID} className={`td-entry-card ${isActive ? "td-entry-card-active" : ""}`}>
+                            {/* Row 1: Format Badge & Price */}
+                            <div className="td-entry-row1">
+                              <span className="td-entry-badge">
+                                {formatName}
+                              </span>
+                              <div className="td-entry-price-block">
+                                <span className="td-entry-price">{feeK}</span>
+                                <span className="td-entry-price-unit"> / {feeUnit}</span>
+                              </div>
                             </div>
+
+                            {/* Row 2: Title */}
+                            <div className="td-entry-row2">
+                              <h4 className="td-entry-name">
+                                {div.DivisionName}
+                              </h4>
+                            </div>
+
+                            {/* Row 3: 2-Column Specs Grid */}
+                            <div className="td-entry-row3-grid">
+                              <div className="td-entry-grid-item">
+                                <span className="td-entry-grid-label">Giới tính:</span>
+                                <span className="td-entry-grid-val">
+                                  {div.GenderRequirement === "MaleOnly" ? "Nam" : div.GenderRequirement === "FemaleOnly" ? "Nữ" : "Nam/Nữ"}
+                                </span>
+                              </div>
+                              <div className="td-entry-grid-item">
+                                <span className="td-entry-grid-label">Độ tuổi:</span>
+                                <span className="td-entry-grid-val">{div.AgeGroup}</span>
+                              </div>
+                              <div className="td-entry-grid-item">
+                                <span className="td-entry-grid-label">DUPR:</span>
+                                <span className="td-entry-grid-val">
+                                  {div.MinDUPR !== null ? `${div.MinDUPR} - ${div.MaxDUPR}` : "Open"}
+                                </span>
+                              </div>
+                              <div className="td-entry-grid-item">
+                                <span className="td-entry-grid-label">Tối đa:</span>
+                                <span className="td-entry-grid-val">
+                                  {maxTeams} {isSingles ? "VĐV" : "Cặp"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Row 4: Slot status / Progress Bar */}
+                            <div className="td-entry-row4-capacity">
+                              <div className="td-entry-capacity-header">
+                                <span>{slotsLeft}/{maxTeams} suất còn trống</span>
+                                <span className="td-entry-capacity-status" style={{ color: progressColor }}>
+                                  {progressText}
+                                </span>
+                              </div>
+                              <div className="td-entry-progress-bg">
+                                <div 
+                                  className="td-entry-progress-fill" 
+                                  style={{ 
+                                    width: `${Math.min(100, pct)}%`, 
+                                    background: progressColor 
+                                  }} 
+                                />
+                              </div>
+                            </div>
+
+                            {/* Row 5: Action CTA */}
+                            {(() => {
+                              const isExpired = new Date() > new Date(tournament.RegistrationEnd);
+                              const isStatusClosed = tournament.Status !== "Open" && tournament.Status !== "Published";
+                              const isButtonDisabled = !!myDivReg || isFull || isExpired || isStatusClosed;
+                              
+                              let buttonText = "Đăng ký ngay";
+                              if (myDivReg) buttonText = "Đã đăng ký nội dung này";
+                              else if (isStatusClosed) buttonText = tournament.Status === "DrawGenerated" ? "Đã chốt danh sách" : "Đã đóng đăng ký";
+                              else if (isExpired) buttonText = "Đã quá hạn đăng ký";
+                              else if (isFull) buttonText = "Hết chỗ (Tham gia hàng chờ)";
+
+                              return (
+                                <button
+                                  type="button"
+                                  disabled={isButtonDisabled}
+                                  onClick={() => {
+                                    const token = typeof window !== "undefined" ? localStorage.getItem("pickleclub_token") : null;
+                                    if (!token) {
+                                      router.push("/login");
+                                      return;
+                                    }
+                                    setSelectedDivision(div);
+                                    setRegisterModalOpen(true);
+                                  }}
+                                  className={`td-entry-btn ${isButtonDisabled ? "td-entry-btn-disabled" : ""}`}
+                                >
+                                  {buttonText}
+                                </button>
+                              );
+                            })()}
+
+                            {/* Row 6: Status Panel */}
+                            {myDivReg && (() => {
+                              const statusLabel = getRegStatusText(myDivReg.RegistrationStatus);
+                              const isReady = myDivReg.RegistrationStatus === "Confirmed" || myDivReg.RegistrationStatus === "Paid";
+                              const isPending = myDivReg.RegistrationStatus === "PendingPayment";
+
+                              return (
+                                <div style={{ 
+                                  marginTop: "16px", 
+                                  padding: "16px", 
+                                  background: isReady ? "#f0fdf4" : isPending ? "#fffbeb" : "#f8fafc", 
+                                  border: `1px solid ${isReady ? "rgba(167, 243, 208, 0.4)" : isPending ? "rgba(253, 230, 138, 0.4)" : "rgba(226, 232, 240, 0.6)"}`, 
+                                  borderRadius: "12px",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "10px",
+                                  textAlign: "left"
+                                }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                    <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                      {isReady ? <LuTrophy size={18} style={{ color: "#059669" }} /> : <LuClock size={18} style={{ color: "#d97706" }} />}
+                                    </span>
+                                    <div>
+                                      <h5 style={{ margin: 0, fontSize: "0.85rem", fontWeight: "800", color: isReady ? "#064e3b" : "#92400e" }}>
+                                        {isReady ? "Bạn đã sẵn sàng thi đấu" : "Hồ sơ đang chờ xử lý"}
+                                      </h5>
+                                      <p style={{ margin: "2px 0 0 0", fontSize: "0.75rem", color: isReady ? "#047857" : "#b45309" }}>
+                                        Trạng thái: <strong>{statusLabel}</strong> | {div.DivisionName}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  
+                                  <div style={{ display: "flex", gap: "12px", borderTop: `1px solid ${isReady ? "rgba(5, 150, 105, 0.1)" : "rgba(245, 158, 11, 0.1)"}`, paddingTop: "10px", flexWrap: "wrap", alignItems: "center" }}>
+                                    <button 
+                                      type="button" 
+                                      onClick={() => router.push("/bookings")}
+                                      style={{ background: "transparent", border: "none", color: "#059669", fontSize: "0.75rem", fontWeight: "700", cursor: "pointer", padding: 0 }}
+                                    >
+                                      Xem hồ sơ
+                                    </button>
+                                    <span style={{ color: "rgba(100, 116, 139, 0.2)" }}>|</span>
+                                    {matches && matches.length > 0 ? (
+                                      <button 
+                                        type="button" 
+                                        onClick={() => {
+                                          setActiveTab("bracket");
+                                          document.getElementById("tournament-tabs-section")?.scrollIntoView({ behavior: "smooth" });
+                                        }}
+                                        style={{ background: "transparent", border: "none", color: "#059669", fontSize: "0.75rem", fontWeight: "700", cursor: "pointer", padding: 0 }}
+                                      >
+                                        Theo dõi lịch đấu
+                                      </button>
+                                    ) : (
+                                      <button 
+                                        type="button" 
+                                        disabled
+                                        style={{ background: "transparent", border: "none", color: "#94a3b8", fontSize: "0.75rem", fontWeight: "700", cursor: "not-allowed", padding: 0 }}
+                                      >
+                                        Lịch đấu chưa công bố
+                                      </button>
+                                    )}
+                                    <span style={{ color: "rgba(100, 116, 139, 0.2)" }}>|</span>
+                                    <button 
+                                      type="button" 
+                                      onClick={() => router.push("/notifications")}
+                                      style={{ background: "transparent", border: "none", color: "#059669", fontSize: "0.75rem", fontWeight: "700", cursor: "pointer", padding: 0 }}
+                                    >
+                                      Thông báo giải
+                                    </button>
+
+                                    {/* Partner Matching shortcuts for Doubles */}
+                                    {!isSingles && (
+                                      <>
+                                        <span style={{ color: "rgba(100, 116, 139, 0.2)" }}>|</span>
+                                        <button 
+                                          type="button" 
+                                          onClick={() => {
+                                            const formatParam = div.CompetitionFormat;
+                                            const genderParam = div.GenderRequirement;
+                                            const minDuprParam = div.MinDUPR !== undefined && div.MinDUPR !== null ? div.MinDUPR : "";
+                                            const maxDuprParam = div.MaxDUPR !== undefined && div.MaxDUPR !== null ? div.MaxDUPR : "";
+                                            const dateParam = tournament.StartDate || "";
+                                            
+                                            const searchParams = new URLSearchParams();
+                                            searchParams.set("tab", "teammates");
+                                            searchParams.set("tournamentId", String(tournament.TournamentID));
+                                            if (formatParam) searchParams.set("format", formatParam);
+                                            if (genderParam) searchParams.set("gender", genderParam);
+                                            if (minDuprParam !== "") searchParams.set("minDupr", String(minDuprParam));
+                                            if (maxDuprParam !== "") searchParams.set("maxDupr", String(maxDuprParam));
+                                            if (dateParam) searchParams.set("date", String(dateParam));
+                                            
+                                            router.push(`/matching?${searchParams.toString()}`);
+                                          }}
+                                          style={{ background: "transparent", border: "none", color: "#059669", fontSize: "0.75rem", fontWeight: "700", cursor: "pointer", padding: 0 }}
+                                        >
+                                          Tìm đồng đội
+                                        </button>
+                                        <span style={{ color: "rgba(100, 116, 139, 0.2)" }}>|</span>
+                                        <button 
+                                          type="button" 
+                                          onClick={handleOpenMatchingModal}
+                                          style={{ background: "transparent", border: "none", color: "#059669", fontSize: "0.75rem", fontWeight: "700", cursor: "pointer", padding: 0 }}
+                                        >
+                                          Người chơi phù hợp
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </div>
+                        );
+                      })
+                    )}
 
-                          {/* Title */}
-                          <h4 style={{ fontSize: "1.1rem", fontWeight: "800", margin: "0 0 16px 0", color: "#0f172a", lineHeight: "1.4" }}>
-                            {div.DivisionName}
-                          </h4>
-                          
-                          {/* Specs Grid */}
-                          <div style={{ 
-                            background: "#f8fafc", 
-                            borderRadius: "16px", 
-                            padding: "16px", 
-                            display: "grid", 
-                            gridTemplateColumns: "1fr 1fr", 
-                            gap: "12px",
-                            fontSize: "0.8rem",
-                            color: "#334155"
-                          }}>
-                            <div>
-                              <span style={{ color: "#64748b", display: "block", fontSize: "0.75rem", marginBottom: "2px" }}>Giới tính:</span>
-                              <strong style={{ color: "#0f172a" }}>
-                                {div.GenderRequirement === "MaleOnly" ? "Nam" : div.GenderRequirement === "FemaleOnly" ? "Nữ" : "Nam/Nữ"}
-                              </strong>
-                            </div>
-                            <div>
-                              <span style={{ color: "#64748b", display: "block", fontSize: "0.75rem", marginBottom: "2px" }}>Độ tuổi:</span>
-                              <strong style={{ color: "#0f172a" }}>{div.AgeGroup}</strong>
-                            </div>
-                            <div>
-                              <span style={{ color: "#64748b", display: "block", fontSize: "0.75rem", marginBottom: "2px" }}>Giới hạn DUPR:</span>
-                              <strong style={{ color: "#0f172a" }}>
-                                {div.MinDUPR !== null ? `${div.MinDUPR} - ${div.MaxDUPR}` : "Open"}
-                              </strong>
-                            </div>
-                            <div>
-                              <span style={{ color: "#64748b", display: "block", fontSize: "0.75rem", marginBottom: "2px" }}>Tối đa:</span>
-                              <strong style={{ color: "#0f172a" }}>
-                                {maxTeams} {isSingles ? "VĐV" : "Cặp"}
-                              </strong>
-                            </div>
+
+                  </div>
+
+                  {/* Right Column: Dynamic Registration CTA overview card */}
+                  <div className="tm-details-panel-right" style={{ height: "100%" }}>
+                    <div className="td-org-card" style={{ padding: "20px", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                      <div>
+                        <h3 className="td-org-card-title" style={{ fontSize: "15px", fontWeight: "900", color: "#073b2b", marginBottom: "16px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Tổng quan Đăng ký</h3>
+                        
+                        <div className="td-org-list" style={{ fontSize: "13px", display: "flex", flexDirection: "column", gap: "12px" }}>
+                          <div className="td-org-item" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px" }}>
+                            <span style={{ color: "#64748b", display: "flex", alignItems: "center", gap: "8px" }}>💰 Lệ phí:</span>
+                            <strong style={{ color: "#00a86b", fontSize: "14px" }}>
+                              {divisions.length > 0 
+                                ? `${Math.min(...divisions.map(d => d.RegistrationFee)).toLocaleString()} VNĐ` 
+                                : "Liên hệ BTC"}
+                            </strong>
                           </div>
-
-                          {/* Progress bar info */}
-                          <div style={{ marginTop: "18px" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", fontWeight: "700", marginBottom: "6px" }}>
-                              <span style={{ color: "#64748b" }}>Còn {slotsLeft} suất trống</span>
-                              <span style={{ color: progressColor }}>{progressText}</span>
-                            </div>
-                            <div style={{ width: "100%", height: "6px", background: "#e2e8f0", borderRadius: "10px", overflow: "hidden" }}>
-                              <div style={{ width: `${Math.min(100, pct)}%`, height: "100%", background: progressColor, borderRadius: "10px" }} />
-                            </div>
+                          <div className="td-org-item" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px" }}>
+                            <span style={{ color: "#64748b", display: "flex", alignItems: "center", gap: "8px" }}>⏱️ Hạn chót:</span>
+                            <strong style={{ color: "#073b2b" }}>{formatDate(tournament.RegistrationEnd)}</strong>
+                          </div>
+                          <div className="td-org-item" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px" }}>
+                            <span style={{ color: "#64748b", display: "flex", alignItems: "center", gap: "8px" }}>👥 Còn lại:</span>
+                            <strong style={{ color: "#073b2b" }}>
+                              {divisions.reduce((acc, d) => acc + Math.max(0, (d.MaxTeams || 48) - ((d as any).RegisteredCount || 0)), 0)} suất
+                            </strong>
+                          </div>
+                          <div className="td-org-item" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "4px" }}>
+                            <span style={{ color: "#64748b", display: "flex", alignItems: "center", gap: "8px" }}>⚙️ Trạng thái:</span>
+                            <strong style={{ color: tournament.Status === "Open" || tournament.Status === "Published" ? "#00a86b" : "#ef4444" }}>
+                              {tournament.Status === "Open" || tournament.Status === "Published" ? "Đang mở đăng ký" : "Đã đóng đăng ký"}
+                            </strong>
                           </div>
                         </div>
-
-                        {/* Action button */}
-                        {(() => {
-                          const isExpired = new Date() > new Date(tournament.RegistrationEnd);
-                          const isStatusClosed = tournament.Status !== "Open" && tournament.Status !== "Published";
-                          const isButtonDisabled = !!myDivReg || isFull || isExpired || isStatusClosed;
-                          
-                          let buttonText = "Đăng ký tham gia →";
-                          if (myDivReg) buttonText = "Đã đăng ký nội dung này";
-                          else if (isStatusClosed) buttonText = tournament.Status === "DrawGenerated" ? "Đã chốt danh sách" : "Đã đóng đăng ký";
-                          else if (isExpired) buttonText = "Đã quá hạn đăng ký";
-                          else if (isFull) buttonText = "Đã hết suất đăng ký";
-
-                          return (
-                            <button
-                              disabled={isButtonDisabled}
-                          onClick={() => {
-                            setSelectedDivision(div);
-                            setRegisterModalOpen(true);
-                          }}
-                          className="tm-btn"
-                          style={{ 
-                            width: "100%", 
-                            padding: "14px",
-                            borderRadius: "14px",
-                            background: isButtonDisabled ? "#cbd5e1" : "linear-gradient(135deg, #059669, #047857)",
-                            color: isButtonDisabled ? "#64748b" : "#ffffff",
-                            fontWeight: "700",
-                            fontSize: "0.9rem",
-                            border: "none",
-                            cursor: isButtonDisabled ? "not-allowed" : "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: "8px",
-                            boxShadow: isButtonDisabled ? "none" : "0 4px 6px rgba(5, 150, 105, 0.15)",
-                            transition: "all 0.2s"
-                          }}
-                        >
-                          {buttonText}
-                        </button>
-                          );
-                        })()}
                       </div>
-                    );
-                  })}
+
+                      <div style={{ marginTop: "24px" }}>
+                        <div className="td-org-divider" style={{ margin: "16px 0" }} />
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <button 
+                            type="button" 
+                            className="tm-btn tm-btn-secondary w-full"
+                            style={{ padding: "8px 12px", fontSize: "12px", borderRadius: "8px" }}
+                            onClick={() => {
+                              setActiveTab("info");
+                              setTimeout(() => {
+                                document.getElementById("tournament-rules-section")?.scrollIntoView({ behavior: "smooth" });
+                              }, 100);
+                            }}
+                          >
+                            Xem điều lệ
+                          </button>
+                          <button 
+                            type="button" 
+                            className="tm-btn tm-btn-primary w-full"
+                            style={{ padding: "8px 12px", fontSize: "12px", borderRadius: "8px" }}
+                            onClick={() => window.location.href = "mailto:support@pickleclub.com"}
+                          >
+                            Liên hệ hỗ trợ
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Bottom Assistance Cards Grid */}
-                <div style={{ 
-                  display: "grid", 
-                  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", 
-                  gap: "24px",
-                  marginTop: "40px" 
-                }}>
-                  {/* Left Card: Partner Suggestion */}
-                  <div style={{
-                    background: "linear-gradient(135deg, #065f46, #064e3b)",
-                    borderRadius: "24px",
-                    padding: "36px",
-                    color: "#ffffff",
-                    position: "relative",
-                    overflow: "hidden",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                    minHeight: "220px",
-                    boxShadow: "0 10px 15px -3px rgba(5, 150, 105, 0.1)"
-                  }}>
-                    <div>
-                      <h4 style={{ fontSize: "1.35rem", fontWeight: "900", margin: "0 0 10px 0" }}>
-                        Bạn chưa có đồng đội?
-                      </h4>
-                      <p style={{ fontSize: "0.875rem", opacity: 0.9, lineHeight: "1.6", margin: 0, maxWidth: "400px" }}>
-                        Đừng lo lắng! Tham gia cộng đồng tìm người chơi của chúng tôi để kết nối với những vợt thủ có cùng trình độ.
+                {/* Utility Bar */}
+                <div className="td-utility-bar">
+                  {/* Section 1: Hồ sơ thi đấu */}
+                  <div className="td-utility-item">
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div className="td-utility-item-header">
+                        <span className="td-utility-item-icon"><LuUser size={18} /></span>
+                        <h4 className="td-utility-item-title">Hồ sơ thi đấu</h4>
+                      </div>
+                      <p className="td-utility-item-desc">
+                        Xem thông tin cá nhân, cập nhật DUPR và theo dõi trạng thái hồ sơ của bạn.
                       </p>
                     </div>
                     <button 
-                      onClick={() => router.push("/matching")}
-                      style={{
-                        background: "#ffffff",
-                        color: "#065f46",
-                        border: "none",
-                        padding: "12px 24px",
-                        borderRadius: "30px",
-                        fontSize: "0.85rem",
-                        fontWeight: "750",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        alignSelf: "flex-start",
-                        marginTop: "20px",
-                        boxShadow: "0 4px 6px rgba(0,0,0,0.05)"
-                      }}
+                      type="button" 
+                      onClick={() => router.push("/bookings")}
+                      className="td-utility-item-btn"
                     >
-                      Tìm đồng đội ngay
+                      Xem hồ sơ đăng ký
                     </button>
                   </div>
 
-                  {/* Right Card: Support details */}
-                  <div style={{
-                    background: "#f0fdf4",
-                    border: "2px dashed #a7f3d0",
-                    borderRadius: "24px",
-                    padding: "36px",
-                    color: "#064e3b",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    textAlign: "center",
-                    minHeight: "220px"
-                  }}>
-                    <span style={{ fontSize: "2.5rem", marginBottom: "12px" }}>❓</span>
-                    <h4 style={{ fontSize: "1.2rem", fontWeight: "900", margin: "0 0 6px 0" }}>
-                      Cần hỗ trợ?
-                    </h4>
-                    <p style={{ fontSize: "0.85rem", margin: "0 0 14px 0", color: "#047857" }}>
-                      Liên hệ hotline giải đấu:<br />
-                      <strong style={{ fontSize: "1.1rem", color: "#064e3b" }}>1900 1234 (24/7)</strong>
-                    </p>
-                    <a 
-                      href="#" 
-                      style={{ fontSize: "0.85rem", color: "#0284c7", fontWeight: "700", textDecoration: "underline" }}
-                      onClick={(e) => e.preventDefault()}
+                  {/* Section 2: Lịch đấu */}
+                  <div className="td-utility-item">
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div className="td-utility-item-header">
+                        <span className="td-utility-item-icon"><LuCalendar size={18} /></span>
+                        <h4 className="td-utility-item-title">Lịch đấu</h4>
+                      </div>
+                      <p className="td-utility-item-desc">
+                        Theo dõi sơ đồ nhánh đấu và lịch thi đấu chi tiết sau khi được ban tổ chức công bố.
+                      </p>
+                    </div>
+                    {matches && matches.length > 0 ? (
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setActiveTab("bracket");
+                          document.getElementById("tournament-tabs-section")?.scrollIntoView({ behavior: "smooth" });
+                        }}
+                        className="td-utility-item-btn"
+                      >
+                        Theo dõi lịch đấu
+                      </button>
+                    ) : (
+                      <button 
+                        type="button" 
+                        disabled 
+                        className="td-utility-item-btn"
+                      >
+                        Lịch đấu chưa công bố
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Section 3: Hỗ trợ đăng ký */}
+                  <div className="td-utility-item">
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div className="td-utility-item-header">
+                        <span className="td-utility-item-icon"><LuPhone size={18} /></span>
+                        <h4 className="td-utility-item-title">Hỗ trợ đăng ký</h4>
+                      </div>
+                      <p className="td-utility-item-desc">
+                        Hotline giải đấu: 1900 1234 (Hỗ trợ 24/7). Liên hệ để giải quyết các sự cố.
+                      </p>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        setActiveTab("info");
+                        setTimeout(() => {
+                          document.getElementById("tournament-rules-section")?.scrollIntoView({ behavior: "smooth" });
+                        }, 100);
+                      }}
+                      className="td-utility-item-btn"
                     >
-                      Xem câu hỏi thường gặp
-                    </a>
+                      Xem FAQ & Quy định
+                    </button>
                   </div>
                 </div>
-              </div>
+              </>
             )}
-          </div>
-        )}
+            </div>
+          );
+        })()}
 
         {activeTab === "bracket" && (
           <div>
@@ -2086,6 +2689,261 @@ export default function TournamentDetailPage({ params }: { params: Promise<{ id:
           </div>
         );
       })()}
+
+      {/* Suitable Teammates Matching Modal */}
+      {matchingModalOpen && (
+        <div className="tm-modal-backdrop" style={{ overflowY: "auto", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1100, padding: "20px" }}>
+          <div className="tm-modal-content" style={{ 
+            maxWidth: "640px", 
+            width: "100%", 
+            margin: "auto",
+            background: "#ffffff",
+            borderRadius: "24px",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)",
+            border: "1px solid rgba(226, 232, 240, 0.8)",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            maxHeight: "85vh"
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              background: "#ffffff",
+              padding: "20px 28px",
+              color: "#1e293b",
+              position: "relative",
+              borderBottom: "1px solid #e2e8f0",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center"
+            }}>
+              <div>
+                <h3 style={{ fontSize: "1.15rem", fontWeight: "800", margin: 0, color: "#0f172a", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span>🤝</span> Người chơi phù hợp đánh đôi
+                </h3>
+                <p style={{ margin: "4px 0 0 0", fontSize: "0.8rem", color: "#64748b" }}>
+                  Danh sách gợi ý dựa trên trình độ, khu vực và khung giờ thi đấu.
+                </p>
+              </div>
+              <button 
+                onClick={() => {
+                  setMatchingModalOpen(false);
+                  setInvitingPlayer(null);
+                }}
+                style={{ 
+                  background: "transparent", 
+                  border: "none", 
+                  fontSize: "1.5rem", 
+                  color: "#64748b", 
+                  cursor: "pointer",
+                  padding: "4px"
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: "24px", overflowY: "auto", flex: 1, background: "#f8fafc" }}>
+              {loadingPlayers ? (
+                <div style={{ textAlign: "center", padding: "40px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+                  <div style={{ width: "32px", height: "32px", border: "3px solid #047857", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} className="animate-spin" />
+                  <p style={{ color: "#64748b", fontSize: "0.9rem" }}>Đang phân tích và tìm kiếm người chơi phù hợp...</p>
+                </div>
+              ) : suitablePlayers.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "48px 24px", background: "#ffffff", borderRadius: "16px", border: "1.5px dashed #cbd5e1" }}>
+                  <span style={{ fontSize: "40px", display: "block", marginBottom: "16px" }}>👥</span>
+                  <h4 style={{ margin: "0 0 8px 0", color: "#0f172a", fontSize: "0.95rem", fontWeight: "700" }}>Chưa tìm thấy người chơi phù hợp</h4>
+                  <p style={{ margin: 0, color: "#64748b", fontSize: "0.85rem", lineHeight: "1.5" }}>
+                    Hãy thử cập nhật lại khung giờ rảnh trong Hồ sơ chơi bóng của bạn hoặc quay lại sau.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  {suitablePlayers.map((item) => {
+                    const player = item.profile || item;
+                    const isExpanded = expandedPlayerIds.includes(player.UserID);
+                    const status = invitationStatus[player.UserID];
+                    
+                    // Format time helper
+                    const formatTimeLocal = (timeVal: any) => {
+                      if (!timeVal) return "";
+                      const str = String(timeVal);
+                      if (str.includes("T")) {
+                        const parts = str.split("T")[1];
+                        return parts ? parts.substring(0, 5) : str.substring(0, 5);
+                      }
+                      return str.substring(0, 5);
+                    };
+
+                    return (
+                      <div key={player.UserID} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)", display: "flex", flexDirection: "column", gap: "14px" }}>
+                        {/* Player Header */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                            {player.AvatarURL ? (
+                              <img src={player.AvatarURL} alt={player.FullName} style={{ width: "48px", height: "48px", borderRadius: "50%", objectFit: "cover", border: "2px solid #e2e8f0" }} />
+                            ) : (
+                              <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#f0fdf4", color: "#047857", display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "center", fontWeight: "800", fontSize: "1.1rem", border: "2px solid #e2e8f0" }}>
+                                {player.FullName ? player.FullName.charAt(0).toUpperCase() : "P"}
+                              </div>
+                            )}
+                            <div>
+                              <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: "800", color: "#0f172a" }}>{player.FullName}</h4>
+                              <div style={{ display: "flex", gap: "6px", alignItems: "center", marginTop: "4px" }}>
+                                <span style={{ background: "#f1f5f9", color: "#475569", fontSize: "0.7rem", padding: "2px 8px", borderRadius: "4px", fontWeight: "600" }}>
+                                  {player.PlayingRole || "Người chơi"}
+                                </span>
+                                <span style={{ background: player.Gender === "Female" ? "#fce7f3" : "#dbeafe", color: player.Gender === "Female" ? "#be185d" : "#1d4ed8", fontSize: "0.7rem", padding: "2px 8px", borderRadius: "4px", fontWeight: "600" }}>
+                                  {player.Gender === "Female" ? "Nữ" : "Nam"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div style={{ textAlign: "right" }}>
+                            <span style={{ fontSize: "0.75rem", color: "#64748b", display: "block" }}>DUPR Rating</span>
+                            <span style={{ fontSize: "1.1rem", fontWeight: "900", color: "#ef4444" }}>{player.Rating || player.SkillLevel || "3.5"}</span>
+                          </div>
+                        </div>
+
+                        {/* Player Basic Info Grid */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", background: "#f8fafc", padding: "10px 14px", borderRadius: "8px", fontSize: "0.8rem" }}>
+                          <div>
+                            <span style={{ color: "#64748b" }}>📍 Khu vực: </span>
+                            <strong style={{ color: "#334155" }}>{player.Address || "Hà Nội"}</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: "#64748b" }}>⏱️ Lịch trống: </span>
+                            <strong style={{ color: "#047857" }}>
+                              {player.AvailableStartTime ? `${formatTimeLocal(player.AvailableStartTime)} - ${formatTimeLocal(player.AvailableEndTime)}` : "Cả ngày"}
+                            </strong>
+                          </div>
+                        </div>
+
+                        {/* Expanded detail */}
+                        {isExpanded && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "12px", border: "1px dashed #e2e8f0", borderRadius: "8px", fontSize: "0.8rem", background: "#fafafa" }}>
+                            <div>
+                              <span style={{ color: "#64748b" }}>Kinh nghiệm: </span>
+                              <strong style={{ color: "#334155" }}>{player.ExperienceYears || "0"} năm thi đấu</strong>
+                            </div>
+                            {player.PlayStyle && (
+                              <div>
+                                <span style={{ color: "#64748b" }}>Phong cách chơi: </span>
+                                <span style={{ color: "#334155" }}>{player.PlayStyle}</span>
+                              </div>
+                            )}
+                            {player.Goal && (
+                              <div>
+                                <span style={{ color: "#64748b" }}>Mục tiêu: </span>
+                                <span style={{ color: "#334155" }}>{player.Goal}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Action row */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleExpandPlayer(player.UserID)}
+                            style={{ background: "transparent", border: "none", color: "#047857", cursor: "pointer", fontSize: "0.8rem", fontWeight: "700", display: "flex", alignItems: "center", gap: "4px", padding: 0 }}
+                          >
+                            {isExpanded ? "Thu gọn hồ sơ ▲" : "Xem hồ sơ chi tiết ▼"}
+                          </button>
+
+                          {status?.sent ? (
+                            <span style={{ background: "#dcfce7", color: "#166534", fontSize: "0.8rem", padding: "6px 16px", borderRadius: "8px", fontWeight: "700", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                              ✓ Đã gửi lời mời
+                            </span>
+                          ) : invitingPlayer?.UserID === player.UserID ? (
+                            <div style={{ display: "flex", gap: "6px" }}>
+                              <button
+                                type="button"
+                                disabled={status?.sending}
+                                onClick={() => handleSendInviteToPlayer(player)}
+                                style={{ background: "#047857", color: "#ffffff", border: "none", borderRadius: "8px", padding: "6px 12px", fontSize: "0.8rem", fontWeight: "700", cursor: "pointer" }}
+                              >
+                                {status?.sending ? "Đang gửi..." : "Xác nhận gửi"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setInvitingPlayer(null)}
+                                style={{ background: "#e2e8f0", color: "#475569", border: "none", borderRadius: "8px", padding: "6px 12px", fontSize: "0.8rem", fontWeight: "700", cursor: "pointer" }}
+                              >
+                                Hủy
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInvitingPlayer(player);
+                                setCustomInviteMsg(`Chào bạn, mình muốn gửi lời mời ghép cặp cùng tham gia giải đấu ${tournament?.TournamentName || ""} nhé!`);
+                              }}
+                              style={{ background: "#047857", color: "#ffffff", border: "none", borderRadius: "8px", padding: "6px 16px", fontSize: "0.8rem", fontWeight: "750", cursor: "pointer", transition: "all 0.2s" }}
+                            >
+                              Gửi lời mời ghép cặp
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Inline custom invitation msg area */}
+                        {invitingPlayer?.UserID === player.UserID && (
+                          <div style={{ marginTop: "4px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                            <label style={{ fontSize: "0.75rem", fontWeight: "600", color: "#475569" }}>Lời nhắn gửi tới {player.FullName}:</label>
+                            <textarea
+                              value={customInviteMsg}
+                              onChange={(e) => setCustomInviteMsg(e.target.value)}
+                              rows={2}
+                              style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.8rem", outline: "none" }}
+                            />
+                          </div>
+                        )}
+
+                        {/* Error warning */}
+                        {status?.error && (
+                          <span style={{ color: "#ef4444", fontSize: "0.75rem", marginTop: "-4px", display: "block" }}>
+                            ⚠️ {status.error}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{
+              padding: "16px 28px",
+              background: "#f8fafc",
+              borderTop: "1px solid #e2e8f0",
+              textAlign: "right"
+            }}>
+              <button 
+                onClick={() => {
+                  setMatchingModalOpen(false);
+                  setInvitingPlayer(null);
+                }}
+                className="tm-btn"
+                style={{ 
+                  background: "#ffffff", 
+                  border: "1px solid #cbd5e1", 
+                  color: "#334155", 
+                  borderRadius: "8px", 
+                  padding: "8px 16px",
+                  fontSize: "0.85rem",
+                  fontWeight: "700",
+                  cursor: "pointer"
+                }}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

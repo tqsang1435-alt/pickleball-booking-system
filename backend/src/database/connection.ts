@@ -87,6 +87,36 @@ export async function getPool() {
     console.error("Migration error (ensuring LockReason column in Users):", err);
   }
 
+  // Self-migration for Tournaments ImageURL column
+  try {
+    await pool.request().query(`
+      IF NOT EXISTS (
+        SELECT * FROM sys.columns 
+        WHERE object_id = OBJECT_ID('Tournaments') AND name = 'ImageURL'
+      )
+      BEGIN
+        ALTER TABLE Tournaments ADD ImageURL NVARCHAR(500) NULL;
+      END
+    `);
+  } catch (err) {
+    console.error("Migration error (ensuring ImageURL column in Tournaments):", err);
+  }
+
+  // Self-migration for Tournaments OrganizerName column
+  try {
+    await pool.request().query(`
+      IF NOT EXISTS (
+        SELECT * FROM sys.columns 
+        WHERE object_id = OBJECT_ID('Tournaments') AND name = 'OrganizerName'
+      )
+      BEGIN
+        ALTER TABLE Tournaments ADD OrganizerName NVARCHAR(255) NULL;
+      END
+    `);
+  } catch (err) {
+    console.error("Migration error (ensuring OrganizerName column in Tournaments):", err);
+  }
+
   // Self-migration for AI Promotions columns
   try {
     await pool.request().query(`

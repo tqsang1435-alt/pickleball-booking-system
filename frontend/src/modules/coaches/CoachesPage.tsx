@@ -19,6 +19,97 @@ const SKILL_OPTIONS = [
   { value: "Professional", label: "Professional" },
 ];
 
+// HelpfulButton sub-component for interactive rating feedback
+function HelpfulButton({ reviewId }: { reviewId: number }) {
+  const [clicked, setClicked] = useState(false);
+  const [count, setCount] = useState(() => (reviewId % 5) + 3);
+
+  const handleHelpful = () => {
+    if (clicked) {
+      setCount((prev) => prev - 1);
+      setClicked(false);
+    } else {
+      setCount((prev) => prev + 1);
+      setClicked(true);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      className={`${styles.helpfulBtn} ${clicked ? styles.helpfulBtnActive : ""}`}
+      onClick={handleHelpful}
+    >
+      👍 Hữu ích ({count})
+    </button>
+  );
+}
+
+// Sample premium coach reviews database
+const sampleCoachReviews = [
+  {
+    ReviewID: 8001,
+    BookingID: 401,
+    UserID: 11,
+    CoachID: 1,
+    Rating: 5,
+    Comment: "Hệ thống gợi ý HLV bằng AI siêu chuẩn! Mình tìm được người hướng dẫn kiên nhẫn và đúng chuyên môn dink bóng chỉ sau 1 phút.",
+    Status: "Approved",
+    CreatedAt: "2026-07-10T08:30:00.000Z",
+    FullName: "Văn Anh",
+    AvatarURL: "",
+    CoachName: "David Nguyễn"
+  },
+  {
+    ReviewID: 8002,
+    BookingID: 402,
+    UserID: 12,
+    CoachID: 2,
+    Rating: 5,
+    Comment: "Hồ sơ Coach rất minh bạch và chi tiết. Mình thích nhất là có thể xem lịch trống của Coach trước khi quyết định booking.",
+    Status: "Approved",
+    CreatedAt: "2026-07-09T14:15:00.000Z",
+    FullName: "Minh Khang",
+    AvatarURL: ""
+  },
+  {
+    ReviewID: 8003,
+    BookingID: 403,
+    UserID: 13,
+    CoachID: 3,
+    Rating: 5,
+    Comment: "Các khóa học và Coach trên nền tảng cực kỳ chất lượng. Chuyên môn cao và thái độ giảng dạy rất nhiệt tình!",
+    Status: "Approved",
+    CreatedAt: "2026-07-08T17:45:00.000Z",
+    FullName: "Thanh Tùng",
+    AvatarURL: ""
+  },
+  {
+    ReviewID: 8004,
+    BookingID: 404,
+    UserID: 14,
+    CoachID: 4,
+    Rating: 4,
+    Comment: "Huấn luyện viên rất nhiệt tình và hướng dẫn dễ hiểu. Các bài tập rèn luyện thể lực rất hiệu quả.",
+    Status: "Approved",
+    CreatedAt: "2026-07-07T09:00:00.000Z",
+    FullName: "Quốc Huy",
+    AvatarURL: ""
+  },
+  {
+    ReviewID: 8005,
+    BookingID: 405,
+    UserID: 15,
+    CoachID: 5,
+    Rating: 5,
+    Comment: "Buổi học hiệu quả, kỹ thuật vung vợt và đập bóng của mình được cải thiện rõ rệt chỉ sau một khóa học ngắn hạn.",
+    Status: "Approved",
+    CreatedAt: "2026-07-06T10:30:00.000Z",
+    FullName: "Tran Bao Chau",
+    AvatarURL: ""
+  }
+];
+
 export default function CoachesPage() {
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [keyword, setKeyword] = useState("");
@@ -32,6 +123,67 @@ export default function CoachesPage() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiResults, setAiResults] = useState<CoachScoreResult[]>([]);
   const [aiFallback, setAiFallback] = useState(false);
+
+  const [activeFilter, setActiveFilter] = useState("Tất cả");
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [itemsToShow, setItemsToShow] = useState(3);
+
+  // Compute filtered reviews dynamically based on active filter pill selection
+  const filteredReviews = useMemo(() => {
+    let result = [...sampleCoachReviews];
+
+    if (activeFilter === "5 sao") {
+      result = result.filter((r) => r.Rating === 5);
+    } else if (activeFilter === "Có hình ảnh") {
+      result = result.filter((r) => r.ReviewID % 2 === 0);
+    } else if (activeFilter === "Mới nhất") {
+      result.sort((a, b) => new Date(b.CreatedAt).getTime() - new Date(a.CreatedAt).getTime());
+    }
+
+    return result;
+  }, [activeFilter]);
+
+  // Handle responsive items count calculation client-side on mount and resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 640) {
+        setItemsToShow(1);
+      } else if (window.innerWidth <= 1024) {
+        setItemsToShow(2);
+      } else {
+        setItemsToShow(3);
+      }
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Reset slider index when filter changes
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [activeFilter]);
+
+  // Autoplay timer to scroll testimonials card-by-card every 5.5 seconds
+  useEffect(() => {
+    if (filteredReviews.length <= itemsToShow) return;
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % filteredReviews.length);
+    }, 5500);
+    return () => clearInterval(timer);
+  }, [filteredReviews.length, itemsToShow]);
+
+  // Slice visible reviews based on responsive screen count and current sliding index
+  const visibleReviews = useMemo(() => {
+    if (filteredReviews.length === 0) return [];
+    const list = [];
+    const count = Math.min(filteredReviews.length, itemsToShow);
+    for (let i = 0; i < count; i++) {
+      const idx = (currentIndex + i) % filteredReviews.length;
+      list.push(filteredReviews[idx]);
+    }
+    return list;
+  }, [filteredReviews, currentIndex, itemsToShow]);
 
   useEffect(() => {
     let mounted = true;
@@ -438,57 +590,158 @@ export default function CoachesPage() {
               </section>
 
               <section className={styles.reviewSection}>
-                <div className={styles.reviewHeader}>
-                  <div className={styles.reviewScoreWrap}>
-                    <div className={styles.reviewScoreBig}>{averageRating}</div>
-                    <div className={styles.reviewScoreDetails}>
-                      <div className={styles.reviewStars}>★★★★★</div>
-                      <span>Dựa trên {totalStudents}+ học viên đã trải nghiệm</span>
-                    </div>
-                  </div>
-                  
-                  <div className={styles.reviewAction}>
-                    <button type="button">Xem tất cả đánh giá</button>
-                  </div>
+                <div className={styles.sectionHeaderCentered}>
+                  <span className={styles.testimonialBadge}>Đánh giá học viên</span>
+                  <h2 className={styles.testimonialTitle}>Cảm nhận về đội ngũ Huấn luyện viên</h2>
+                  <p className={styles.testimonialSub}>Nhận xét chân thực từ các học viên sau các khóa đào tạo kỹ thuật Pickleball.</p>
                 </div>
 
-                <div className={styles.reviewGrid}>
-                  <div className={styles.reviewCommentCard}>
-                    <div className={styles.quoteIcon}>“</div>
-                    <p>Hệ thống gợi ý HLV bằng AI siêu chuẩn! Mình tìm được người hướng dẫn kiên nhẫn và đúng chuyên môn dink bóng chỉ sau 1 phút.</p>
-                    <div className={styles.commentAuthor}>
-                      <div className={styles.authorAvatar}>V</div>
-                      <div>
-                        <strong>Văn Anh</strong>
-                        <span>Học viên Beginner</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className={styles.reviewCommentCard}>
-                    <div className={styles.quoteIcon}>“</div>
-                    <p>Hồ sơ Coach rất minh bạch và chi tiết. Mình thích nhất là có thể xem lịch trống của Coach trước khi quyết định booking.</p>
-                    <div className={styles.commentAuthor}>
-                      <div className={styles.authorAvatar}>M</div>
-                      <div>
-                        <strong>Minh Khang</strong>
-                        <span>Học viên Intermediate</span>
-                      </div>
+                {/* Overview Ratings Card (Card tổng quan lớn) */}
+                <div className={styles.overviewCard}>
+                  {/* Left Column: Average Score */}
+                  <div className={styles.overviewLeft}>
+                    <h3 className={styles.ratingNumber}>{Number(averageRating || 4.7).toFixed(1)}</h3>
+                    <div className={styles.ratingStarsWrap}>
+                      <div className={styles.starsFilledBig}>★★★★★</div>
+                      <p className={styles.totalReviewsText}>Dựa trên {totalStudents || 805}+ học viên</p>
                     </div>
                   </div>
 
-                  <div className={styles.reviewCommentCard}>
-                    <div className={styles.quoteIcon}>“</div>
-                    <p>Các khóa học và Coach trên nền tảng cực kỳ chất lượng. Chuyên môn cao và thái độ giảng dạy rất nhiệt tình!</p>
-                    <div className={styles.commentAuthor}>
-                      <div className={styles.authorAvatar}>T</div>
-                      <div>
-                        <strong>Thanh Tùng</strong>
-                        <span>Học viên Advanced</span>
+                  {/* Middle Column: Distribution Bars */}
+                  <div className={styles.overviewMiddle}>
+                    {[
+                      { star: 5, pct: 85 },
+                      { star: 4, pct: 10 },
+                      { star: 3, pct: 4 },
+                      { star: 2, pct: 1 },
+                      { star: 1, pct: 0 }
+                    ].map((row) => (
+                      <div className={styles.statRow} key={row.star}>
+                        <span className={styles.statStarLabel}>{row.star} ★</span>
+                        <div className={styles.statBarContainer}>
+                          <div className={styles.statBarFill} style={{ width: `${row.pct}%` }} />
+                        </div>
+                        <span className={styles.statPctLabel}>{row.pct}%</span>
                       </div>
-                    </div>
+                    ))}
+                  </div>
+
+                  {/* Right Column: Write Review CTA */}
+                  <div className={styles.overviewRight}>
+                    <h4>Kết nối huấn luyện viên</h4>
+                    <p>Chọn đúng huấn luyện viên giúp định hướng kỹ thuật chơi nhanh chóng hơn.</p>
+                    <button 
+                      type="button" 
+                      className={styles.writeReviewBtnPremium}
+                      onClick={() => {
+                        const el = document.getElementById("search-section") || document.querySelector("input");
+                        if (el) el.scrollIntoView({ behavior: "smooth" });
+                      }}
+                    >
+                      🔍 Tìm Coach phù hợp
+                    </button>
                   </div>
                 </div>
+
+                {/* Filter Pills Container */}
+                <div className={styles.filterPillsContainer}>
+                  {["Tất cả", "5 sao", "Có hình ảnh", "Mới nhất"].map((pill) => (
+                    <button
+                      key={pill}
+                      type="button"
+                      className={`${styles.filterPill} ${activeFilter === pill ? styles.filterPillActive : ""}`}
+                      onClick={() => setActiveFilter(pill)}
+                    >
+                      {pill}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Comment Cards Grid with transition animation */}
+                {visibleReviews.length === 0 ? (
+                  <div className={styles.emptyReviews}>
+                    Không có đánh giá nào phù hợp với bộ lọc hiện tại.
+                  </div>
+                ) : (
+                  <>
+                    <div className={styles.testimonialsGrid} key={currentIndex}>
+                      {visibleReviews.map((review) => {
+                        const isVerified = !!review.BookingID;
+                        const reviewDate = new Date(review.CreatedAt).toLocaleDateString("vi-VN");
+                        
+                        return (
+                          <div className={styles.premiumReviewCard} key={review.ReviewID}>
+                            {/* Top Accent Gradient Line */}
+                            <div className={styles.cardAccentLine} />
+
+                            <div className={styles.cardHeaderRow}>
+                              <div className={styles.cardStars}>
+                                {Array.from({ length: 5 }, (_, i) => (
+                                  <span
+                                    key={i}
+                                    className={i < review.Rating ? styles.starGold : styles.starGray}
+                                  >
+                                    ★
+                                  </span>
+                                ))}
+                              </div>
+                              <span className={styles.cardDate}>{reviewDate}</span>
+                            </div>
+
+                            {/* Decorative quote mark */}
+                            <span className={styles.quoteMark}>“</span>
+
+                            <p className={styles.premiumReviewComment}>
+                              {review.Comment}
+                            </p>
+
+                            <div className={styles.cardFooterRow}>
+                              <div className={styles.authorInfo}>
+                                <div className={styles.authorAvatar}>
+                                  {review.AvatarURL ? (
+                                    <img src={review.AvatarURL} alt={review.FullName} />
+                                  ) : (
+                                    <span>{review.FullName.charAt(0).toUpperCase()}</span>
+                                  )}
+                                </div>
+                                <div className={styles.authorText}>
+                                  <strong>{review.FullName}</strong>
+                                  <span className={styles.authorTarget}>
+                                    Học viên PickleClub
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Right metadata badges and Helpful button */}
+                              <div className={styles.cardMetaCol}>
+                                <div className={styles.badgesWrap}>
+                                  {isVerified && <span className={styles.verifiedBadge}>✓ Đã xác thực</span>}
+                                  <span className={styles.serviceTag}>Coach</span>
+                                </div>
+                                <HelpfulButton reviewId={review.ReviewID} />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Testimonial Dot Navigation Indicators */}
+                    {filteredReviews.length > itemsToShow && (
+                      <div className={styles.reviewDots}>
+                        {filteredReviews.map((_, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            className={`${styles.reviewDot} ${currentIndex === i ? styles.reviewDotActive : ""}`}
+                            onClick={() => setCurrentIndex(i)}
+                            aria-label={`Slide ${i + 1}`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
               </section>
             </main>
 

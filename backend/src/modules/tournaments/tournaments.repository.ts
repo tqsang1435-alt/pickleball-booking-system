@@ -92,18 +92,20 @@ export async function createTournament(data: CreateTournamentInput & { createdBy
     .input("TournamentStart", sql.DateTime, data.tournamentStart)
     .input("TournamentEnd", sql.DateTime, data.tournamentEnd)
     .input("PrizeInfo", sql.NVarChar(sql.MAX), data.prizeInfo || null)
+    .input("ImageURL", sql.NVarChar(500), data.imageURL || null)
+    .input("OrganizerName", sql.NVarChar(255), data.organizerName || null)
     .input("CreatedBy", sql.Int, data.createdBy)
     .query(`
       INSERT INTO Tournaments (
         TournamentCode, TournamentName, Description, Location,
         RegistrationStart, RegistrationEnd, TournamentStart, TournamentEnd,
-        Status, PrizeInfo, CreatedBy, CreatedAt, UpdatedAt, IsDeleted
+        Status, PrizeInfo, ImageURL, OrganizerName, CreatedBy, CreatedAt, UpdatedAt, IsDeleted
       )
       OUTPUT INSERTED.*
       VALUES (
         @TournamentCode, @TournamentName, @Description, @Location,
         @RegistrationStart, @RegistrationEnd, @TournamentStart, @TournamentEnd,
-        'Draft', @PrizeInfo, @CreatedBy, GETDATE(), GETDATE(), 0
+        'Draft', @PrizeInfo, @ImageURL, @OrganizerName, @CreatedBy, GETDATE(), GETDATE(), 0
       )
     `);
   return result.recordset[0];
@@ -151,6 +153,14 @@ export async function updateTournament(id: number, data: UpdateTournamentInput):
     request.input("PrizeInfo", sql.NVarChar(sql.MAX), data.prizeInfo || null);
     sets.push("PrizeInfo = @PrizeInfo");
   }
+  if (data.imageURL !== undefined) {
+    request.input("ImageURL", sql.NVarChar(500), data.imageURL || null);
+    sets.push("ImageURL = @ImageURL");
+  }
+  if (data.organizerName !== undefined) {
+    request.input("OrganizerName", sql.NVarChar(255), data.organizerName || null);
+    sets.push("OrganizerName = @OrganizerName");
+  }
 
   sets.push("UpdatedAt = GETDATE()");
 
@@ -163,6 +173,21 @@ export async function updateTournament(id: number, data: UpdateTournamentInput):
 
   const result = await request.query(query);
   return result.recordset[0];
+}
+
+/**
+ * Soft delete a tournament by setting IsDeleted = 1
+ */
+export async function softDeleteTournament(id: number): Promise<boolean> {
+  const pool = await getPool();
+  const result = await pool.request()
+    .input("TournamentID", sql.Int, id)
+    .query(`
+      UPDATE Tournaments
+      SET IsDeleted = 1, UpdatedAt = GETDATE()
+      WHERE TournamentID = @TournamentID
+    `);
+  return (result.rowsAffected[0] ?? 0) > 0;
 }
 
 /**

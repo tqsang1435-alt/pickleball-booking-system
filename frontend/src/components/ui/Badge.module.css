@@ -1,0 +1,49 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.5rem;
+  padding: 0.25rem 0.625rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.neutral {
+  background: var(--pcs-neutral-100);
+  color: var(--pcs-neutral-700);
+  border-color: var(--pcs-neutral-200);
+}
+
+.brand {
+  background: var(--pcs-brand-primary-light);
+  color: var(--pcs-brand-primary-hover);
+  border-color: var(--pcs-brand-primary-border);
+}
+
+.success {
+  background: var(--pcs-status-success-bg);
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.warning {
+  background: var(--pcs-status-warning-bg);
+  color: #a16207;
+  border-color: #fde68a;
+}
+
+.danger {
+  background: var(--pcs-status-error-bg);
+  color: #b91c1c;
+  border-color: var(--pcs-status-error-border);
+}
+
+.info {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}

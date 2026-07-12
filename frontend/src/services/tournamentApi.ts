@@ -14,6 +14,7 @@ export interface Tournament {
   Status: string;
   Rules?: string;
   CreatedAt: string;
+  ImageURL?: string;
 }
 
 export interface TournamentDivision {
@@ -94,6 +95,13 @@ export const tournamentApi = {
   cancelTournament: async (id: number) => {
     return apiClient<any>(`/api/tournaments/${id}/cancel`, {
       method: "POST",
+      ...getHeaders(),
+    });
+  },
+
+  deleteTournament: async (id: number) => {
+    return apiClient<any>(`/api/tournaments/${id}`, {
+      method: "DELETE",
       ...getHeaders(),
     });
   },

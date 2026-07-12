@@ -106,3 +106,23 @@ export async function createReviewController(req: NextRequest) {
     return handleError(error);
   }
 }
+
+export async function checkReviewEligibilityController(req: NextRequest) {
+  try {
+    const auth = requireAuth(req);
+    if (auth instanceof Response) return auth;
+
+    const { searchParams } = new URL(req.url);
+    const courtId = searchParams.get("courtId") ? Number(searchParams.get("courtId")) : undefined;
+    const coachId = searchParams.get("coachId") ? Number(searchParams.get("coachId")) : undefined;
+
+    const bookingId = await reviewsService.checkReviewEligibility(auth.userId, courtId, coachId);
+
+    return successResponse(
+      { canReview: !!bookingId, bookingId },
+      "Eligibility checked successfully"
+    );
+  } catch (error) {
+    return handleError(error);
+  }
+}

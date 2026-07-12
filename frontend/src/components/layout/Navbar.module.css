@@ -3,12 +3,12 @@
   top: 0;
   z-index: 50;
 
-  background: rgba(251, 255, 245, 0.9);
+  background: rgba(247, 250, 245, 0.9);
   backdrop-filter: blur(18px);
 
-  border-bottom: 1px solid var(--pcs-neutral-200);
+  border-bottom: 1px solid #E2EBE0;
 
-  box-shadow: 0 8px 26px rgba(39, 75, 31, 0.06);
+  box-shadow: 0 8px 30px rgba(15, 45, 30, 0.07);
 }
 
 .inner {
@@ -33,6 +33,12 @@
   white-space: nowrap;
 
   color: var(--pcs-neutral-900);
+}
+
+.logoImage {
+  border-radius: 50%;
+  overflow: hidden;
+  object-fit: cover;
 }
 
 .logo b {
@@ -231,10 +237,14 @@
   .nav {
     order: 3;
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
     overflow-x: auto;
+    overflow-y: hidden;
     justify-content: flex-start;
     gap: 20px;
     padding-bottom: 8px;
+    scrollbar-width: thin;
   }
 
   .nav a {

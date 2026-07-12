@@ -1,0 +1,105 @@
+.field {
+  display: grid;
+  gap: 0.5rem;
+  color: var(--pcs-neutral-800);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.label {
+  line-height: 1.2;
+}
+
+.control,
+.textareaControl {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  border: 1px solid var(--pcs-border-default);
+  border-radius: var(--pcs-radius-md);
+  background: var(--pcs-surface);
+  color: var(--pcs-neutral-900);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+}
+
+.control {
+  min-height: 3rem;
+  padding: 0 0.875rem;
+}
+
+.textareaControl {
+  align-items: flex-start;
+  padding: 0.75rem 0.875rem;
+}
+
+.control:focus-within,
+.textareaControl:focus-within {
+  border-color: var(--pcs-brand-primary);
+  box-shadow: var(--pcs-focus-ring);
+}
+
+.invalid {
+  border-color: var(--pcs-status-error);
+}
+
+.invalid:focus-within {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16);
+}
+
+.icon {
+  display: inline-flex;
+  color: var(--pcs-neutral-500);
+  flex-shrink: 0;
+}
+
+.control input,
+.control select,
+.textareaControl textarea {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--pcs-neutral-900);
+  font: inherit;
+  font-weight: 600;
+}
+
+.control input::placeholder,
+.textareaControl textarea::placeholder {
+  color: var(--pcs-neutral-400);
+  font-weight: 500;
+}
+
+.control input:disabled,
+.control select:disabled,
+.textareaControl textarea:disabled {
+  cursor: not-allowed;
+  color: var(--pcs-neutral-500);
+}
+
+.selectControl select {
+  cursor: pointer;
+}
+
+.textareaControl textarea {
+  min-height: 7rem;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.hint,
+.error {
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.hint {
+  color: var(--pcs-neutral-500);
+}
+
+.error {
+  color: var(--pcs-status-error);
+}

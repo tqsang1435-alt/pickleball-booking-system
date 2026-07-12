@@ -180,6 +180,29 @@ export async function cancelTournamentController(req: NextRequest, params: { id:
 }
 
 /**
+ * DELETE /api/tournaments/:id
+ */
+export async function deleteTournamentController(req: NextRequest, params: { id: string }) {
+  try {
+    const id = parseInt(params.id, 10);
+    if (isNaN(id)) {
+      return errorResponse("ID giải đấu không hợp lệ", 400);
+    }
+
+    const auth = requireAuth(req);
+    if (auth instanceof Response) return auth;
+
+    const roleError = requireRoles(auth, ["Admin"]);
+    if (roleError) return roleError;
+
+    const result = await tournamentService.deleteTournament(id, auth.userId);
+    return successResponse(result, "Xóa giải đấu thành công");
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+/**
  * GET /api/tournaments/:id/divisions
  */
 export async function getDivisionsController(req: NextRequest, params: { id: string }) {

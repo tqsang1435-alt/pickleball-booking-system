@@ -13,6 +13,7 @@ import BookingModal from "./BookingModal";
 import ReviewList from "@/components/reviews/ReviewList";
 import ReviewStatsView from "@/components/reviews/ReviewStatsView";
 import ReviewModal from "@/components/reviews/ReviewModal";
+import { getToken } from "@/utils/authStorage";
 import styles from "./CourtDetailPage.module.css";
 
 function todayVN() {
@@ -343,7 +344,23 @@ export default function CourtDetailPage({ courtId }: { courtId: string }) {
             <section className={styles.section} style={{ position: "relative" }}>
               <h2>Đánh giá</h2>
               <button 
-                onClick={() => setReviewModalOpen(true)}
+                onClick={async () => {
+                  const token = getToken();
+                  if (!token) {
+                    alert("Vui lòng đăng nhập để viết đánh giá.");
+                    return;
+                  }
+                  try {
+                    const res = await reviewApi.checkEligibility({ courtId: court.CourtID }, token);
+                    if (res && res.canReview) {
+                      setReviewModalOpen(true);
+                    } else {
+                      alert("Bạn chỉ có thể đánh giá sân này sau khi đã đặt lịch và hoàn thành giờ chơi tại đây.");
+                    }
+                  } catch (err: any) {
+                    alert(err.message || "Đã xảy ra lỗi khi kiểm tra quyền đánh giá.");
+                  }
+                }}
                 style={{ position: "absolute", top: "0px", right: "0px", background: "#1677ff", color: "white", padding: "8px 16px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 500 }}
               >
                 Viết Đánh giá
