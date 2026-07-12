@@ -24,6 +24,7 @@ export default function MatchingLayout() {
 
   // Toast notification state
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const showToast = (message: string, type: "success" | "error" = "success") => {
     setToast({ message, type });
@@ -41,11 +42,8 @@ export default function MatchingLayout() {
   useEffect(() => {
     const t = getToken();
     if (!t) {
-      // User is not logged in - redirect to /login
-      if (typeof window !== "undefined") {
-        alert("Vui lòng đăng nhập để sử dụng tính năng ghép cặp.");
-      }
-      router.push("/login");
+      // User is not logged in - show login modal instead of toast
+      setShowLoginModal(true);
     } else {
       setToken(t);
       setCheckingAuth(false);
@@ -81,10 +79,74 @@ export default function MatchingLayout() {
     setRefreshTrigger((prev) => prev + 1);
   };
 
+  const renderToast = () => {
+    if (!toast) return null;
+    return (
+      <div
+        style={{
+          position: "fixed",
+          bottom: "24px",
+          right: "24px",
+          backgroundColor: toast.type === "success" ? "#dcfce7" : "#fee2e2",
+          border: `1px solid ${toast.type === "success" ? "#bbf7d0" : "#fecaca"}`,
+          color: toast.type === "success" ? "#166534" : "#991b1b",
+          padding: "12px 24px",
+          borderRadius: "8px",
+          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+          zIndex: 9999,
+          fontWeight: "500",
+          fontSize: "14px",
+          transition: "all 0.3s ease",
+        }}
+      >
+        {toast.type === "success" ? "✅ " : "❌ "}
+        {toast.message}
+      </div>
+    );
+  };
+
   if (checkingAuth || !token) {
     return (
-      <div className={styles.container} style={{ textAlign: "center", padding: "4rem 1rem" }}>
-        <p style={{ color: "#64748b" }}>Đang kiểm tra thông tin đăng nhập...</p>
+      <div className={styles.container} style={{ textAlign: "center", padding: "4rem 1rem", position: "relative" }}>
+        {renderToast()}
+        
+        {/* Render centered login modal if showLoginModal is true */}
+        {showLoginModal && (
+          <div style={{
+            position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)", zIndex: 10000,
+            display: "flex", alignItems: "center", justifyContent: "center"
+          }}>
+            <div style={{
+              backgroundColor: "#fff", padding: "32px", borderRadius: "12px",
+              width: "90%", maxWidth: "400px", textAlign: "center",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)"
+            }}>
+              <h3 style={{ margin: "0 0 16px", color: "#1e293b", fontSize: "20px", fontWeight: "600" }}>
+                Yêu cầu đăng nhập
+              </h3>
+              <p style={{ margin: "0 0 24px", color: "#475569", fontSize: "15px", lineHeight: "1.5" }}>
+                Vui lòng đăng nhập để sử dụng tính năng ghép cặp và tìm kiếm đồng đội.
+              </p>
+              <button
+                onClick={() => router.push("/login")}
+                style={{
+                  backgroundColor: "#10b981", color: "#fff", border: "none",
+                  padding: "12px 32px", borderRadius: "8px", fontSize: "16px",
+                  fontWeight: "600", cursor: "pointer", transition: "background-color 0.2s"
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#059669"}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#10b981"}
+              >
+                Đăng nhập (OK)
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!showLoginModal && (
+          <p style={{ color: "#64748b" }}>Đang kiểm tra thông tin đăng nhập...</p>
+        )}
       </div>
     );
   }
@@ -92,28 +154,7 @@ export default function MatchingLayout() {
   return (
     <div className={styles.container}>
       {/* Toast Alert overlay */}
-      {toast && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: "24px",
-            right: "24px",
-            backgroundColor: toast.type === "success" ? "#dcfce7" : "#fee2e2",
-            border: `1px solid ${toast.type === "success" ? "#bbf7d0" : "#fecaca"}`,
-            color: toast.type === "success" ? "#166534" : "#991b1b",
-            padding: "12px 24px",
-            borderRadius: "8px",
-            boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-            zIndex: 9999,
-            fontWeight: "500",
-            fontSize: "14px",
-            transition: "all 0.3s ease",
-          }}
-        >
-          {toast.type === "success" ? "✅ " : "❌ "}
-          {toast.message}
-        </div>
-      )}
+      {renderToast()}
 
       <div className={styles.titleArea}>
         <h1 className={styles.title}>Player Matching & Teams</h1>
