@@ -362,6 +362,22 @@ export async function updateTournament(id: number, data: UpdateTournamentInput, 
     throw Object.assign(new Error("Không tìm thấy giải đấu"), { statusCode: 404 });
   }
 
+  // Validate date relationship on update
+  const mergedRegStart = data.registrationStart ? new Date(data.registrationStart) : new Date(tournament.RegistrationStart);
+  const mergedRegEnd = data.registrationEnd ? new Date(data.registrationEnd) : new Date(tournament.RegistrationEnd);
+  const mergedTourStart = data.tournamentStart ? new Date(data.tournamentStart) : new Date(tournament.TournamentStart);
+  const mergedTourEnd = data.tournamentEnd ? new Date(data.tournamentEnd) : new Date(tournament.TournamentEnd);
+
+  if (mergedRegStart >= mergedRegEnd) {
+    throw Object.assign(new Error("Ngày bắt đầu đăng ký phải trước ngày kết thúc đăng ký"), { statusCode: 400 });
+  }
+  if (mergedRegEnd > mergedTourStart) {
+    throw Object.assign(new Error("Ngày kết thúc đăng ký phải trước hoặc bằng ngày bắt đầu giải đấu"), { statusCode: 400 });
+  }
+  if (mergedTourStart >= mergedTourEnd) {
+    throw Object.assign(new Error("Ngày bắt đầu giải đấu phải trước ngày kết thúc giải đấu"), { statusCode: 400 });
+  }
+
   // BR-T01 / BR-T37: Không cho sửa nếu đã Completed hoặc Cancelled
   if (tournament.Status === TOURNAMENT_STATUS.COMPLETED || tournament.Status === TOURNAMENT_STATUS.CANCELLED) {
     throw Object.assign(

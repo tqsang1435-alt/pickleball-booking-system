@@ -132,6 +132,25 @@ export default function AdminTournamentsPage() {
     setError("");
     setSuccess("");
     try {
+      if (!formData.registrationStart || !formData.registrationEnd || !formData.startDate || !formData.endDate) {
+        throw new Error("Vui lòng điền đầy đủ thông tin thời gian đăng ký và thời gian giải đấu.");
+      }
+
+      const regStart = new Date(formData.registrationStart).getTime();
+      const regEnd = new Date(formData.registrationEnd).getTime();
+      const tourStart = new Date(formData.startDate).getTime();
+      const tourEnd = new Date(formData.endDate).getTime();
+
+      if (regStart >= regEnd) {
+        throw new Error("Ngày bắt đầu đăng ký phải trước ngày kết thúc đăng ký.");
+      }
+      if (regEnd > tourStart) {
+        throw new Error("Ngày kết thúc đăng ký phải trước hoặc bằng ngày bắt đầu giải đấu.");
+      }
+      if (tourStart >= tourEnd) {
+        throw new Error("Ngày bắt đầu giải đấu phải trước ngày kết thúc giải đấu.");
+      }
+
       const apiPayload = {
         tournamentCode: editingId ? undefined : `TOURN-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         tournamentName: formData.tournamentName,
