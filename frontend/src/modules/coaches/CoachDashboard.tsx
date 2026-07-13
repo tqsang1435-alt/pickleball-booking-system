@@ -856,7 +856,7 @@ export default function CoachDashboard({ token }: Props) {
               </button>
             </div>
 
-            <div className={`${styles.contentPad} ${styles.profileGrid}`}>
+            <div className={`${styles.contentPad}`}>
               <div className={styles.mainColumn}>
                 <div className={styles.avatarUpload}>
                   <img
@@ -975,53 +975,19 @@ export default function CoachDashboard({ token }: Props) {
                     </div>
                   </div>
                   <div className={styles.kpiCard}>
-                    <span>Lượt xem hồ sơ</span>
-                    <strong>248</strong>
-                    <p>30 ngày gần nhất</p>
+                    <span>Học viên đã dạy</span>
+                    <strong>{coach?.TotalStudents || 0}</strong>
+                    <p>Tổng số học viên</p>
                   </div>
                   <div className={styles.kpiCard}>
-                    <span>Tỷ lệ đặt sau xem</span>
-                    <strong>18%</strong>
-                    <p>Cao hơn trung bình</p>
+                    <span>Đánh giá trung bình</span>
+                    <strong>{Number(coach?.AverageRating || 0).toFixed(1)} sao</strong>
+                    <p>Từ học viên</p>
                   </div>
                 </div>
               </div>
 
-              <aside className={styles.sidePanel}>
-                <div className={styles.panelHead}>
-                  <h3>Preview hồ sơ</h3>
-                  <p>Học viên sẽ thấy thẻ giới thiệu này khi xem danh sách Coach.</p>
-                </div>
-                <div className={styles.livePreview}>
-                  <div className={styles.previewTop}>
-                    <img
-                      src={avatarPreview || getImageUrl(coach?.AvatarURL)}
-                      alt={coach?.FullName || "Coach"}
-                    />
-                    <div>
-                      <strong>{coach?.FullName}</strong>
-                      <p>{expertiseForm.skillLevel || "Coach"} · {formatCurrency(hourlyRate)}/giờ</p>
-                    </div>
-                  </div>
-                  <p>
-                    {profileForm.specialization ||
-                      "Cập nhật chuyên môn để hồ sơ nổi bật hơn."}
-                  </p>
-                  <div className={styles.badgeRow}>
-                    <span className={styles.miniBadge}>
-                      {Number(coach?.AverageRating || 0).toFixed(1)} sao
-                    </span>
-                    <span className={styles.miniBadge}>{coach?.TotalStudents || 0} học viên</span>
-                  </div>
-                </div>
 
-                <div className={styles.checklist}>
-                  <div><span>✓</span><strong>Ảnh rõ mặt</strong><em>Đạt</em></div>
-                  <div><span>✓</span><strong>Chuyên môn cụ thể</strong><em>Đạt</em></div>
-                  <div><span>✓</span><strong>Mô tả ngắn gọn</strong><em>Đạt</em></div>
-                  <div><span>✓</span><strong>Có lịch mở tuần này</strong><em>{availableSchedules.length} slot</em></div>
-                </div>
-              </aside>
             </div>
           </form>
         )}
@@ -1039,8 +1005,63 @@ export default function CoachDashboard({ token }: Props) {
               </button>
             </div>
 
-            <div className={`${styles.contentPad} ${styles.twoColumnGrid}`}>
+            <div className={`${styles.contentPad}`}>
               <div className={styles.mainColumn}>
+                <section className={styles.panel}>
+                  <div className={styles.panelHead}>
+                    <h3>Chứng chỉ / Giải thưởng</h3>
+                    <p>Ảnh chứng chỉ giúp tăng độ tin cậy.</p>
+                  </div>
+                  <div className={styles.panelBody}>
+                    <div className={styles.certificateBox}>
+                      <div className={styles.certThumb}>PPR</div>
+                      <div>
+                        <strong>
+                          {expertiseForm.certifications && !expertiseForm.certifications.startsWith("/uploads")
+                            ? expertiseForm.certifications
+                            : "PPR Certified"}
+                        </strong>
+                        <p>{hasCertificate ? "Đã có chứng chỉ" : "Chưa tải chứng chỉ"}</p>
+                      </div>
+                    </div>
+                    <div className={styles.uploadPicker}>
+                      <input
+                        id="certs"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleCertChange}
+                        className={styles.hiddenFileInput}
+                      />
+                      <label htmlFor="certs" className={styles.uploadButton}>
+                        Chọn chứng chỉ
+                      </label>
+                      <span className={styles.uploadFileName}>
+                        {certFile?.name || "Chưa có tệp nào được chọn"}
+                      </span>
+                    </div>
+                    {certError && <p className={styles.error}>{certError}</p>}
+                    {(certPreview ||
+                      (expertiseForm.certifications &&
+                        expertiseForm.certifications.startsWith("/uploads"))) && (
+                      <div className={styles.certificatePreview}>
+                        <img
+                          src={certPreview || getImageUrl(expertiseForm.certifications)}
+                          alt="Certificate Preview"
+                        />
+                        {certPreview && (
+                          <button
+                            type="button"
+                            onClick={handleCancelCert}
+                            className={styles.textButton}
+                          >
+                            Hủy ảnh vừa chọn
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </section>
+
                 <section className={styles.panel}>
                   <div className={styles.panelHead}>
                     <h3>Trình độ kỹ năng</h3>
@@ -1161,77 +1182,6 @@ export default function CoachDashboard({ token }: Props) {
                   </p>
                 )}
               </div>
-
-              <aside className={styles.sideStack}>
-                <section className={styles.panel}>
-                  <div className={styles.panelHead}>
-                    <h3>Chứng chỉ / Giải thưởng</h3>
-                    <p>Ảnh chứng chỉ giúp tăng độ tin cậy.</p>
-                  </div>
-                  <div className={styles.panelBody}>
-                    <div className={styles.certificateBox}>
-                      <div className={styles.certThumb}>PPR</div>
-                      <div>
-                        <strong>
-                          {expertiseForm.certifications && !expertiseForm.certifications.startsWith("/uploads")
-                            ? expertiseForm.certifications
-                            : "PPR Certified"}
-                        </strong>
-                        <p>{hasCertificate ? "Đã có chứng chỉ" : "Chưa tải chứng chỉ"}</p>
-                      </div>
-                    </div>
-                    <div className={styles.uploadPicker}>
-                      <input
-                        id="certs"
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={handleCertChange}
-                        className={styles.hiddenFileInput}
-                      />
-                      <label htmlFor="certs" className={styles.uploadButton}>
-                        Chọn chứng chỉ
-                      </label>
-                      <span className={styles.uploadFileName}>
-                        {certFile?.name || "Chưa có tệp nào được chọn"}
-                      </span>
-                    </div>
-                    {certError && <p className={styles.error}>{certError}</p>}
-                    {(certPreview ||
-                      (expertiseForm.certifications &&
-                        expertiseForm.certifications.startsWith("/uploads"))) && (
-                      <div className={styles.certificatePreview}>
-                        <img
-                          src={certPreview || getImageUrl(expertiseForm.certifications)}
-                          alt="Certificate Preview"
-                        />
-                        {certPreview && (
-                          <button
-                            type="button"
-                            onClick={handleCancelCert}
-                            className={styles.textButton}
-                          >
-                            Hủy ảnh vừa chọn
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </section>
-
-                <section className={`${styles.panel} ${styles.darkPanel}`}>
-                  <div className={styles.panelHead}>
-                    <h3>Tác động hồ sơ</h3>
-                    <p>Dựa trên cách học viên lọc Coach trong 30 ngày gần nhất.</p>
-                  </div>
-                  <div className={styles.panelBody}>
-                    <div className={styles.impactRow}><span>Khớp Beginner</span><strong>92%</strong></div>
-                    <div className={styles.progressTrack}><span style={{ width: "92%" }} /></div>
-                    <div className={styles.impactRow}><span>Khớp Intermediate</span><strong>88%</strong></div>
-                    <div className={styles.progressTrack}><span style={{ width: "88%" }} /></div>
-                    <div className={styles.impactRow}><span>Độ tin cậy</span><strong>High</strong></div>
-                  </div>
-                </section>
-              </aside>
             </div>
           </form>
         )}
@@ -1249,7 +1199,7 @@ export default function CoachDashboard({ token }: Props) {
               </button>
             </div>
 
-            <div className={`${styles.contentPad} ${styles.twoColumnGrid}`}>
+            <div className={`${styles.contentPad}`}>
               <div className={styles.mainColumn}>
                 <div className={styles.priceHero}>
                   <div>
@@ -1311,41 +1261,7 @@ export default function CoachDashboard({ token }: Props) {
                 </div>
               </div>
 
-              <aside className={styles.sideStack}>
-                <section className={styles.panel}>
-                  <div className={styles.panelHead}>
-                    <h3>So sánh thị trường</h3>
-                    <p>Coach cùng cấp độ trong khu vực.</p>
-                  </div>
-                  <div className={styles.panelBody}>
-                    {[
-                      ["Beginner", 36, "320K"],
-                      ["Intermediate", 48, "430K"],
-                      ["Professional", 58, "520K"],
-                      ["Top coach", 76, "760K"],
-                    ].map(([label, width, value]) => (
-                      <div className={styles.benchmarkRow} key={label}>
-                        <span>{label}</span>
-                        <div><i style={{ width: `${width}%` }} /></div>
-                        <strong>{value}</strong>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-
-                <section className={`${styles.panel} ${styles.darkPanel}`}>
-                  <div className={styles.panelHead}>
-                    <h3>Dự báo thu nhập</h3>
-                    <p>Nếu giữ 17 giờ dạy/tháng với mức giá hiện tại.</p>
-                  </div>
-                  <div className={styles.panelBody}>
-                    <div className={styles.impactRow}><span>Số giờ dự kiến</span><strong>17 giờ</strong></div>
-                    <div className={styles.impactRow}><span>Doanh thu trước phí</span><strong>{formatCurrency(projectedMonthlyIncome)}</strong></div>
-                    <div className={styles.impactRow}><span>Xu hướng đặt lịch</span><strong>Ổn định</strong></div>
-                  </div>
-                </section>
-              </aside>
-            </div>
+              </div>
           </form>
         )}
 
@@ -1786,7 +1702,7 @@ export default function CoachDashboard({ token }: Props) {
                       <strong>{incomeData.summary.totalWorkingHours} giờ</strong>
                       <p>Thời lượng thực dạy</p>
                     </div>
-                    <div className={`${styles.kpiCard} ${styles.kpiDark}`}>
+                    <div className={`${styles.kpiCard}`}>
                       <span>Tổng thu nhập</span>
                       <strong>{formatCurrency(incomeData.summary.totalIncome)}</strong>
                       <p>Đã ghi nhận từ booking hoàn thành</p>
@@ -1827,7 +1743,7 @@ export default function CoachDashboard({ token }: Props) {
                       </div>
                     </section>
 
-                    <aside className={`${styles.panel} ${styles.darkPanel}`}>
+                    <aside className={`${styles.panel}`}>
                       <div className={styles.panelHead}>
                         <h3>Tóm tắt đối soát</h3>
                         <p>Các khoản đã hoàn thành và sẵn sàng thanh toán.</p>
